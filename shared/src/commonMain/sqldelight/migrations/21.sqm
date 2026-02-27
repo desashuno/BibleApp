@@ -1,0 +1,4 @@
+-- Migration 21: Add offset columns to highlights for sub-verse highlighting
+ALTER TABLE highlights ADD COLUMN start_offset INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE highlights ADD COLUMN end_offset INTEGER NOT NULL DEFAULT -1;

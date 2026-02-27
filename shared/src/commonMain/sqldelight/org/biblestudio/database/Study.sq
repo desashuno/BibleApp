@@ -1,0 +1,92 @@
+-- Study.sq
+-- Query group: Word study, morphology, lexicon
+-- Generated class: StudyQueries
+
+-- ═══════════════════════════ Lexicon ═══════════════════════════
+
+lexiconByStrongs:
+SELECT *
+FROM lexicon_entries
+WHERE strongs_number = :strongsNumber;
+
+searchLexicon:
+SELECT *
+FROM lexicon_entries
+WHERE original_word LIKE '%' || :query || '%'
+   OR transliteration LIKE '%' || :query || '%'
+   OR definition LIKE '%' || :query || '%'
+LIMIT :maxResults;
+
+relatedByPrefix:
+SELECT *
+FROM lexicon_entries
+WHERE strongs_number LIKE :prefix || '%'
+  AND strongs_number != :excludeStrongs
+LIMIT :maxResults;
+
+insertLexiconEntry:
+INSERT INTO lexicon_entries(strongs_number, original_word, transliteration, definition, usage_notes)
+VALUES (:strongsNumber, :originalWord, :transliteration, :definition, :usageNotes);
+
+-- ═══════════════════════════ Morphology ═══════════════════════════
+
+morphologyForVerse:
+SELECT m.*, l.original_word, l.transliteration, l.definition
+FROM morphology m
+LEFT JOIN lexicon_entries l ON m.strongs_number = l.strongs_number
+WHERE m.global_verse_id = :globalVerseId
+ORDER BY m.word_position ASC;
+
+morphologyByStrongs:
+SELECT m.*, l.original_word, l.transliteration, l.definition
+FROM morphology m
+LEFT JOIN lexicon_entries l ON m.strongs_number = l.strongs_number
+WHERE m.strongs_number = :strongsNumber
+ORDER BY m.global_verse_id, m.word_position;
+
+insertMorphology:
+INSERT INTO morphology(global_verse_id, word_position, strongs_number, parsing_code, surface_form, lemma, gloss)
+VALUES (:globalVerseId, :wordPosition, :strongsNumber, :parsingCode, :surfaceForm, :lemma, :gloss);
+
+-- ═══════════════════════════ Alignment ═══════════════════════════
+
+alignmentForVerse:
+SELECT *
+FROM alignment_words
+WHERE global_verse_id = :globalVerseId
+ORDER BY english_position ASC;
+
+insertAlignment:
+INSERT INTO alignment_words(global_verse_id, english_position, english_token, original_position, strongs_number)
+VALUES (:globalVerseId, :englishPosition, :englishToken, :originalPosition, :strongsNumber);
+
+-- ═══════════════════════════ Outlines ═══════════════════════════
+
+outlinesForVerse:
+SELECT *
+FROM outlines
+WHERE global_verse_start <= :globalVerseId
+  AND global_verse_end >= :globalVerseId
+ORDER BY global_verse_start;
+
+insertOutline:
+INSERT INTO outlines(global_verse_start, global_verse_end, title, content, source)
+VALUES (:globalVerseStart, :globalVerseEnd, :title, :content, :source);
+
+-- ═══════════════════════════ Word Occurrences ═══════════════════════════
+
+occurrencesForWord:
+SELECT *
+FROM word_occurrences
+WHERE strongs_number = :strongsNumber
+ORDER BY global_verse_id ASC;
+
+occurrenceCount:
+SELECT strongs_number, COUNT(*) AS count
+FROM word_occurrences
+WHERE strongs_number = :strongsNumber
+GROUP BY strongs_number;
+
+insertOccurrence:
+INSERT INTO word_occurrences(strongs_number, global_verse_id, word_position)
+VALUES (:strongsNumber, :globalVerseId, :wordPosition);

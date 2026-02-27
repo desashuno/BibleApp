@@ -1,0 +1,20 @@
+-- 3.sqm: Add study tables — lexicon, morphology (v2 → v3)
+
+CREATE TABLE lexicon_entries (
+    strongs_number TEXT NOT NULL PRIMARY KEY,
+    original_word TEXT NOT NULL,
+    transliteration TEXT NOT NULL,
+    definition TEXT NOT NULL,
+    usage_notes TEXT
+);
+
+CREATE TABLE morphology (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    global_verse_id INTEGER NOT NULL,
+    word_position INTEGER NOT NULL,
+    strongs_number TEXT NOT NULL,
+    parsing_code TEXT NOT NULL
+);
+
+CREATE INDEX idx_morphology_verse ON morphology(global_verse_id);
+CREATE INDEX idx_morphology_strongs ON morphology(strongs_number);

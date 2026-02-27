@@ -1,0 +1,86 @@
+-- Bible.sq
+-- Query group: Bible text (bibles, books, chapters, verses, fts_verses)
+-- Generated class: BibleQueries
+
+-- ═══════════════════════════ Named Queries ═══════════════════════════
+
+allBibles:
+SELECT *
+FROM bibles
+ORDER BY name ASC;
+
+bibleById:
+SELECT *
+FROM bibles
+WHERE id = :id;
+
+insertBible:
+INSERT INTO bibles(abbreviation, name, language, text_direction)
+VALUES (:abbreviation, :name, :language, :textDirection);
+
+deleteBible:
+DELETE FROM bibles
+WHERE id = :id;
+
+-- Books
+
+allBooksForBible:
+SELECT *
+FROM books
+WHERE bible_id = :bibleId
+ORDER BY book_number ASC;
+
+bookByNumber:
+SELECT *
+FROM books
+WHERE bible_id = :bibleId AND book_number = :bookNumber;
+
+insertBook:
+INSERT INTO books(bible_id, book_number, name, testament)
+VALUES (:bibleId, :bookNumber, :name, :testament);
+
+-- Chapters
+
+chaptersForBook:
+SELECT *
+FROM chapters
+WHERE book_id = :bookId
+ORDER BY chapter_number ASC;
+
+insertChapter:
+INSERT INTO chapters(book_id, chapter_number, verse_count)
+VALUES (:bookId, :chapterNumber, :verseCount);
+
+-- Verses
+
+versesForChapter:
+SELECT v.*
+FROM verses v
+INNER JOIN chapters c ON v.chapter_id = c.id
+WHERE c.book_id = :bookId AND c.chapter_number = :chapter
+ORDER BY v.verse_number ASC;
+
+verseByGlobalId:
+SELECT *
+FROM verses
+WHERE global_verse_id = :globalVerseId;
+
+versesInRange:
+SELECT *
+FROM verses
+WHERE global_verse_id BETWEEN :startId AND :endId
+ORDER BY global_verse_id ASC;
+
+insertVerse:
+INSERT INTO verses(chapter_id, global_verse_id, verse_number, text, html_text)
+VALUES (:chapterId, :globalVerseId, :verseNumber, :text, :htmlText);
+
+-- FTS Search
+
+searchVerses:
+SELECT v.*
+FROM verses v
+INNER JOIN fts_verses fts ON fts.rowid = v.id
+WHERE fts_verses MATCH :query
+ORDER BY bm25(fts_verses)
+LIMIT :maxResults;

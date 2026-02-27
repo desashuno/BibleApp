@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Timeline — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,47 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 TimelineEvent
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class TimelineEvent(
+    val id: Long,
+    val title: String,
+    val description: String?,
+    val yearStart: Int,
+    val yearEnd: Int?,
+    val era: String,
+    val globalVerseId: Int?,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `id` | `Long` | Auto-increment PK | No |
+| `title` | `String` | Event name | No |
+| `description` | `String?` | Brief description | Yes |
+| `yearStart` | `Int` | Year (BCE negative) | No |
+| `yearEnd` | `Int?` | End year for spans | Yes |
+| `era` | `String` | Period category | No |
+| `globalVerseId` | `Int?` | Key verse reference | Yes |
+
+### 1.2 Era (Enum)
+
+```kotlin
+enum class Era(val label: String) {
+    Creation("Creation"),
+    Patriarchs("Patriarchs"),
+    Exodus("Exodus & Conquest"),
+    Judges("Judges"),
+    UnitedMonarchy("United Monarchy"),
+    DividedMonarchy("Divided Monarchy"),
+    Exile("Exile"),
+    Return("Return & Restoration"),
+    Intertestamental("Intertestamental"),
+    NewTestament("New Testament"),
+    EarlyChurch("Early Church"),
+}
+```
 
 ---
 
@@ -34,43 +54,26 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `timeline_events`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE timeline_events (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title           TEXT    NOT NULL,
+    description     TEXT,
+    year_start      INTEGER NOT NULL,
+    year_end        INTEGER,
+    era             TEXT    NOT NULL,
+    global_verse_id INTEGER
+);
 ```
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE INDEX idx_timeline_era ON timeline_events(era);
+CREATE INDEX idx_timeline_verse ON timeline_events(global_verse_id);
+CREATE INDEX idx_timeline_years ON timeline_events(year_start, year_end);
 ```
 
 ---
@@ -80,60 +83,39 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface TimelineRepository {
+    suspend fun getAll(): Result<List<TimelineEvent>>
+    suspend fun getByEra(era: String): Result<List<TimelineEvent>>
+    suspend fun getForVerse(globalVerseId: Int): Result<List<TimelineEvent>>
+    suspend fun getById(id: Long): Result<TimelineEvent?>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | Parameters | Return | Performance |
+|-------|-----------|--------|-------------|
+| `allEvents` | — | `List<TimelineEvent>` | ~300 rows |
+| `eventsByEra` | `era` | `List<TimelineEvent>` | Indexed |
+| `eventsForVerse` | `globalVerseId` | `List<TimelineEvent>` | Indexed |
+| `eventsByRange` | `yearFrom, yearTo` | `List<TimelineEvent>` | Indexed |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v7 → v8 | Created `timeline_events` table | `7.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `global_verse_id` reference | Convention-based |
+| `entities` | Events link to knowledge graph entities | Cross-reference |
+| `geographic_locations` | Events may reference locations | Cross-reference |

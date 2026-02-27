@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Bookmarks & History — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,90 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  BookmarksPane / HistoryTab                       |
+|  BookmarkFolderList / BookmarkItem                |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultBookmarksComponent (Decompose)            |
+|  +-- Manages StateFlow<BookmarksState>            |
+|  +-- VerseBus subscriber                          |
+|  +-- Calls BookmarkRepository                     |
++---------------------------------------------------+
+|                      DATA                         |
+|  BookmarkRepository (interface)                   |
+|  BookmarkRepositoryImpl                           |
+|  +-- AnnotationQueries (SQLDelight)               |
+|       +-- SQLite (bookmarks)                      |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Create Bookmark
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User bookmarks verse** — Via context menu or bookmark button.
+2. **Folder selection** — User picks a folder (or creates new).
+3. **Repository** — `BookmarkRepository.create()` persists bookmark.
+4. **State update** — Bookmark list refreshes.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **History tracking** — Navigation events auto-recorded (last 100).
+- **Folder management** — Create, rename, reorder folders.
+- **Quick navigate** — Tap bookmark to publish VerseBus event.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
-| `.sq` File | Query | Parameters | Return | Description |
-|-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `.sq` File | Query | Parameters | Description |
+|-----------|-------|------------|-------------|
+| `Annotation.sq` | `bookmarksInFolder` | `folderId` | Bookmarks in folder |
+| `Annotation.sq` | `allBookmarks` | — | All bookmarks |
+| `Annotation.sq` | `insertBookmark` | all fields | Create bookmark |
+| `Annotation.sq` | `deleteBookmark` | `uuid` | Soft delete |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val bookmarksModule = module {
+    singleOf(::BookmarkRepositoryImpl) bind BookmarkRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultBookmarksComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `BookmarkRepositoryImpl` | Abstracts bookmark queries |
+| Observer | VerseBus subscriber | Auto-check bookmark status for active verse |
+| Folder hierarchy | `folder_id` + `sort_order` | User-organized bookmark groups |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Bookmark lookup < 5 ms** — Indexed on `global_verse_id` and `folder_id`.
+- **History auto-prune** — Keeps last 100 entries; auto-deletes older.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Flat folder structure | Nested folders | Simpler UX; sufficient for Bible study |
+| Auto-history | Manual history | Reduces user friction; always available |
+| UUID primary key | Auto-increment | Sync-safe |

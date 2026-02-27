@@ -1,0 +1,45 @@
+-- Reference.sq
+-- Query group: Cross-references and parallel passages
+-- Generated class: ReferenceQueries
+
+-- ═══════════════════════════ Cross References ═══════════════════════════
+
+crossRefsFromVerse:
+SELECT *
+FROM cross_references
+WHERE source_verse_id = :globalVerseId
+ORDER BY confidence DESC;
+
+crossRefsToVerse:
+SELECT *
+FROM cross_references
+WHERE target_verse_id = :globalVerseId
+ORDER BY confidence DESC;
+
+allCrossRefsForVerse:
+SELECT *
+FROM cross_references
+WHERE source_verse_id = :globalVerseId OR target_verse_id = :globalVerseId
+ORDER BY confidence DESC;
+
+insertCrossRef:
+INSERT INTO cross_references(source_verse_id, target_verse_id, type, confidence)
+VALUES (:sourceVerseId, :targetVerseId, :type, :confidence);
+
+-- ═══════════════════════════ Parallel Passages ═══════════════════════════
+
+parallelPassagesForVerse:
+SELECT *
+FROM parallel_passages
+WHERE global_verse_id = :globalVerseId
+ORDER BY group_id ASC;
+
+parallelPassagesByGroup:
+SELECT *
+FROM parallel_passages
+WHERE group_id = :groupId
+ORDER BY global_verse_id ASC;
+
+insertParallelPassage:
+INSERT INTO parallel_passages(group_id, global_verse_id, label)
+VALUES (:groupId, :globalVerseId, :label);

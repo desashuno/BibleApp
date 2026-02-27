@@ -1,0 +1,40 @@
+-- Search.sq
+-- Query group: Search history + FTS5 search across all content types
+-- Generated class: SearchQueries
+
+-- ═══════════════════════════ Search History ═══════════════════════════
+
+recentSearches:
+SELECT *
+FROM search_history
+ORDER BY created_at DESC
+LIMIT :limit;
+
+insertSearch:
+INSERT INTO search_history(query, scope, result_count, created_at)
+VALUES (:query, :scope, :resultCount, :createdAt);
+
+clearSearchHistory:
+DELETE FROM search_history;
+
+-- ═══════════════════════════ FTS Cross-Content Search ═══════════════════════════
+
+searchNotes:
+SELECT n.*
+FROM notes n
+INNER JOIN fts_notes fts ON fts.rowid = n.rowid
+WHERE fts_notes MATCH :query AND n.deleted_at IS NULL
+ORDER BY bm25(fts_notes)
+LIMIT :maxResults;
+
+searchLexicon:
+SELECT l.*
+FROM lexicon_entries l
+INNER JOIN fts_lexicon fts ON fts.rowid = l.rowid
+WHERE fts_lexicon MATCH :query
+ORDER BY bm25(fts_lexicon)
+LIMIT :maxResults;
+
+-- Note: FTS rebuild commands (INSERT INTO fts_*(fts_*) VALUES ('rebuild'))
+-- must be executed via raw SQL at runtime since SQLDelight cannot compile
+-- FTS5 control statements as named queries.

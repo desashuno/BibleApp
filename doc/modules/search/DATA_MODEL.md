@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Search — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,43 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 SearchResult
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class SearchResult(
+    val globalVerseId: Int,
+    val bookName: String,
+    val chapter: Int,
+    val verseNumber: Int,
+    val snippet: String,
+    val rank: Double,
+    val source: SearchSource,
+)
+
+enum class SearchSource { Bible, Notes, Resources, Lexicon, Sermons }
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `globalVerseId` | `Int` | `BBCCCVVV` verse reference | No |
+| `bookName` | `String` | Human-readable book name | No |
+| `chapter` | `Int` | Chapter number | No |
+| `verseNumber` | `Int` | Verse number | No |
+| `snippet` | `String` | Text snippet with match terms highlighted | No |
+| `rank` | `Double` | BM25 relevance score | No |
+| `source` | `SearchSource` | Which FTS table the result came from | No |
+
+### 1.2 SearchHistoryEntry
+
+```kotlin
+data class SearchHistoryEntry(
+    val id: Long,
+    val query: String,
+    val scope: String,
+    val resultCount: Int,
+    val createdAt: String,
+)
+```
 
 ---
 
@@ -34,44 +50,27 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `search_history`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE search_history (
+    id           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    query        TEXT    NOT NULL,
+    scope        TEXT    NOT NULL DEFAULT 'all',
+    result_count INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
+### 2.2 FTS5 Virtual Tables (consumed — not owned)
 
-#### Indexes
-
-```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
-```
+| Virtual Table | Source Table | Owner Module | Content |
+|---------------|-------------|--------------|---------|
+| `fts_verses` | `verses` | bible-reader | Bible text search |
+| `fts_notes` | `notes` | note-editor | User notes search |
+| `fts_resources` | `resource_entries` | resource-library | Commentary/dictionary search |
+| `fts_lexicon` | `lexicon_entries` | word-study | Lexicon definition search |
+| `fts_sermons` | `sermon_sections` | sermon-editor | Sermon content search |
 
 ---
 
@@ -80,60 +79,66 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
+interface SearchRepository {
+    suspend fun searchAll(query: String, maxResults: Int = 100): Result<List<SearchResult>>
+    suspend fun searchVerses(query: String, bookRange: IntRange? = null, maxResults: Int = 100): Result<List<SearchResult>>
+    suspend fun searchNotes(query: String, maxResults: Int = 50): Result<List<SearchResult>>
+    suspend fun searchResources(query: String, maxResults: Int = 50): Result<List<SearchResult>>
+    suspend fun getHistory(limit: Int = 20): Result<List<SearchHistoryEntry>>
+    suspend fun addToHistory(query: String, scope: String, resultCount: Int)
+    suspend fun clearHistory()
+}
 ```
 
 ### 3.2 Implementation
 
 ```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+class SearchRepositoryImpl(
+    private val database: BibleStudioDatabase,
+) : SearchRepository {
+
+    override suspend fun searchVerses(query: String, bookRange: IntRange?, maxResults: Int): Result<List<SearchResult>> = runCatching {
+        database.searchQueries
+            .searchVersesFts(query, maxResults.toLong())
+            .executeAsList()
+            .map { it.toSearchResult(SearchSource.Bible) }
+    }
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `searchVersesFts` | `Search.sq` | `query: String, limit: Long` | `List<SearchResult>` | < 50 ms (FTS5 + BM25) |
+| `searchNotesFts` | `Search.sq` | `query: String, limit: Long` | `List<SearchResult>` | < 50 ms |
+| `searchResourcesFts` | `Search.sq` | `query: String, limit: Long` | `List<SearchResult>` | < 50 ms |
+| `searchLexiconFts` | `Search.sq` | `query: String, limit: Long` | `List<SearchResult>` | < 50 ms |
+| `searchSermonsFts` | `Search.sq` | `query: String, limit: Long` | `List<SearchResult>` | < 50 ms |
+| `recentSearches` | `Search.sq` | `limit: Long` | `List<SearchHistory>` | O(n) small set |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v5 → v6 | Created FTS5 tables (`fts_verses`, `fts_notes`, `fts_resources`) | `5.sqm` |
+| v7 → v8 | Created `search_history` table | `7.sqm` |
+| v14 → v15 | Added `fts_lexicon`, `fts_sermons` FTS5 tables | `14.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
+The Search module does not own any verse-reference data directly. It reads from FTS5 virtual tables that mirror content from other modules:
 
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `fts_verses` (→ `verses`) | Read via FTS5 MATCH | Cross-module read |
+| `fts_notes` (→ `notes`) | Read via FTS5 MATCH | Cross-module read |
+| `fts_resources` (→ `resource_entries`) | Read via FTS5 MATCH | Cross-module read |
+| `fts_lexicon` (→ `lexicon_entries`) | Read via FTS5 MATCH | Cross-module read |
+| `fts_sermons` (→ `sermon_sections`) | Read via FTS5 MATCH | Cross-module read |

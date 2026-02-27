@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Passage Guide — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,52 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Create `PassageGuideComponent` | Orchestrate 6 parallel repository queries | 3 days | All source repositories |
+| 2 | Create `PassageGuidePane` | Scrollable collapsible sections | 2 days | Component |
+| 3 | Progressive section rendering | Show skeleton per section until data arrives | 1 day | UI |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Key words extraction | Identify and highlight important words from morphology | 2 days | MorphologyRepository |
+| 2 | Section reordering | User can drag-reorder sections | 1.5 days | UI |
+
+### P2 — Desirable
+
+| # | Improvement | Description | Estimated effort | Dependencies |
+|---|------------|-------------|-----------------|-------------|
+| 1 | Passage range support | Select chapter range, not just single verse | 2 days | Component |
+| 2 | Export passage report | PDF/Markdown export of full report | 1.5 days | import-export |
 
 ---
 
-## 2. Absorbed Features
-
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
+## 2. Comparison with Logos Bible Software
 
 | Logos Feature | BibleStudio Status | Priority | Notes |
 |--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Passage Guide panel | Planned | P0 | Aggregated study hub |
+| Section customization | Planned (reordering) | P1 | Logos allows show/hide |
+| Exegetical Guide | Separate module (exegetical-guide) | — | BibleStudio separates concerns |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Improvements | Total effort | Prerequisites |
+|-------|-------------|-------------|--------------|
+| **Phase 4** | P0 #1-3 | ~6 days | Phase 3 modules |
+| **Phase 4.5** | P1 #1-2 | ~3.5 days | Phase 4 |
+| **Future** | P2 | ~3.5 days | Phase 4.5 |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created from Phase 4 tasks | -- |

@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Knowledge Graph — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,92 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  KnowledgeGraphPane                               |
+|  EntityBrowser / RelationshipGraph / EntityDetail  |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultKnowledgeGraphComponent (Decompose)       |
+|  +-- Manages StateFlow<KnowledgeGraphState>       |
+|  +-- Subscribes to VerseBus VerseSelected         |
+|  +-- Queries entity/relationship data             |
++---------------------------------------------------+
+|                      DATA                         |
+|  KnowledgeGraphRepository (interface)             |
+|  KnowledgeGraphRepositoryImpl                     |
+|  +-- KnowledgeQueries (SQLDelight)                |
+|       +-- SQLite (entities, relationships)        |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Browse Entities
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User opens pane** — Loads entity categories (People, Places, Events).
+2. **Category selection** — Queries entities by type.
+3. **Entity detail** — Shows attributes, related entities, and verse references.
+4. **Graph view** — Renders interactive relationship graph (force-directed layout).
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **VerseBus integration** — On `VerseSelected`, shows entities mentioned in that verse.
+- **Entity search** — Full-text search across entity names/descriptions.
+- **Relationship navigation** — Click an edge to see related entities.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Knowledge.sq` | `entitiesByType` | `type: String` | `List<Entity>` | Filter by People/Places/Events |
+| `Knowledge.sq` | `entityById` | `id: Long` | `Entity?` | Single entity detail |
+| `Knowledge.sq` | `relationshipsFor` | `entityId: Long` | `List<Relationship>` | Entity connections |
+| `Knowledge.sq` | `entitiesForVerse` | `globalVerseId: Int` | `List<Entity>` | Entities in a verse |
+| `Knowledge.sq` | `searchEntities` | `query: String` | `List<Entity>` | FTS search |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val knowledgeGraphModule = module {
+    singleOf(::KnowledgeGraphRepositoryImpl) bind KnowledgeGraphRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultKnowledgeGraphComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `KnowledgeGraphRepositoryImpl` | Abstracts entity/relationship queries |
+| Observer | VerseBus subscriber | Shows entities for selected verse |
+| Graph layout | Force-directed algorithm | Automatic relationship visualization |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Entity query < 10 ms** — Indexed on `type` and `global_verse_id`.
+- **Graph rendering** — Limited to 50 visible nodes; pagination for large clusters.
+- **Lazy loading** — Entity details loaded on demand, not pre-fetched.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| SQLite storage | Neo4j/graph DB | KMP portability; sufficient for biblical entity graph |
+| Force-directed layout | Hierarchical | More intuitive for non-directional relationships |
+| Pre-populated data | User-created only | Biblical entities are static reference data |

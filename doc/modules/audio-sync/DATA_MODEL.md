@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Audio Sync — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,27 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 AudioTimestamp
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class AudioTimestamp(
+    val id: Long,
+    val bibleId: Long,
+    val globalVerseId: Int,
+    val startMs: Long,
+    val endMs: Long,
+    val audioFile: String,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `id` | `Long` | Auto-increment PK | No |
+| `bibleId` | `Long` | Foreign key to `bibles.id` | No |
+| `globalVerseId` | `Int` | `BBCCCVVV` verse reference | No |
+| `startMs` | `Long` | Start offset in milliseconds | No |
+| `endMs` | `Long` | End offset in milliseconds | No |
+| `audioFile` | `String` | Relative path to audio file | No |
 
 ---
 
@@ -34,43 +34,24 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `audio_timestamps`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE audio_timestamps (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    bible_id        INTEGER NOT NULL REFERENCES bibles(id),
+    global_verse_id INTEGER NOT NULL,
+    start_ms        INTEGER NOT NULL,
+    end_ms          INTEGER NOT NULL,
+    audio_file      TEXT    NOT NULL
+);
 ```
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE INDEX idx_audio_bible_verse ON audio_timestamps(bible_id, global_verse_id);
+CREATE INDEX idx_audio_file ON audio_timestamps(audio_file);
 ```
 
 ---
@@ -80,60 +61,49 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
+interface AudioSyncRepository {
+    suspend fun getTimestampsForChapter(
+        bibleId: Long,
+        bookNumber: Int,
+        chapterNumber: Int,
+    ): Result<List<AudioTimestamp>>
 
-### 3.2 Implementation
+    suspend fun getTimestampForVerse(
+        bibleId: Long,
+        globalVerseId: Int,
+    ): Result<AudioTimestamp?>
 
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+    suspend fun getAudioFile(
+        bibleId: Long,
+        bookNumber: Int,
+        chapterNumber: Int,
+    ): Result<String?>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | Parameters | Return | Performance |
+|-------|-----------|--------|-------------|
+| `timestampsForChapter` | `bibleId`, chapter range | `List<AudioTimestamp>` | Indexed |
+| `timestampForVerse` | `bibleId`, `globalVerseId` | `AudioTimestamp?` | Indexed |
+| `audioFileForChapter` | `bibleId`, chapter range | `String?` | Indexed |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v13 → v14 | Created `audio_timestamps` table | `13.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `bibles` | `bible_id` → `bibles.id` | Foreign key |
+| `verses` | `global_verse_id` reference | Convention-based |

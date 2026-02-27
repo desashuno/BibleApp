@@ -1,0 +1,59 @@
+-- Resource.sq
+-- Query group: Resources, commentaries, dictionaries
+-- Generated class: ResourceQueries
+
+-- ═══════════════════════════ Resources ═══════════════════════════
+
+allResources:
+SELECT *
+FROM resources
+WHERE deleted_at IS NULL
+ORDER BY title ASC;
+
+resourcesByType:
+SELECT *
+FROM resources
+WHERE type = :type AND deleted_at IS NULL
+ORDER BY title ASC;
+
+resourceByUuid:
+SELECT *
+FROM resources
+WHERE uuid = :uuid;
+
+insertResource:
+INSERT INTO resources(uuid, type, title, author, version, format, created_at, updated_at, device_id)
+VALUES (:uuid, :type, :title, :author, :version, :format, :createdAt, :updatedAt, :deviceId);
+
+softDeleteResource:
+UPDATE resources
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Resource Entries ═══════════════════════════
+
+entriesForVerse:
+SELECT re.*
+FROM resource_entries re
+WHERE re.resource_id = :resourceId AND re.global_verse_id = :globalVerseId
+ORDER BY re.sort_order ASC;
+
+allEntriesForResource:
+SELECT *
+FROM resource_entries
+WHERE resource_id = :resourceId
+ORDER BY global_verse_id ASC, sort_order ASC;
+
+insertEntry:
+INSERT INTO resource_entries(resource_id, global_verse_id, content, sort_order)
+VALUES (:resourceId, :globalVerseId, :content, :sortOrder);
+
+-- ═══════════════════════════ FTS Search ═══════════════════════════
+
+searchResources:
+SELECT re.*
+FROM resource_entries re
+INNER JOIN fts_resources fts ON fts.rowid = re.id
+WHERE fts_resources MATCH :query
+ORDER BY bm25(fts_resources)
+LIMIT :maxResults;

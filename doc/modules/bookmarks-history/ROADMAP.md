@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Bookmarks & History — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,46 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Implement `BookmarkRepository` | CRUD with folder support | 1.5 days | Annotation.sq |
+| 2 | Create `BookmarksComponent` | State + VerseBus + history | 2 days | Repository |
+| 3 | Bookmarks pane | Folder list + bookmark items | 2 days | Component |
+| 4 | History tracking | Auto-record verse navigation | 1 day | VerseBus |
+| 5 | Quick bookmark | One-tap bookmark from reader | 0.5 days | Component |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Folder reordering | Drag-and-drop folder/bookmark sort | 1.5 days | Pane |
+| 2 | Sync support | LWW merge for bookmarks | 1 day | Sync infra |
 
 ---
 
-## 2. Absorbed Features
+## 2. Comparison with Logos Bible Software
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
-
-| Logos Feature | BibleStudio Status | Priority | Notes |
-|--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Logos Feature | BibleStudio Status | Priority |
+|--------------|-------------------|----------|
+| Bookmarks with folders | Planned | P0 |
+| Navigation history | Planned | P0 |
+| Bookmark labels | Planned | P0 |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Total effort | Prerequisites |
+|-------|-------------|--------------|
+| **Phase 4** | 7 days | Phase 1 DB |
+| **Phase 5** | 2.5 days | P0 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created | — |

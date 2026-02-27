@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Audio Sync — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,48 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Audio timestamp schema | Create `audio_timestamps` table | 0.5 days | Phase 1 DB |
+| 2 | `AudioSyncRepository` | Query timestamps per chapter/verse | 1 day | Schema |
+| 3 | Platform audio player | expect/actual for Android/iOS/Desktop | 3 days | KMP |
+| 4 | Sync engine | 100ms polling + verse mapping | 2 days | Repository + Player |
+| 5 | Player UI | Play/pause/seek/speed controls | 2 days | Component |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Speed control | 0.5x / 1.0x / 1.5x / 2.0x | 0.5 days | Player |
+| 2 | Background playback | Continue when app in background | 2 days | Platform |
+| 3 | Audio import | Import audio files via module system | 1.5 days | Module system |
 
 ---
 
-## 2. Absorbed Features
+## 2. Comparison with Logos Bible Software
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
-
-| Logos Feature | BibleStudio Status | Priority | Notes |
-|--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Logos Feature | BibleStudio Status | Priority |
+|--------------|-------------------|----------|
+| Audio Bible playback | Planned | P0 |
+| Verse-synced highlight | Planned | P0 |
+| Speed control | P1 | P1 |
+| Background playback | P1 | P1 |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Total effort | Prerequisites |
+|-------|-------------|--------------|
+| **Phase 5** | 8.5 days | Phase 1 DB, KMP |
+| **Phase 6** | 4 days | P0 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created | — |

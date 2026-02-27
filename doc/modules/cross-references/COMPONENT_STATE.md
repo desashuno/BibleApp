@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Cross-References — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -8,120 +8,108 @@
 
 | Component | Scope | File | Description |
 |-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| `DefaultCrossReferenceComponent` | Scoped (per pane) | `shared/.../features/crossreferences/component/DefaultCrossReferenceComponent.kt` | Cross-ref loading on verse selection |
 
 ---
 
-## 2. {Module}Component
+## 2. CrossReferenceComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface CrossReferenceComponent {
+    val state: StateFlow<CrossReferenceState>
+    fun onReferenceSelected(reference: CrossReference)
+    fun onExpandReference(reference: CrossReference)
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class CrossReferenceState(
+    val isLoading: Boolean = false,
+    val sourceVerse: Int? = null,
+    val references: List<CrossReference> = emptyList(),
+    val parallels: List<ParallelPassage> = emptyList(),
+    val expandedReferenceIds: Set<Long> = emptySet(),
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
+Initial (no verse selected)
   │
-  │ onLoad()
+  │ VerseBus: VerseSelected received
   ▼
-Loading (loading=true)
+Loading (isLoading=true, sourceVerse set)
   │
-  ├── success ──→ Content (items populated)
+  ├── success ──→ Content (references + parallels populated)
   │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
+  │                ├── onReferenceSelected(ref) ──→ Content (VerseBus published)
+  │                ├── onExpandReference(ref) ──→ Content (inline text loaded)
+  │                └── VerseBus: VerseSelected ──→ Loading (new verse)
   │
   └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| VerseBus `VerseSelected` | DB query | Loads cross-refs and parallels for verse |
+| `onReferenceSelected` | VerseBus publish | Publishes `LinkEvent.VerseSelected(targetVerseId)` |
+| `onExpandReference` | DB query | Loads full target verse text inline |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
 | `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | ↔ Bidirectional | `SharedFlow<LinkEvent>` | Subscribes `VerseSelected`; publishes on ref tap |
+| `BibleRepository` | → Reads | Koin DI | Loads target verse text for preview |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val crossReferencesModule = module {
+    factory<CrossReferenceComponent> { (componentContext: ComponentContext) ->
+        DefaultCrossReferenceComponent(
+            componentContext = componentContext,
+            crossRefRepository = get(),
+            parallelRepository = get(),
+            verseBus = get(),
+        )
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `VerseBus VerseSelected loads references`() = runTest {
+    val verseBus = VerseBus()
+    val component = DefaultCrossReferenceComponent(
+        componentContext = TestComponentContext(),
+        crossRefRepository = FakeCrossRefRepository(testRefs),
+        parallelRepository = FakeParallelRepository(),
+        verseBus = verseBus,
+    )
+    component.state.test {
+        verseBus.publish(LinkEvent.VerseSelected(globalVerseId = 01001001))
+        assertThat(awaitItem().isLoading).isTrue()
+        assertThat(awaitItem().references).isEqualTo(testRefs)
+    }
+}
 ```

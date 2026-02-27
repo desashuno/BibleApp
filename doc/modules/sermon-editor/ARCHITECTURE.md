@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Sermon Editor — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,94 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  SermonEditorPane                                 |
+|  SermonList / SermonEditView / SectionEditor      |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultSermonEditorComponent (Decompose)         |
+|  +-- Manages StateFlow<SermonEditorState>         |
+|  +-- Auto-save with debounce                      |
+|  +-- Calls SermonRepository                       |
++---------------------------------------------------+
+|                      DATA                         |
+|  SermonRepository (interface)                     |
+|  SermonRepositoryImpl                             |
+|  +-- WritingQueries (SQLDelight)                  |
+|       +-- SQLite (sermons, sermon_sections)       |
+|       +-- fts_sermons (FTS5)                      |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Edit Sermon
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User creates or opens sermon** — Loads from `SermonRepository`.
+2. **Section editing** — User types in structured sections (intro, points, conclusion).
+3. **Auto-save** — Debounced (1.5s after last keystroke) persist to SQLite.
+4. **FTS update** — Rebuilds `fts_sermons` index on save.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Sermon list** — Browse all sermons with FTS search.
+- **Verse insertion** — Insert verse references that become VerseBus links.
+- **Export** — Markdown or plain text export.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Writing.sq` | `allSermons` | — | `List<Sermon>` | All sermons |
+| `Writing.sq` | `sermonById` | `id: Long` | `Sermon?` | Single sermon |
+| `Writing.sq` | `sectionsForSermon` | `sermonId: Long` | `List<SermonSection>` | Sermon's sections |
+| `Writing.sq` | `insertSermon` | all fields | — | Create sermon |
+| `Writing.sq` | `updateSermon` | all fields | — | Update sermon |
+| `Writing.sq` | `searchSermons` | FTS query | `List<Sermon>` | FTS5 search |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val sermonEditorModule = module {
+    singleOf(::SermonRepositoryImpl) bind SermonRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultSermonEditorComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `SermonRepositoryImpl` | Abstracts sermon/section queries |
+| Auto-save | Debounced state persist | No manual save; prevents data loss |
+| Structured content | Section-based editing | Sermon outline structure |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Auto-save < 50 ms** — Single transaction update.
+- **FTS rebuild** — Per-sermon (not global) on save.
+- **Sermon load < 10 ms** — Small document + sections in one query.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Section-based editor | Free-form rich text | Structured for sermon preparation |
+| Markdown support | WYSIWYG only | Simpler storage; export-friendly |
+| Auto-save with debounce | Manual save | Better UX; matches modern editors |

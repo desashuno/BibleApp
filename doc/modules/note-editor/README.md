@@ -6,7 +6,9 @@
 
 ## 1. Overview
 
-<!-- WYSIWYG note editor with verse anchoring, tag system. -->
+The Note Editor module allows users to create, edit, and organize rich-text notes linked to specific Bible verses. Each note is uniquely identified by a UUID and associated with a `global_verse_id` (BBCCCVVV format), enabling quick navigation from any verse to its attached notes and vice versa.
+
+Notes support basic rich-text formatting (bold, italic, headings, lists) via a custom Markdown-like editor. The module provides a full-text search capability through the `fts_notes` FTS5 virtual table, allowing notes to be discovered via the Search module.
 
 ---
 
@@ -15,9 +17,9 @@
 | Field | Value |
 |-------|-------|
 | **PaneType** | `PaneType.noteEditor` |
-| **Category** | Write |
-| **Accent color** | Creative Green `#8BA362` |
-| **Icon** | `Icons.note` |
+| **Category** | Writing |
+| **Accent color** | Deep Blue `#4A6E8A` (`paneWriting`) |
+| **Icon** | `Icons.edit_note` |
 
 ---
 
@@ -39,13 +41,15 @@
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| `bible-reader` | Verse Bus | Subscribes to `VerseSelected` to load notes for verse |
 
 ### 4.2 Modules that depend on this (provides)
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| `passage-guide` | Data | Passage guide reads user notes for verse |
+| `search` | Data (FTS5) | Search queries `fts_notes` for note content |
+| `import-export` | Data | Export includes user notes |
 
 ---
 
@@ -53,7 +57,12 @@
 
 | File | Layer | Purpose |
 |---------|------|-----------|
-| <!-- TBD --> | | |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/notes/component/NoteEditorComponent.kt` | Logic | Component interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/notes/component/DefaultNoteEditorComponent.kt` | Logic | Decompose implementation |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/notes/model/Note.kt` | Model | Note domain entity |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/notes/repository/NoteRepository.kt` | Data | Repository interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/notes/repository/NoteRepositoryImpl.kt` | Data | SQLDelight implementation |
+| `composeApp/src/commonMain/kotlin/org/biblestudio/features/notes/ui/NoteEditorPane.kt` | UI | Rich-text editor pane |
 
 ---
 
@@ -62,8 +71,8 @@
 | Document | Contents |
 |-----------|-----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Internal architecture, layers, data flow |
-| [ROUTES.md](ROUTES.md) | Routes exposed and consumed for inter-module communication |
-| [DATA_MODEL.md](DATA_MODEL.md) | Entities, SQLite tables, repositories, queries |
-| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Composables, screens, PaneRegistry registration |
-| [COMPONENT_STATE.md](COMPONENT_STATE.md) | Decompose components, StateFlow, side effects |
-| [ROADMAP.md](ROADMAP.md) | Prioritized pending improvements |
+| [ROUTES.md](ROUTES.md) | Routes exposed and consumed |
+| [DATA_MODEL.md](DATA_MODEL.md) | Entities, SQLite tables, repositories |
+| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Composables, PaneRegistry, wireframes |
+| [COMPONENT_STATE.md](COMPONENT_STATE.md) | Components, StateFlow, side effects |
+| [ROADMAP.md](ROADMAP.md) | Pending improvements |

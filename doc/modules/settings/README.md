@@ -6,7 +6,9 @@
 
 ## 1. Overview
 
-<!-- Configuration and preferences: gestures, keyboard shortcuts, themes, language, font size, plugins. -->
+The Settings module manages all application configuration through a key-value store in the `settings` SQLite table. Settings are organized by category (appearance, reading, sync, accessibility) and exposed as strongly-typed properties via a `SettingsRepository`.
+
+Changes to settings are observed via Kotlin `StateFlow`, enabling real-time UI updates (e.g. font size, theme, text direction) without requiring app restart. The module also manages theme selection (Light/Dark/System) using the Design System tokens.
 
 ---
 
@@ -15,8 +17,8 @@
 | Field | Value |
 |-------|-------|
 | **PaneType** | `PaneType.settings` |
-| **Category** | Tools |
-| **Accent color** | Utility Amber `#A38B5B` |
+| **Category** | Tool |
+| **Accent color** | Dusty Rose `#7A5A5A` (`paneTool`) |
 | **Icon** | `Icons.settings` |
 
 ---
@@ -39,13 +41,15 @@
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| (none) | -- | Settings is a root dependency |
 
 ### 4.2 Modules that depend on this (provides)
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- All modules consume settings configurations (theme, language, font) --> | | |
+| `bible-reader` | Data | Font size, text direction, default Bible |
+| `workspace` | Data | Default workspace layout, theme |
+| All modules | Data | Theme, locale, accessibility settings |
 
 ---
 
@@ -53,7 +57,12 @@
 
 | File | Layer | Purpose |
 |---------|------|-----------|
-| <!-- TBD --> | | |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/settings/component/SettingsComponent.kt` | Logic | Component interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/settings/component/DefaultSettingsComponent.kt` | Logic | Decompose implementation |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/settings/model/AppSettings.kt` | Model | Typed settings model |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/settings/repository/SettingsRepository.kt` | Data | Repository interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/settings/repository/SettingsRepositoryImpl.kt` | Data | SQLDelight implementation |
+| `composeApp/src/commonMain/kotlin/org/biblestudio/features/settings/ui/SettingsPane.kt` | UI | Settings pane |
 
 ---
 
@@ -62,8 +71,8 @@
 | Document | Contents |
 |-----------|-----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Internal architecture, layers, data flow |
-| [ROUTES.md](ROUTES.md) | Routes exposed and consumed for inter-module communication |
-| [DATA_MODEL.md](DATA_MODEL.md) | Entities, SQLite tables, repositories, queries |
-| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Composables, screens, PaneRegistry registration |
-| [COMPONENT_STATE.md](COMPONENT_STATE.md) | Decompose components, StateFlow, side effects |
-| [ROADMAP.md](ROADMAP.md) | Prioritized pending improvements |
+| [ROUTES.md](ROUTES.md) | Routes exposed and consumed |
+| [DATA_MODEL.md](DATA_MODEL.md) | Entities, SQLite tables, repositories |
+| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Composables, PaneRegistry, wireframes |
+| [COMPONENT_STATE.md](COMPONENT_STATE.md) | Components, StateFlow, side effects |
+| [ROADMAP.md](ROADMAP.md) | Pending improvements |

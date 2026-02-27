@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Note Editor — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,27 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 Note
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class Note(
+    val uuid: String,
+    val globalVerseId: Int,
+    val title: String,
+    val content: String,
+    val createdAt: String,
+    val updatedAt: String,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `uuid` | `String` | UUID v4 primary key | No |
+| `globalVerseId` | `Int` | `BBCCCVVV` verse reference | No |
+| `title` | `String` | Note title | No |
+| `content` | `String` | Rich text content (Markdown-like) | No |
+| `createdAt` | `String` | ISO 8601 creation timestamp | No |
+| `updatedAt` | `String` | ISO 8601 last-modified timestamp | No |
 
 ---
 
@@ -34,43 +34,47 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `notes`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE notes (
+    uuid            TEXT NOT NULL PRIMARY KEY,
+    global_verse_id INTEGER NOT NULL,
+    title           TEXT NOT NULL DEFAULT '',
+    content         TEXT NOT NULL DEFAULT '',
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
-
-#### Indexes
+### 2.2 FTS5 Virtual Table
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
+CREATE VIRTUAL TABLE fts_notes USING fts5(
+    title, content,
+    content=notes, content_rowid=rowid
+);
 ```
 
-### 2.2 FTS5 Virtual Tables (if applicable)
+### 2.3 FTS5 Triggers
 
 ```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE TRIGGER notes_ai AFTER INSERT ON notes BEGIN
+    INSERT INTO fts_notes(rowid, title, content)
+    VALUES (new.rowid, new.title, new.content);
+END;
+
+CREATE TRIGGER notes_au AFTER UPDATE ON notes BEGIN
+    INSERT INTO fts_notes(fts_notes, rowid, title, content)
+    VALUES ('delete', old.rowid, old.title, old.content);
+    INSERT INTO fts_notes(rowid, title, content)
+    VALUES (new.rowid, new.title, new.content);
+END;
+
+CREATE TRIGGER notes_ad AFTER DELETE ON notes BEGIN
+    INSERT INTO fts_notes(fts_notes, rowid, title, content)
+    VALUES ('delete', old.rowid, old.title, old.content);
+END;
 ```
 
 ---
@@ -80,60 +84,47 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface NoteRepository {
+    suspend fun getNotesForVerse(verseId: Int): Result<List<Note>>
+    suspend fun getNoteByUuid(uuid: String): Result<Note?>
+    suspend fun getAllNotes(): Result<List<Note>>
+    suspend fun insertNote(note: Note): Result<Unit>
+    suspend fun updateNote(note: Note): Result<Unit>
+    suspend fun deleteNote(uuid: String): Result<Unit>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `notesForVerse` | `Annotation.sq` | `globalVerseId: Int` | `List<Note>` | Indexed |
+| `noteByUuid` | `Annotation.sq` | `uuid: String` | `Note?` | O(1) PK lookup |
+| `allNotes` | `Annotation.sq` | -- | `List<Note>` | Full scan |
+| `insertNote` | `Annotation.sq` | `Note` fields | `Unit` | O(1) |
+| `updateNote` | `Annotation.sq` | `Note` fields | `Unit` | O(1) |
+| `deleteNote` | `Annotation.sq` | `uuid: String` | `Unit` | O(1) |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v1 | Created `notes` table | Initial schema |
+| v5 -> v6 | Created `fts_notes` FTS5 virtual table + triggers | `5.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
 ```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
+notes.global_verse_id -> verses.global_verse_id (BBCCCVVV)
 ```
 
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `notes.global_verse_id -> verses.global_verse_id` | Convention-based |
+| `fts_notes` | Mirror of `notes` for full-text search | FTS5 content sync |

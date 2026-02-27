@@ -1,4 +1,4 @@
-# {Module Name} — UI Components
+# Workspace — UI Components
 
 > Composables, PaneRegistry registration, and responsive behavior.
 
@@ -6,136 +6,107 @@
 
 ## 1. PaneRegistry Registration
 
-<!-- How this module is registered in the global pane catalog. -->
-
-```kotlin
-// PaneRegistry.register("{module}") { config ->
-//     {Module}Pane(config = config)
-// }
-```
+The workspace module is the **host** that renders all other panes. It is not registered as a pane type.
 
 | Field | Value |
 |-------|-------|
-| **Type key** | `{module}` |
-| **Builder** | `{Module}Pane` |
-| **Category** | {Read / Study / Write / Tools / Resources / Media} |
+| **Type key** | N/A (root shell) |
+| **Builder** | `WorkspaceShell` |
+| **Category** | Tools |
 
 ---
 
 ## 2. Screens / Panes
 
-### 2.1 {Module}Pane (workspace pane)
-
-<!-- Description of the composable when rendered as a pane in the multi-pane workspace. -->
+### 2.1 WorkspaceShell (root composable)
 
 | Aspect | Detail |
 |--------|--------|
-| Pane Header | {Title, icon, header actions} |
-| Toolbar | {Yes/No} — {buttons/actions} |
-| Min width | {N}dp |
-| Min height | {N}dp |
-
-### 2.2 {Module}Content (full-screen on mobile)
-
-<!-- Description of the full-screen layout on mobile. -->
-
-| Aspect | Detail |
-|--------|--------|
-| Top App Bar | {Yes/No} — {description} |
-| FAB | {Yes/No} — {action} |
-| Bottom Sheet | {Yes/No} — {content} |
+| Activity Bar | Left-side vertical bar with pane type icons |
+| Content Area | Recursive `LayoutNodeRenderer` |
+| Min width | 360dp (mobile) |
 
 ---
 
 ## 3. Key Composables
 
-<!-- List of composable functions that make up this module's UI. -->
-
 | Composable | File | Description | Reusable |
 |------------|------|-------------|----------|
-| `{Module}Pane` | `composeApp/.../features/{module}/ui/{Module}Pane.kt` | Main pane container | No |
-| `{Composable1}` | `composeApp/.../features/{module}/ui/{Composable1}.kt` | {description} | {Yes/No} |
-| `{Composable2}` | `composeApp/.../features/{module}/ui/{Composable2}.kt` | {description} | {Yes/No} |
+| `WorkspaceShell` | `composeApp/.../workspace/ui/WorkspaceShell.kt` | Root shell | No |
+| `LayoutNodeRenderer` | `composeApp/.../workspace/ui/LayoutNodeRenderer.kt` | Recursive tree renderer | No |
+| `PaneContainer` | `composeApp/.../workspace/ui/PaneContainer.kt` | Header + close wrapper | Yes |
+| `SplitPane` | `composeApp/.../workspace/ui/SplitPane.kt` | Draggable split divider | Yes |
+| `TabGroupPane` | `composeApp/.../workspace/ui/TabGroupPane.kt` | Tab row with content | Yes |
+| `WorkspaceSwitcher` | `composeApp/.../workspace/ui/WorkspaceSwitcher.kt` | Workspace dropdown | No |
+| `PresetPicker` | `composeApp/.../workspace/ui/PresetPicker.kt` | Quickstart layout grid | No |
+| `ActivityBar` | `composeApp/.../workspace/ui/ActivityBar.kt` | Vertical icon list | No |
 
 ---
 
 ## 4. Descriptive Wireframe
 
-<!-- Text-based wireframe of the main UI layout. -->
-
 ```
-┌─────────────────────────────────────────┐
-│ [Icon] {Pane Title}          [⋮] [✕]   │  ← Pane Header
-├─────────────────────────────────────────┤
-│ [Toolbar: contextual actions]           │  ← Toolbar (optional)
-├─────────────────────────────────────────┤
-│                                         │
-│         Main content area               │
-│         of the module                   │
-│                                         │
-│                                         │
-├─────────────────────────────────────────┤
-│ [Status / Footer info]                  │  ← Footer (optional)
-└─────────────────────────────────────────┘
++------+----------------------------------------------+
+|      | [Workspace: Study]      [Switch]   [+ Add]   |
+|  A   +---------------------+------------------------+
+|  c   |                     | [Cross-Refs] [Word] [M]|
+|  t   |                     +------------------------+
+|  i   |   Bible Reader      |  Cross-References      |
+|  v   |   (Leaf pane)       |  (Active tab content)  |
+|  i   |                     |                        |
+|  t   |                     |                        |
+|  y   +--[=== drag ===]-----+                        |
+|  B   |                     |                        |
+|  a   |                     |                        |
+|  r   |                     |                        |
++------+---------------------+------------------------+
 ```
 
 ---
 
 ## 5. Responsive Behavior
 
-<!-- How the UI adapts to different screen sizes. -->
-
 | Breakpoint | Behavior |
 |-----------|----------|
-| **Mobile** (0–599dp) | {Full-screen navigation, simplified layout, etc.} |
-| **Tablet** (600–899dp) | {Side panel, adapted layout, etc.} |
-| **Desktop** (900dp+) | {Workspace pane, multi-pane, etc.} |
+| **Mobile** (0–599dp) | Single-pane stack; activity bar hidden; bottom nav |
+| **Tablet** (600–899dp) | Two-pane split; simplified activity bar |
+| **Desktop** (900dp+) | Full multi-pane with activity bar, split/tabs |
 
 ---
 
 ## 6. Verse Bus Interaction
 
-<!-- How the module reacts to verse changes in other panes. -->
-
 | Event | UI Action |
 |-------|-----------|
-| Receives `VerseSelected` from VerseBus | {Scroll to verse, highlight, load data, etc.} |
-| User selects a verse | {Publishes `VerseSelected` to VerseBus} |
+| N/A | Workspace does not subscribe; individual panes handle VerseBus |
 
 ---
 
 ## 7. UI States
 
-<!-- Different visual states of the module. -->
-
 | State | Visual | Trigger |
 |-------|--------|---------|
-| **Loading** | {Skeleton / Spinner / Shimmer} | Initial load or data change |
-| **Empty** | {Message + illustration + CTA} | No data to display |
-| **Error** | {Error message + retry button} | Load failure |
-| **Content** | {Main UI with data} | Data loaded successfully |
-| **Searching** | {Active input + progressive results} | User searches within module |
+| **Loading** | Skeleton layout | Workspace loading from DB |
+| **Empty** | Preset picker | First launch |
+| **Active** | Full layout | Workspace loaded |
+| **Error** | Error banner + fallback pane | Deserialization failure |
 
 ---
 
 ## 8. Animations & Transitions
 
-<!-- Module-specific animations. -->
-
 | Transition | Duration | Easing | Description |
 |-----------|---------|--------|-------------|
-| {Panel entry} | `200ms` | `EaseOut` | {description} |
-| {Content change} | `150ms` | `EaseInOut` | {description} |
+| Pane add/remove | `300ms` | `EaseInOut` | AnimatedVisibility |
+| Tab switch | `200ms` | `EaseOut` | Crossfade |
+| Workspace switch | `250ms` | `EaseInOut` | Fade transition |
 
 ---
 
 ## 9. Accessibility
 
-<!-- Module-specific accessibility considerations. -->
-
 | Requirement | Implementation |
 |-------------|----------------|
-| Semantic descriptions | {Composables that require `Modifier.semantics`} |
-| Keyboard navigation | {Shortcuts, tab order} |
-| Contrast | {Verify against DESIGN_SYSTEM §12} |
-| Text scaling | {Respects user's text scale preference} |
+| Semantic descriptions | Activity bar: "Open [pane] panel" |
+| Keyboard navigation | `Ctrl+1..9` switch tabs; `Ctrl+W` close pane |
+| Split resize | Arrow keys adjust ratio when focused |

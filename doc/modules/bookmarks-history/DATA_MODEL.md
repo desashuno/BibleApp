@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Bookmarks & History — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,49 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 Bookmark
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class Bookmark(
+    val uuid: String,
+    val globalVerseId: Int,
+    val label: String,
+    val folderId: String?,
+    val sortOrder: Int,
+    val createdAt: String,
+    val updatedAt: String,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `uuid` | `String` | UUID v4 primary key | No |
+| `globalVerseId` | `Int` | `BBCCCVVV` verse reference | No |
+| `label` | `String` | User-defined label | No |
+| `folderId` | `String?` | Parent folder (null = root) | Yes |
+| `sortOrder` | `Int` | Position within folder | No |
+| `createdAt` | `String` | ISO 8601 | No |
+| `updatedAt` | `String` | ISO 8601 | No |
+
+### 1.2 BookmarkFolder
+
+```kotlin
+data class BookmarkFolder(
+    val uuid: String,
+    val name: String,
+    val sortOrder: Int,
+)
+```
+
+### 1.3 HistoryEntry
+
+```kotlin
+data class HistoryEntry(
+    val id: Long,
+    val globalVerseId: Int,
+    val timestamp: String,
+)
+```
 
 ---
 
@@ -34,43 +56,26 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `bookmarks`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE bookmarks (
+    uuid            TEXT    NOT NULL PRIMARY KEY,
+    global_verse_id INTEGER NOT NULL,
+    label           TEXT    NOT NULL,
+    folder_id       TEXT,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    is_deleted      INTEGER NOT NULL DEFAULT 0
+);
 ```
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE INDEX idx_bookmarks_folder ON bookmarks(folder_id, sort_order);
+CREATE INDEX idx_bookmarks_verse ON bookmarks(global_verse_id);
 ```
 
 ---
@@ -80,60 +85,41 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface BookmarkRepository {
+    suspend fun getAll(): Result<List<Bookmark>>
+    suspend fun getInFolder(folderId: String?): Result<List<Bookmark>>
+    suspend fun create(bookmark: Bookmark): Result<Unit>
+    suspend fun update(bookmark: Bookmark): Result<Unit>
+    suspend fun delete(uuid: String): Result<Unit>
+    suspend fun isBookmarked(globalVerseId: Int): Result<Boolean>
+    suspend fun getHistory(limit: Int = 100): Result<List<HistoryEntry>>
+    suspend fun addToHistory(globalVerseId: Int): Result<Unit>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `bookmarksInFolder` | `Annotation.sq` | `folderId` | `List<Bookmark>` | Indexed |
+| `isBookmarked` | `Annotation.sq` | `globalVerseId` | `Boolean` | Indexed |
+| `allBookmarks` | `Annotation.sq` | — | `List<Bookmark>` | Full scan |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v1 → v2 | Created `bookmarks` table | `1.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `global_verse_id` → `verses.global_verse_id` | Convention-based |
+| `reading_plan_progress` | Reading plans record bookmark-like progress | Parallel data |

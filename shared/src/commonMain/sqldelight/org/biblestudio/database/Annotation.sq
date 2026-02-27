@@ -1,0 +1,175 @@
+-- Annotation.sq
+-- Query group: User annotations (notes, highlights, bookmarks, folders, history)
+-- Generated class: AnnotationQueries
+
+-- ═══════════════════════════ Notes ═══════════════════════════
+
+notesByVerse:
+SELECT *
+FROM notes
+WHERE global_verse_id = :globalVerseId AND deleted_at IS NULL
+ORDER BY updated_at DESC;
+
+noteByUuid:
+SELECT *
+FROM notes
+WHERE uuid = :uuid;
+
+allNotes:
+SELECT *
+FROM notes
+WHERE deleted_at IS NULL
+ORDER BY updated_at DESC
+LIMIT :limit OFFSET :offset;
+
+insertNote:
+INSERT INTO notes(uuid, global_verse_id, title, content, format, created_at, updated_at, device_id)
+VALUES (:uuid, :globalVerseId, :title, :content, :format, :createdAt, :updatedAt, :deviceId);
+
+updateNote:
+UPDATE notes
+SET title = :title, content = :content, format = :format, updated_at = :updatedAt, device_id = :deviceId
+WHERE uuid = :uuid;
+
+softDeleteNote:
+UPDATE notes
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+searchNotesFts:
+SELECT notes.*
+FROM notes
+INNER JOIN fts_notes ON fts_notes.rowid = notes.rowid
+WHERE fts_notes MATCH :query AND notes.deleted_at IS NULL
+ORDER BY bm25(fts_notes)
+LIMIT :maxResults;
+
+-- ═══════════════════════════ Highlights ═══════════════════════════
+
+highlightsByVerse:
+SELECT *
+FROM highlights
+WHERE global_verse_id = :globalVerseId AND deleted_at IS NULL;
+
+allHighlights:
+SELECT *
+FROM highlights
+WHERE deleted_at IS NULL
+ORDER BY global_verse_id ASC;
+
+highlightsByVerseRange:
+SELECT *
+FROM highlights
+WHERE global_verse_id BETWEEN :startVerseId AND :endVerseId AND deleted_at IS NULL
+ORDER BY global_verse_id ASC;
+
+insertHighlight:
+INSERT INTO highlights(uuid, global_verse_id, color_index, style, start_offset, end_offset, created_at, updated_at, device_id)
+VALUES (:uuid, :globalVerseId, :colorIndex, :style, :startOffset, :endOffset, :createdAt, :updatedAt, :deviceId);
+
+updateHighlight:
+UPDATE highlights
+SET color_index = :colorIndex, style = :style, start_offset = :startOffset, end_offset = :endOffset, updated_at = :updatedAt, device_id = :deviceId
+WHERE uuid = :uuid;
+
+softDeleteHighlight:
+UPDATE highlights
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Bookmarks ═══════════════════════════
+
+bookmarksByVerse:
+SELECT *
+FROM bookmarks
+WHERE global_verse_id = :globalVerseId AND deleted_at IS NULL;
+
+bookmarksByFolder:
+SELECT *
+FROM bookmarks
+WHERE folder_id = :folderId AND deleted_at IS NULL
+ORDER BY sort_order ASC;
+
+allBookmarks:
+SELECT *
+FROM bookmarks
+WHERE deleted_at IS NULL
+ORDER BY sort_order ASC;
+
+insertBookmark:
+INSERT INTO bookmarks(uuid, global_verse_id, label, folder_id, sort_order, created_at, updated_at, device_id)
+VALUES (:uuid, :globalVerseId, :label, :folderId, :sortOrder, :createdAt, :updatedAt, :deviceId);
+
+updateBookmark:
+UPDATE bookmarks
+SET label = :label, folder_id = :folderId, sort_order = :sortOrder, updated_at = :updatedAt, device_id = :deviceId
+WHERE uuid = :uuid;
+
+softDeleteBookmark:
+UPDATE bookmarks
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Bookmark Folders ═══════════════════════════
+
+allFolders:
+SELECT *
+FROM bookmark_folders
+WHERE deleted_at IS NULL
+ORDER BY sort_order ASC;
+
+folderByUuid:
+SELECT *
+FROM bookmark_folders
+WHERE uuid = :uuid;
+
+foldersByParent:
+SELECT *
+FROM bookmark_folders
+WHERE parent_id = :parentId AND deleted_at IS NULL
+ORDER BY sort_order ASC;
+
+rootFolders:
+SELECT *
+FROM bookmark_folders
+WHERE parent_id IS NULL AND deleted_at IS NULL
+ORDER BY sort_order ASC;
+
+insertFolder:
+INSERT INTO bookmark_folders(uuid, name, parent_id, sort_order, created_at, updated_at, device_id)
+VALUES (:uuid, :name, :parentId, :sortOrder, :createdAt, :updatedAt, :deviceId);
+
+updateFolder:
+UPDATE bookmark_folders
+SET name = :name, parent_id = :parentId, sort_order = :sortOrder, updated_at = :updatedAt, device_id = :deviceId
+WHERE uuid = :uuid;
+
+softDeleteFolder:
+UPDATE bookmark_folders
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Navigation History ═══════════════════════════
+
+recentHistory:
+SELECT *
+FROM navigation_history
+ORDER BY id DESC
+LIMIT :limit;
+
+insertHistoryEntry:
+INSERT INTO navigation_history(global_verse_id, visited_at)
+VALUES (:globalVerseId, :visitedAt);
+
+historyCount:
+SELECT COUNT(*) AS cnt
+FROM navigation_history;
+
+pruneHistory:
+DELETE FROM navigation_history
+WHERE id NOT IN (
+    SELECT id FROM navigation_history ORDER BY visited_at DESC LIMIT :keepCount
+);
+
+clearHistory:
+DELETE FROM navigation_history;

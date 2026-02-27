@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Import / Export — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,90 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultImportExportComponent` | Scoped | Import/export orchestration |
 
 ---
 
-## 2. {Module}Component
+## 2. ImportExportComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface ImportExportComponent {
+    val state: StateFlow<ImportExportState>
+    fun onSelectImportFile(fileBytes: ByteArray, fileName: String)
+    fun onConfirmImport()
+    fun onCancelImport()
+    fun onExport(scope: ExportScope, format: ExportFormat)
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class ImportExportState(
+    val activeTab: Tab = Tab.Import,
+    val importJob: ImportJob? = null,
+    val exportJob: ExportJob? = null,
+    val error: AppError? = null,
+)
+enum class Tab { Import, Export }
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Idle --> Parsing --> Preview --> Importing --> Complete
+                |                          +-> Error
+                +-> Error
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onSelectImportFile` | File parsing | Async format detection + parse |
+| `onConfirmImport` | DB transaction | Bulk insert parsed data |
+| `onExport` | DB read + file write | Query data + serialize to file |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `WorkspaceComponent` | ← Parent | Decompose | Lifecycle |
+| `BibleRepository` | → Writes | Koin DI | Bible import |
+| `AnnotationQueries` | → Reads/Writes | Koin DI | Annotation export/sync import |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val importExportModule = module {
+    factory<ImportExportComponent> { (ctx: ComponentContext) ->
+        DefaultImportExportComponent(ctx, get(), get(), get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `OSIS import parses and inserts correctly`() = runTest {
+    val component = DefaultImportExportComponent(TestComponentContext(), FakeImporter(), OsisParser(), ...)
+    component.onSelectImportFile(osisXmlBytes, "kjv.osis.xml")
+    component.state.test {
+        val preview = awaitItem()
+        assertThat(preview.importJob?.status).isEqualTo(ImportStatus.Previewing)
+    }
+}
 ```

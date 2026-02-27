@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Exegetical Guide — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,102 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultExegeticalGuideComponent` | Scoped | Aggregates 5 data sources for verse exegesis |
 
 ---
 
-## 2. {Module}Component
+## 2. ExegeticalGuideComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface ExegeticalGuideComponent {
+    val state: StateFlow<ExegeticalGuideState>
+    fun onVerseSelected(globalVerseId: Int)
+    fun onCrossRefTapped(globalVerseId: Int)
+    fun onStrongsTapped(strongsNumber: String)
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
-```
+data class ExegeticalGuideState(
+    val loading: Boolean = false,
+    val globalVerseId: Int? = null,
+    val data: ExegeticalData? = null,
+    val expandedSections: Set<Section> = Section.entries.toSet(),
+    val error: AppError? = null,
+)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
+enum class Section { Morphology, WordStudy, CrossReferences, Commentary, Context }
+```
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+NoVerse --> Loading (VerseBus) --> Content (all sections)
+                               +-> Partial (some sections)
+                               +-> Error
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| VerseBus `VerseSelected` | 5 parallel DB queries | Load all exegetical data |
+| `onCrossRefTapped` | VerseBus publish | Navigate reader to cross-ref |
+| `onStrongsTapped` | VerseBus publish | Open word study for Strong's number |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | Bidirectional | SharedFlow | Subscribe to verse; publish cross-ref/Strong's |
+| `MorphologyRepository` | → Reads | Koin DI | Word parsing |
+| `WordStudyRepository` | → Reads | Koin DI | Lexicon entries |
+| `CrossRefRepository` | → Reads | Koin DI | Cross-references |
+| `ResourceRepository` | → Reads | Koin DI | Commentary |
+| `BibleRepository` | → Reads | Koin DI | Context verses |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val exegeticalGuideModule = module {
+    factory<ExegeticalGuideComponent> { (ctx: ComponentContext) ->
+        DefaultExegeticalGuideComponent(
+            ctx, get(), get(), get(), get(), get(), get()
+        )
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `loads all sections in parallel`() = runTest {
+    val component = DefaultExegeticalGuideComponent(
+        TestComponentContext(),
+        FakeMorphRepo(), FakeWordStudyRepo(), FakeCrossRefRepo(),
+        FakeResourceRepo(), FakeBibleRepo(), VerseBus()
+    )
+    component.onVerseSelected(43003016) // John 3:16
+    component.state.test {
+        val content = awaitItem()
+        assertThat(content.data).isNotNull()
+        assertThat(content.data!!.morphology).isNotEmpty()
+        assertThat(content.data!!.crossReferences).isNotEmpty()
+    }
+}
 ```

@@ -1,0 +1,12 @@
+-- 11.sqm: Add audio timestamps (v10 → v11)
+
+CREATE TABLE audio_timestamps (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    bible_id INTEGER NOT NULL REFERENCES bibles(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL,
+    start_ms INTEGER NOT NULL,
+    end_ms INTEGER NOT NULL,
+    audio_file TEXT NOT NULL
+);
+
+CREATE INDEX idx_audio_verse ON audio_timestamps(bible_id, global_verse_id);

@@ -88,71 +88,71 @@
 
 ## 5.7 Exegetical Guide
 
-- [ ] Create `ExegeticalGuideRepository` aggregating cross-refs, morphology, word study, outlines, and commentaries
+- [x] Create `ExegeticalGuideRepository` aggregating cross-refs, morphology, word study, outlines, and commentaries
 - [ ] Implement `getGuide(verseId: Long): ExegeticalGuide` — structured analysis object
 - [ ] Define `ExegeticalGuide` data class with sections: `textCritical`, `grammatical`, `lexical`, `structural`, `theological`, `applicational`
-- [ ] Create `ExegeticalGuideComponent` subscribing to VerseBus `VerseSelected`
-- [ ] Create `ExegeticalGuidePane` composable: sectioned scrollable analysis
+- [x] Create `ExegeticalGuideComponent` subscribing to VerseBus `VerseSelected`
+- [x] Create `ExegeticalGuidePane` composable: sectioned scrollable analysis
 - [ ] Implement text-critical section: manuscript variant readings (if data available)
 - [ ] Implement grammatical section: parsed morphology with syntactic annotations
-- [ ] Implement lexical section: key word definitions with semantic range
+- [x] Implement lexical section: key word definitions with semantic range
 - [ ] Implement structural section: passage outline with chiastic / rhetorical structure
-- [ ] Implement theological section: cross-references + doctrinal themes
-- [ ] Register `exegeticalGuide` in `PaneRegistry`
-- [ ] Write test: guide aggregates all sections correctly
+- [x] Implement theological section: cross-references + doctrinal themes
+- [x] Register `exegeticalGuide` in `PaneRegistry`
+- [x] Write test: guide aggregates all sections correctly
 - [ ] Write UI test: all 6 sections render
 
 ## 5.8 Sermon Editor
 
-- [ ] Create `SermonRepository` with `getSermons(): List<Sermon>`, `saveSermon()`, `deleteSermon()`
-- [ ] Map `sermons` table to `Sermon` data class: `id`, `title`, `date`, `passage`, `outline`, `content`, `notes`, `status`
-- [ ] Implement `SermonStatus` enum: `Draft`, `InProgress`, `Ready`, `Delivered`
-- [ ] Implement sermon search using `sermons_fts` FTS5 table
-- [ ] Create `SermonEditorComponent` with `StateFlow<SermonEditorState>`
-- [ ] Define `SermonEditorState`: `sermon`, `isDirty`, `wordCount`, `estimatedMinutes`
-- [ ] Create `SermonEditorPane` composable: metadata header + Markdown editor + Scripture reference inline
-- [ ] Implement outline mode: drag-and-drop reorderable point list
+- [x] Create `SermonRepository` with `getSermons(): List<Sermon>`, `saveSermon()`, `deleteSermon()`
+- [x] Map `sermons` table to `Sermon` data class: `id`, `title`, `date`, `passage`, `outline`, `content`, `notes`, `status`
+- [x] Implement `SermonStatus` enum: `Draft`, `InProgress`, `Ready`, `Delivered`
+- [x] Implement sermon search using `sermons_fts` FTS5 table
+- [x] Create `SermonEditorComponent` with `StateFlow<SermonEditorState>`
+- [x] Define `SermonEditorState`: `sermon`, `isDirty`, `wordCount`, `estimatedMinutes`
+- [x] Create `SermonEditorPane` composable: metadata header + Markdown editor + Scripture reference inline
+- [x] Implement outline mode: drag-and-drop reorderable point list
 - [ ] Implement Scripture reference insertion (same as Note Editor but sermon context)
-- [ ] Implement word count and estimated delivery time (150 wpm)
+- [x] Implement word count and estimated delivery time (150 wpm)
 - [ ] Implement export to PDF / DOCX using platform-specific libraries
-- [ ] Register `sermonEditor` in `PaneRegistry`
-- [ ] Write test: sermon CRUD + FTS search
+- [x] Register `sermonEditor` in `PaneRegistry`
+- [x] Write test: sermon CRUD + FTS search
 - [ ] Write UI test: sermon editor renders outline mode
 
 ## 5.9 Reading Plans — Data Layer
 
-- [ ] Create `ReadingPlanRepository` with `getPlans(): List<ReadingPlan>`, `getProgress(planId): ReadingPlanProgress`
-- [ ] Map `reading_plans` table to `ReadingPlan` data class: `id`, `name`, `description`, `durationDays`, `entries`
-- [ ] Map `reading_plan_progress` table to `ReadingPlanProgress` data class: `planId`, `dayIndex`, `completed`, `completedAt`
+- [x] Create `ReadingPlanRepository` with `getPlans(): List<ReadingPlan>`, `getProgress(planId): ReadingPlanProgress`
+- [x] Map `reading_plans` table to `ReadingPlan` data class: `id`, `name`, `description`, `durationDays`, `entries`
+- [x] Map `reading_plan_progress` table to `ReadingPlanProgress` data class: `planId`, `dayIndex`, `completed`, `completedAt`
 - [ ] Implement built-in plans: "Bible in a Year" (365 days), "NT in 90 Days", "Psalms & Proverbs (31 days)", "Gospels (30 days)"
-- [ ] Create `ReadingPlanQuery.sq`
-- [ ] Register repository in Koin
-- [ ] Write test: plan progress tracks completed days
+- [x] Create `ReadingPlanQuery.sq`
+- [x] Register repository in Koin
+- [x] Write test: plan progress tracks completed days
 
 ## 5.10 Reading Plans — Component & UI
 
-- [ ] Create `ReadingPlanComponent` with `StateFlow<ReadingPlanState>`
-- [ ] Define `ReadingPlanState`: `activePlan`, `todayReading`, `progress`, `streakDays`
-- [ ] Create `ReadingPlanPane` composable: progress ring + today's reading + calendar grid
+- [x] Create `ReadingPlanComponent` with `StateFlow<ReadingPlanState>`
+- [x] Define `ReadingPlanState`: `activePlan`, `todayReading`, `progress`, `streakDays`
+- [x] Create `ReadingPlanPane` composable: progress ring + today's reading + calendar grid
 - [ ] Implement today's reading card: passage reference + "Start Reading" button
 - [ ] Implement "Start Reading" tap: publish `LinkEvent.PassageSelected` to VerseBus
-- [ ] Implement calendar grid with color-coded completion status per day
-- [ ] Implement streak counter and notification reminder (platform-specific)
-- [ ] Register `readingPlans` in `PaneRegistry`
+- [x] Implement calendar grid with color-coded completion status per day
+- [x] Implement streak counter and notification reminder (platform-specific)
+- [x] Register `readingPlans` in `PaneRegistry`
 - [ ] Write UI test: progress ring shows correct percentage
-- [ ] Write test: streak counter increments on consecutive days
+- [x] Write test: streak counter increments on consecutive days
 
 ## 5.11 Dashboard
 
-- [ ] Create `DashboardComponent` with `StateFlow<DashboardState>`
-- [ ] Define `DashboardState`: `recentHistory`, `activeReadingPlan`, `dailyVerse`, `recentNotes`, `quickActions`
-- [ ] Create `DashboardPane` composable: card grid landing page
+- [x] Create `DashboardComponent` with `StateFlow<DashboardState>`
+- [x] Define `DashboardState`: `recentHistory`, `activeReadingPlan`, `dailyVerse`, `recentNotes`, `quickActions`
+- [x] Create `DashboardPane` composable: card grid landing page
 - [ ] Implement "Daily Verse" card: random verse with share button
 - [ ] Implement "Continue Reading" card: last read passage + resume button
 - [ ] Implement "Reading Plan Progress" card: compact progress ring + today's reading
 - [ ] Implement "Recent Notes" card: last 3 notes with tap to open
 - [ ] Implement "Quick Actions" row: Search, New Note, Bookmarks, Settings
-- [ ] Register `dashboard` in `PaneRegistry`
+- [x] Register `dashboard` in `PaneRegistry`
 - [ ] Write UI test: dashboard renders all cards
 
 ## 5.12 Audio Sync

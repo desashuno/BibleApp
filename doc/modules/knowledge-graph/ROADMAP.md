@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Knowledge Graph — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,48 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Entity schema + seed data | Create tables + import biblical entities | 3 days | Phase 1 DB |
+| 2 | `KnowledgeGraphRepository` | CRUD + search + verse lookup | 2 days | Schema |
+| 3 | Entity browser UI | Category tabs + entity list | 2 days | Repository |
+| 4 | Entity detail view | Attributes + verse refs | 1.5 days | Repository |
+| 5 | Relationship graph | Force-directed graph renderer | 3 days | Data model |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | FTS search for entities | Full-text search on name/description | 1 day | FTS5 |
+| 2 | Cross-link to atlas/timeline | Navigate to related modules | 1.5 days | Those modules |
+| 3 | User-created entities | Allow user to add custom entities | 2 days | Repository |
 
 ---
 
-## 2. Absorbed Features
+## 2. Comparison with Logos Bible Software
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
-
-| Logos Feature | BibleStudio Status | Priority | Notes |
-|--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Logos Feature | BibleStudio Status | Priority |
+|--------------|-------------------|----------|
+| People browser | Planned | P0 |
+| Bible places | Planned | P0 |
+| Relationship graph | Planned | P0 |
+| Event browser | Planned | P0 |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Total effort | Prerequisites |
+|-------|-------------|--------------|
+| **Phase 5** | 11.5 days | Phase 1 DB |
+| **Phase 6** | 4.5 days | P0 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created | — |

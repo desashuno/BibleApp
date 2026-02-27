@@ -1,0 +1,10 @@
+-- 14.sqm: Add workspace layouts (v13 → v14)
+
+CREATE TABLE workspace_layouts (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    workspace_id TEXT NOT NULL REFERENCES workspaces(uuid) ON DELETE CASCADE,
+    layout_json TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_layout_workspace ON workspace_layouts(workspace_id);

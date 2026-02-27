@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Dashboard — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,49 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Dashboard component | Parallel widget data aggregation | 2 days | Source modules |
+| 2 | Verse of the day widget | Curated daily verse display | 1 day | Bible data |
+| 3 | Reading plan widget | Active plan summary + progress | 1 day | reading-plans |
+| 4 | Recent notes widget | Last 5 edited notes | 0.5 days | note-editor |
+| 5 | Bookmarks widget | Recent bookmarks | 0.5 days | bookmarks-history |
+| 6 | Widget grid layout | Responsive grid container | 1 day | — |
 
-### P1 — Important (improve user experience)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Widget reordering | Drag-and-drop widget arrangement | 1.5 days | Grid |
+| 2 | Custom widgets | User-defined dashboard widgets | 3 days | DI system |
+| 3 | Statistics widget | Reading stats and trends | 1.5 days | reading-plans |
 
 ---
 
-## 2. Absorbed Features
+## 2. Comparison with Logos Bible Software
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
-
-| Logos Feature | BibleStudio Status | Priority | Notes |
-|--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Logos Feature | BibleStudio Status | Priority |
+|--------------|-------------------|----------|
+| Home dashboard | Planned | P0 |
+| Reading plan summary | Planned | P0 |
+| Verse of the day | Planned | P0 |
+| Customizable widgets | P1 | P1 |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Total effort | Prerequisites |
+|-------|-------------|--------------|
+| **Phase 4** | 6 days | Source modules |
+| **Phase 5** | 6 days | P0 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created | — |

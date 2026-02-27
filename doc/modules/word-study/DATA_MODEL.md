@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Word Study — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,36 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 LexiconEntry
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class LexiconEntry(
+    val strongsNumber: String,
+    val originalWord: String,
+    val transliteration: String,
+    val definition: String,
+    val usageNotes: String?,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `strongsNumber` | `String` | Strong's ID (e.g. "H1254", "G2316") | No |
+| `originalWord` | `String` | Hebrew/Greek original word | No |
+| `transliteration` | `String` | Romanized pronunciation | No |
+| `definition` | `String` | English definition | No |
+| `usageNotes` | `String?` | Extended usage and semantic range | Yes |
+
+### 1.2 WordOccurrence
+
+```kotlin
+data class WordOccurrence(
+    val id: Long,
+    val strongsNumber: String,
+    val globalVerseId: Int,
+    val wordPosition: Int,
+)
+```
 
 ---
 
@@ -34,43 +43,42 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `lexicon_entries`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE lexicon_entries (
+    strongs_number  TEXT NOT NULL PRIMARY KEY,
+    original_word   TEXT NOT NULL,
+    transliteration TEXT NOT NULL,
+    definition      TEXT NOT NULL,
+    usage_notes     TEXT
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
+#### Table: `word_occurrences`
+
+```sql
+CREATE TABLE word_occurrences (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    strongs_number  TEXT    NOT NULL,
+    global_verse_id INTEGER NOT NULL,
+    word_position   INTEGER NOT NULL
+);
+```
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
+CREATE INDEX idx_morphology_strongs ON morphology(strongs_number);
 ```
 
-### 2.2 FTS5 Virtual Tables (if applicable)
+### 2.2 FTS5 Virtual Table
 
 ```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE VIRTUAL TABLE fts_lexicon USING fts5(
+    definition, usage_notes,
+    content=lexicon_entries, content_rowid=rowid
+);
 ```
 
 ---
@@ -80,60 +88,45 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface WordStudyRepository {
+    suspend fun getEntry(strongsNumber: String): Result<LexiconEntry?>
+    suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>>
+    suspend fun getOccurrenceCount(strongsNumber: String): Result<Int>
+    suspend fun getRelatedWords(strongsNumber: String): Result<List<LexiconEntry>>
+    suspend fun searchLexicon(query: String): Result<List<LexiconEntry>>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `lexiconByStrongs` | `Study.sq` | `strongsNumber: String` | `LexiconEntry?` | O(1) PK lookup |
+| `occurrencesForStrongs` | `Study.sq` | `strongsNumber: String` | `List<WordOccurrence>` | Indexed |
+| `occurrenceCount` | `Study.sq` | `strongsNumber: String` | `Long` | Count on index |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v2 → v3 | Created `lexicon_entries`, `morphology` tables | `2.sqm` |
+| v14 → v15 | Created `word_occurrences`, `fts_lexicon` | `14.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
 ```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
+word_occurrences.global_verse_id → verses.global_verse_id (BBCCCVVV)
+word_occurrences.strongs_number → lexicon_entries.strongs_number
+morphology.strongs_number → lexicon_entries.strongs_number
 ```
 
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `word_occurrences.global_verse_id → verses.global_verse_id` | Convention-based |
+| `morphology` | Shared `strongs_number` reference | Convention-based |

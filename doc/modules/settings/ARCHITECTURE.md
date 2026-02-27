@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Settings — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,78 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  SettingsPane (@Composable)                       |
+|  +-- Grouped sections: Appearance, Reading, etc.  |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultSettingsComponent (Decompose)             |
+|  +-- Manages StateFlow<SettingsState>             |
+|  +-- Calls SettingsRepository on change           |
++---------------------------------------------------+
+|                      DATA                         |
+|  SettingsRepository (interface)                   |
+|  SettingsRepositoryImpl                           |
+|  +-- SettingsQueries (SQLDelight)                 |
+|       +-- SQLite (settings table)                 |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Read/Update Setting
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
-
-### 2.2 Secondary Flows
-
-<!-- Describe alternative or secondary flows. -->
+1. **App startup** -- `SettingsRepository.observeSettings()` emits initial `AppSettings`.
+2. **Root component** -- Applies theme, font, locale to Compose `MaterialTheme`.
+3. **User changes** -- Settings pane calls `updateSetting(key, value)`.
+4. **Flow re-emits** -- All observers receive updated `AppSettings`.
+5. **UI recomposes** -- Theme/font/locale change takes effect immediately.
 
 ---
 
-## 3. SQLDelight Query Integration
-
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
-| `.sq` File | Query | Parameters | Return | Description |
-|-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
-
----
-
-## 4. Dependency Injection
-
-<!-- How the module's dependencies are registered and resolved via Koin. -->
+## 3. Dependency Injection
 
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val settingsModule = module {
+    singleOf(::SettingsRepositoryImpl) bind SettingsRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultSettingsComponent(
+            componentContext = ctx,
+            repository = get(),
+        )
+    }
+}
 ```
 
 ---
 
-## 5. Patterns Applied
-
-<!-- Design patterns specific to this module. -->
+## 4. Patterns Applied
 
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `SettingsRepositoryImpl` | Abstracts key-value store |
+| Observable Flow | `observeSettings()` | Real-time setting propagation |
+| Typed wrapper | `AppSettings` data class | Type-safe access; avoids raw string keys |
+| Upsert | `upsertSetting` SQL | INSERT OR REPLACE for atomic updates |
 
 ---
 
-## 6. Performance Considerations
+## 5. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Settings table**: < 30 rows total; full scan is negligible.
+- **Flow observation**: Uses SQLDelight's `asFlow()` which listens to table changes via notify.
+- **No caching needed**: Table is small enough to query directly on every read.
 
 ---
 
-## 7. Design Decisions
-
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
+## 6. Design Decisions
 
 | Decision | Alternatives considered | Justification |
 |----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Key-value table | SharedPreferences/DataStore | Cross-platform; queryable; part of single SQLite DB |
+| `observeSettings()` Flow | Callback-based | Compose-native; automatic recomposition |
+| Typed `AppSettings` wrapper | Raw key/value access | Compile-time safety; centralized defaults |

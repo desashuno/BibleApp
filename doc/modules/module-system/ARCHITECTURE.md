@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Module System — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,96 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  ModuleSystemPane / ModuleBrowser                 |
+|  ModuleDetail / InstallProgress                   |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultModuleSystemComponent (Decompose)         |
+|  +-- Manages StateFlow<ModuleSystemState>         |
+|  +-- Validates .bsmodule packages                 |
+|  +-- Coordinates install/uninstall via Importer   |
++---------------------------------------------------+
+|                      DATA                         |
+|  ModuleRepository (interface)                     |
+|  ModuleRepositoryImpl                             |
+|  +-- File system (.bsmodule packages)             |
+|  +-- BibleQueries / ResourceQueries (SQLDelight)  |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Install Module
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User selects `.bsmodule` file** — File picker or drag-and-drop.
+2. **Validation** — `ModuleValidator` checks ZIP structure, manifest, content integrity.
+3. **Extraction** — Contents extracted to temp directory.
+4. **Import** — `ModuleImporter` inserts data into SQLite tables within a transaction.
+5. **FTS rebuild** — Affected FTS5 indexes rebuilt.
+6. **State update** — Module appears in installed list.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Browse** — Lists installed modules from DB metadata.
+- **Uninstall** — Removes all data for a module in a transaction.
+- **Version check** — Compares installed vs manifest version.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Bible.sq` | `allBibles` | — | `List<Bible>` | Installed Bibles |
+| `Bible.sq` | `insertBible` | all fields | — | Insert Bible module |
+| `Resource.sq` | `allResources` | — | `List<Resource>` | Installed resources |
+| `Resource.sq` | `insertResource` | all fields | — | Insert resource |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val moduleSystemModule = module {
+    singleOf(::ModuleRepositoryImpl) bind ModuleRepository::class
+    singleOf(::ModuleValidator)
+    singleOf(::ModuleImporter)
+    factory { (ctx: ComponentContext) ->
+        DefaultModuleSystemComponent(ctx, get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `ModuleRepositoryImpl` | Abstracts module metadata |
+| Strategy | `ModuleImporter` | Different import per content type |
+| Validator | `ModuleValidator` | Input sanitization |
+| Transaction | Import pipeline | Atomicity on failure |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Bible import < 30 s** — Batch inserts via `database.transaction {}`.
+- **FTS rebuild** — Once after full import, not per-row.
+- **Progress reporting** — Emits percentage via StateFlow.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| `.bsmodule` ZIP format | SQLite per module | ZIP allows validation; single DB simplifies queries |
+| Bundled seed data | Download on first launch | No network dependency |
+| Transaction-based install | Row-by-row | Atomicity — failed import leaves no partial data |

@@ -1,139 +1,85 @@
-# {Module Name} — Data Model
+# Passage Guide — Data Model
 
-> Domain entities, SQLite schema, repositories, and queries.
+> Domain entities and consumed repositories. Passage Guide does not own database tables.
 
 ---
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 PassageReport
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class PassageReport(
+    val verseId: Int,
+    val verseText: String,
+    val crossReferences: List<CrossReference>,
+    val keyWords: List<LexiconEntry>,
+    val commentaryEntries: List<ResourceEntry>,
+    val userNotes: List<Note>,
+    val morphologyWords: List<MorphWord>,
+)
 ```
 
-| Field | Type | Description | Nullable |
-|-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| Field | Type | Description | Source Module |
+|-------|------|-------------|--------------|
+| `verseId` | `Int` | `BBCCCVVV` verse reference | bible-reader |
+| `verseText` | `String` | Full verse text | bible-reader |
+| `crossReferences` | `List<CrossReference>` | Related verses | cross-references |
+| `keyWords` | `List<LexiconEntry>` | Important words with definitions | word-study |
+| `commentaryEntries` | `List<ResourceEntry>` | Commentary entries for verse | resource-library |
+| `userNotes` | `List<Note>` | User's notes on this verse | note-editor |
+| `morphologyWords` | `List<MorphWord>` | Word-level linguistic data | morphology-interlinear |
 
 ---
 
 ## 2. SQLite Schema
 
-### 2.1 Tables
+**Passage Guide owns no tables.** All data is read from other module repositories:
 
-#### Table: `{table_name}`
-
-```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
-```
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
-
-#### Indexes
-
-```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
-```
+| Repository consumed | Module | Method called |
+|--------------------|--------|---------------|
+| `BibleRepository` | bible-reader | `getVerseById(verseId)` |
+| `CrossRefRepository` | cross-references | `getReferences(verseId)` |
+| `WordStudyRepository` | word-study | `getEntry(strongsNumber)` per key word |
+| `ResourceRepository` | resource-library | `getEntriesForVerse(verseId)` |
+| `NoteRepository` | note-editor | `getNotesForVerse(verseId)` |
+| `MorphologyRepository` | morphology-interlinear | `getMorphology(verseId)` |
 
 ---
 
-## 3. Repositories
+## 3. Key Queries (Delegated)
 
-### 3.1 Interface
+Since Passage Guide delegates to other repositories, all queries are executed in parallel via `async {}`:
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
+suspend fun buildReport(verseId: Int): PassageReport = coroutineScope {
+    val verseDeferred = async { bibleRepository.getVerseById(verseId) }
+    val crossRefsDeferred = async { crossRefRepository.getReferences(verseId) }
+    val commentaryDeferred = async { resourceRepository.getEntriesForVerse(verseId) }
+    val notesDeferred = async { noteRepository.getNotesForVerse(verseId) }
+    val morphDeferred = async { morphologyRepository.getMorphology(verseId) }
 
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+    PassageReport(
+        verseId = verseId,
+        verseText = verseDeferred.await().getOrDefault(""),
+        crossReferences = crossRefsDeferred.await().getOrDefault(emptyList()),
+        commentaryEntries = commentaryDeferred.await().getOrDefault(emptyList()),
+        userNotes = notesDeferred.await().getOrDefault(emptyList()),
+        morphologyWords = morphDeferred.await().getOrDefault(emptyList()),
+        keyWords = emptyList(), // extracted from morphology post-processing
+    )
+}
 ```
 
 ---
 
-## 4. Key Queries
+## 4. Relations with Other Modules
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
-
----
-
-## 5. Migrations
-
-<!-- History of schema changes for this module. -->
-
-| DB Version | Change | Migration file |
-|-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
-
----
-
-## 6. Relations with Other Modules
-
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
-| External Table | Relation | Type |
-|---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| External Repository | Data consumed | Type |
+|--------------------|---------------|------|
+| `BibleRepository` | Verse text | Read-only |
+| `CrossRefRepository` | References | Read-only |
+| `WordStudyRepository` | Lexicon entries | Read-only |
+| `ResourceRepository` | Commentary entries | Read-only |
+| `NoteRepository` | User notes | Read-only |
+| `MorphologyRepository` | Morphology words | Read-only |

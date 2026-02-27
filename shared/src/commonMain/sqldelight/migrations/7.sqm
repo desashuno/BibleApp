@@ -1,0 +1,22 @@
+-- 7.sqm: Add sermons and sermon sections (v6 → v7)
+
+CREATE TABLE sermons (
+    uuid TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    scripture_ref TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft',
+    device_id TEXT NOT NULL DEFAULT '',
+    deleted_at TEXT
+);
+
+CREATE TABLE sermon_sections (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    sermon_id TEXT NOT NULL REFERENCES sermons(uuid) ON DELETE CASCADE,
+    type TEXT NOT NULL DEFAULT 'paragraph',
+    content TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX idx_sermon_sections_sermon ON sermon_sections(sermon_id, sort_order);

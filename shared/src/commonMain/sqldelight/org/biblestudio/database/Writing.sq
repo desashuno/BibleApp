@@ -1,0 +1,71 @@
+-- Writing.sq
+-- Query group: Sermons and sermon sections
+-- Generated class: WritingQueries
+
+-- ═══════════════════════════ Sermons ═══════════════════════════
+
+allSermons:
+SELECT *
+FROM sermons
+WHERE deleted_at IS NULL
+ORDER BY updated_at DESC;
+
+sermonByUuid:
+SELECT *
+FROM sermons
+WHERE uuid = :uuid;
+
+sermonsByStatus:
+SELECT *
+FROM sermons
+WHERE status = :status AND deleted_at IS NULL
+ORDER BY updated_at DESC;
+
+insertSermon:
+INSERT INTO sermons(uuid, title, scripture_ref, created_at, updated_at, status, device_id)
+VALUES (:uuid, :title, :scriptureRef, :createdAt, :updatedAt, :status, :deviceId);
+
+updateSermon:
+UPDATE sermons
+SET title = :title, scripture_ref = :scriptureRef, updated_at = :updatedAt, status = :status, device_id = :deviceId
+WHERE uuid = :uuid;
+
+softDeleteSermon:
+UPDATE sermons
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Sermon Sections ═══════════════════════════
+
+sectionsBySermon:
+SELECT *
+FROM sermon_sections
+WHERE sermon_id = :sermonId
+ORDER BY sort_order ASC;
+
+insertSection:
+INSERT INTO sermon_sections(sermon_id, type, content, sort_order)
+VALUES (:sermonId, :type, :content, :sortOrder);
+
+updateSection:
+UPDATE sermon_sections
+SET type = :type, content = :content, sort_order = :sortOrder
+WHERE id = :id;
+
+deleteSection:
+DELETE FROM sermon_sections
+WHERE id = :id;
+
+deleteSectionsForSermon:
+DELETE FROM sermon_sections
+WHERE sermon_id = :sermonId;
+
+-- ═══════════════════════════ FTS Search ═══════════════════════════
+
+searchSermons:
+SELECT ss.*
+FROM sermon_sections ss
+INNER JOIN fts_sermons fts ON fts.rowid = ss.id
+WHERE fts_sermons MATCH :query
+ORDER BY bm25(fts_sermons)
+LIMIT :maxResults;

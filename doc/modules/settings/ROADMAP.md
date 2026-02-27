@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Settings — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,43 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Implement `SettingsRepository` | Key-value CRUD with `observeSettings()` Flow | 1.5 days | Phase 1 DB |
+| 2 | Create `SettingsComponent` | Typed AppSettings state management | 1.5 days | Repository |
+| 3 | Create `SettingsPane` | Grouped settings UI with sections | 2 days | Component |
+| 4 | Theme integration | Apply theme from settings to Compose `MaterialTheme` | 1 day | Design System |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Font size preview | Live preview of text size while adjusting slider | 0.5 days | UI |
+| 2 | Locale switching | Hot-swap language without restart | 1 day | i18n system |
+
+### P2 — Desirable
+
+| # | Improvement | Description | Estimated effort | Dependencies |
+|---|------------|-------------|-----------------|-------------|
+| 1 | Settings import/export | Backup/restore settings | 0.5 days | import-export |
+| 2 | Per-workspace settings | Override global settings per workspace | 1 day | Workspace module |
 
 ---
 
-## 2. Absorbed Features
+## 2. Phase Estimates
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
-
-| Logos Feature | BibleStudio Status | Priority | Notes |
-|--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Phase | Improvements | Total effort | Prerequisites |
+|-------|-------------|-------------|--------------|
+| **Phase 2** | P0 #1-4 | ~6 days | Phase 1 DB |
+| **Phase 3** | P1 #1-2 | ~1.5 days | Phase 2 |
+| **Future** | P2 | ~1.5 days | Phase 3 |
 
 ---
 
-## 4. Phase Estimates
-
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
-
----
-
-## 6. Change Log
+## 3. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created from Phase 2 tasks | -- |

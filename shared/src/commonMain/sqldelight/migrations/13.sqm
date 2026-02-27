@@ -1,0 +1,21 @@
+-- 13.sqm: Add sync log and delete log (v12 → v13)
+
+CREATE TABLE sync_log (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    table_name TEXT NOT NULL,
+    row_id TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    device_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE delete_log (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    table_name TEXT NOT NULL,
+    row_uuid TEXT NOT NULL,
+    deleted_at TEXT NOT NULL,
+    device_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_sync_log_table ON sync_log(table_name, timestamp);
+CREATE INDEX idx_delete_log_table ON delete_log(table_name, deleted_at);

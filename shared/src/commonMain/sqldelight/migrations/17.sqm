@@ -1,0 +1,6 @@
+-- Migration 17: Add surface_form, lemma, gloss columns to morphology table
+-- These allow MorphWord to pull display data directly without depending solely on lexicon JOIN.
+
+ALTER TABLE morphology ADD COLUMN surface_form TEXT NOT NULL DEFAULT '';
+ALTER TABLE morphology ADD COLUMN lemma TEXT NOT NULL DEFAULT '';
+ALTER TABLE morphology ADD COLUMN gloss TEXT NOT NULL DEFAULT '';

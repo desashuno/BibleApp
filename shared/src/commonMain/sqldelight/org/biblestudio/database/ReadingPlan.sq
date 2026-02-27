@@ -1,0 +1,52 @@
+-- ReadingPlan.sq
+-- Query group: Reading plans and progress tracking
+-- Generated class: ReadingPlanQueries
+
+-- ═══════════════════════════ Reading Plans ═══════════════════════════
+
+allReadingPlans:
+SELECT *
+FROM reading_plans
+ORDER BY title ASC;
+
+readingPlanByUuid:
+SELECT *
+FROM reading_plans
+WHERE uuid = :uuid;
+
+readingPlansByType:
+SELECT *
+FROM reading_plans
+WHERE type = :type
+ORDER BY title ASC;
+
+insertReadingPlan:
+INSERT INTO reading_plans(uuid, title, description, duration_days, type)
+VALUES (:uuid, :title, :description, :durationDays, :type);
+
+deleteReadingPlan:
+DELETE FROM reading_plans
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Reading Plan Progress ═══════════════════════════
+
+progressForPlan:
+SELECT *
+FROM reading_plan_progress
+WHERE plan_id = :planId
+ORDER BY day ASC;
+
+completedDaysForPlan:
+SELECT *
+FROM reading_plan_progress
+WHERE plan_id = :planId AND completed = 1
+ORDER BY day ASC;
+
+insertProgress:
+INSERT INTO reading_plan_progress(plan_id, day, completed, completed_at)
+VALUES (:planId, :day, :completed, :completedAt);
+
+markDayCompleted:
+UPDATE reading_plan_progress
+SET completed = 1, completed_at = :completedAt
+WHERE plan_id = :planId AND day = :day;

@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Exegetical Guide — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,102 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  ExegeticalGuidePane                              |
+|  SectionCards (Morphology / WordStudy / CrossRefs |
+|               / Commentary / Context)             |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultExegeticalGuideComponent (Decompose)      |
+|  +-- Manages StateFlow<ExegeticalGuideState>      |
+|  +-- Subscribes to VerseBus VerseSelected         |
+|  +-- Aggregates data from 5+ repositories         |
++---------------------------------------------------+
+|                      DATA                         |
+|  No dedicated repository — aggregation layer      |
+|  +-- MorphologyRepository (morphology-interlinear)|
+|  +-- WordStudyRepository  (word-study)            |
+|  +-- CrossRefRepository   (cross-references)      |
+|  +-- ResourceRepository   (resource-library)      |
+|  +-- BibleRepository      (bible-reader)          |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Verse Exegesis
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
+1. **VerseBus** — Receives `VerseSelected` event.
+2. **Parallel queries** — Launches concurrent queries to 5 data sources.
+3. **Aggregation** — Collects morphology, word studies, cross-references, commentaries, context.
+4. **Render** — Displays organized sections in a scrollable guide.
 
-### 2.1 Primary Flow
+### 2.2 Section Breakdown
 
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
-
-### 2.2 Secondary Flows
-
-<!-- Describe alternative or secondary flows. -->
+| Section | Data Source | Description |
+|---------|-----------|-------------|
+| **Morphology** | `MorphologyRepository` | Greek/Hebrew parsing for each word |
+| **Word Studies** | `WordStudyRepository` | Key vocabulary with definitions |
+| **Cross-References** | `CrossRefRepository` | Related scripture passages |
+| **Commentary** | `ResourceRepository` | Commentary excerpts from installed resources |
+| **Context** | `BibleRepository` | Surrounding verses for literary context |
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
+Uses queries from other modules — no dedicated `.sq` file.
 
-| `.sq` File | Query | Parameters | Return | Description |
-|-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| Source `.sq` | Query | Usage |
+|-------------|-------|-------|
+| `Morphology.sq` | `morphologyForVerse` | Word-by-word parsing |
+| `Lexicon.sq` | `entryByStrongs` | Vocabulary definitions |
+| `CrossRef.sq` | `refsForVerse` | Cross-references |
+| `Resource.sq` | `entriesForVerse` | Commentary entries |
+| `Bible.sq` | `versesInRange` | Context verses |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val exegeticalGuideModule = module {
+    factory { (ctx: ComponentContext) ->
+        DefaultExegeticalGuideComponent(
+            ctx, get(), get(), get(), get(), get(), get()
+        )
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Aggregator | Component logic | Combines 5 data sources into single view |
+| Parallel loading | `coroutineScope { async {} }` | Sub-second total load |
+| Observer | VerseBus subscriber | Auto-updates on verse change |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Total load < 500 ms** — 5 parallel queries, longest wins.
+- **Caching** — Caches last 3 verse results to avoid re-query on back navigation.
+- **Lazy sections** — Commentary section loads on scroll if large.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Aggregation (no own tables) | Dedicated cache table | Keeps data authoritative in source modules |
+| Fixed section order | User-configurable | Consistent exegetical workflow |
+| VerseBus-driven | Manual verse input | Seamless integration with reader |

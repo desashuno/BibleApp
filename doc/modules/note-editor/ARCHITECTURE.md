@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Note Editor — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,86 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  NoteEditorPane (@Composable)                     |
+|  +-- RichTextEditor                               |
+|  +-- NoteListPanel                                |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultNoteEditorComponent (Decompose)           |
+|  +-- Manages StateFlow<NoteEditorState>           |
+|  +-- Subscribes to VerseBus VerseSelected         |
+|  +-- Auto-save with 2s debounce                   |
++---------------------------------------------------+
+|                      DATA                         |
+|  NoteRepository (interface)                       |
+|  NoteRepositoryImpl                               |
+|  +-- AnnotationQueries (SQLDelight)               |
+|       +-- SQLite (notes, fts_notes)               |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Edit Note
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **VerseBus event** or manual open -- Load notes for verse.
+2. **User edits** -- Rich text changes update `NoteEditorState.content`.
+3. **Auto-save (2s debounce)** -- After 2 seconds of inactivity, `NoteRepository.updateNote()` saves.
+4. **FTS trigger** -- SQLite trigger updates `fts_notes` automatically.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **New note** -- User taps "+" FAB -> inserts note with UUID, linked to current verse.
+- **Delete note** -- Soft delete with confirmation dialog; `delete_log` entry for sync.
+- **Note list** -- Shows all notes for current verse; tap to switch active note.
 
 ---
 
-## 3. SQLDelight Query Integration
-
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
-| `.sq` File | Query | Parameters | Return | Description |
-|-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
-
----
-
-## 4. Dependency Injection
-
-<!-- How the module's dependencies are registered and resolved via Koin. -->
+## 3. Dependency Injection
 
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val noteEditorModule = module {
+    singleOf(::NoteRepositoryImpl) bind NoteRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultNoteEditorComponent(
+            componentContext = ctx,
+            repository = get(),
+            verseBus = get(),
+        )
+    }
+}
 ```
 
 ---
 
-## 5. Patterns Applied
-
-<!-- Design patterns specific to this module. -->
+## 4. Patterns Applied
 
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `NoteRepositoryImpl` | Abstracts note CRUD |
+| Auto-save with debounce | Component (2s debounce) | Prevents data loss without excessive writes |
+| UUID primary key | `notes.uuid` | Enables cross-device sync |
+| FTS5 content sync | Triggers on notes table | Automatic full-text index maintenance |
 
 ---
 
-## 6. Performance Considerations
+## 5. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Auto-save debounce (2s)**: Balances data safety with write reduction.
+- **FTS sync via triggers**: Zero application-level FTS maintenance required.
+- **UUID PK**: No auto-increment contention; safe for multi-device sync.
 
 ---
 
-## 7. Design Decisions
-
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
+## 6. Design Decisions
 
 | Decision | Alternatives considered | Justification |
 |----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| UUID primary key | Auto-increment | Required for offline-first sync between devices |
+| 2s auto-save debounce | Manual save button, 5s debounce | 2s balances safety and write frequency |
+| Rich text as Markdown-like | HTML, Delta format | Simpler parsing; human-readable export |

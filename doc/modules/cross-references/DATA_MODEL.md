@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Cross-References — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,38 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 CrossReference
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class CrossReference(
+    val id: Long,
+    val sourceVerseId: Int,
+    val targetVerseId: Int,
+    val type: ReferenceType,
+    val confidence: Double,
+)
+
+enum class ReferenceType { Parallel, Quotation, Allusion, Related }
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `id` | `Long` | Auto-incremented primary key | No |
+| `sourceVerseId` | `Int` | `BBCCCVVV` source verse | No |
+| `targetVerseId` | `Int` | `BBCCCVVV` target verse | No |
+| `type` | `ReferenceType` | Classification of reference | No |
+| `confidence` | `Double` | Confidence score (0.0–1.0) | No |
+
+### 1.2 ParallelPassage
+
+```kotlin
+data class ParallelPassage(
+    val id: Long,
+    val groupId: Int,
+    val globalVerseId: Int,
+    val label: String,
+)
+```
 
 ---
 
@@ -34,106 +45,87 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `cross_references`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE cross_references (
+    id               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    source_verse_id  INTEGER NOT NULL,
+    target_verse_id  INTEGER NOT NULL,
+    type             TEXT    NOT NULL DEFAULT 'related',
+    confidence       REAL    NOT NULL DEFAULT 1.0
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
+#### Table: `parallel_passages`
+
+```sql
+CREATE TABLE parallel_passages (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    group_id        INTEGER NOT NULL,
+    global_verse_id INTEGER NOT NULL,
+    label           TEXT    NOT NULL
+);
+```
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE INDEX idx_crossref_source ON cross_references(source_verse_id);
+CREATE INDEX idx_crossref_target ON cross_references(target_verse_id);
 ```
 
 ---
 
 ## 3. Repositories
 
-### 3.1 Interface
+### 3.1 CrossRefRepository Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
+interface CrossRefRepository {
+    suspend fun getReferences(verseId: Int): Result<List<CrossReference>>
+    suspend fun getReferencesByTarget(verseId: Int): Result<List<CrossReference>>
+    suspend fun getReferenceCount(verseId: Int): Result<Int>
+}
 ```
 
-### 3.2 Implementation
+### 3.2 ParallelRepository Interface
 
 ```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface ParallelRepository {
+    suspend fun getParallels(verseId: Int): Result<List<ParallelPassage>>
+    suspend fun getParallelGroup(groupId: Int): Result<List<ParallelPassage>>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `crossRefsForVerse` | `Reference.sq` | `sourceVerseId: Int` | `List<CrossRef>` | < 15 ms (indexed) |
+| `crossRefsToVerse` | `Reference.sq` | `targetVerseId: Int` | `List<CrossRef>` | < 15 ms (indexed) |
+| `parallelsForVerse` | `Reference.sq` | `globalVerseId: Int` | `List<Parallel>` | O(n) small set |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v4 → v5 | Created `cross_references`, `parallel_passages` tables | `4.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
 ```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
+cross_references.source_verse_id → verses.global_verse_id (BBCCCVVV)
+cross_references.target_verse_id → verses.global_verse_id (BBCCCVVV)
+parallel_passages.global_verse_id → verses.global_verse_id (BBCCCVVV)
 ```
 
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `source_verse_id / target_verse_id → verses.global_verse_id` | Convention-based |

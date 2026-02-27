@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Theological Atlas — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,47 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Location schema + seed data | Create table + populate biblical locations | 2 days | Phase 1 DB |
+| 2 | `AtlasRepository` | Query locations by verse, name | 1 day | Schema |
+| 3 | Map renderer | Compose Canvas map with bundled tiles | 4 days | — |
+| 4 | Markers + clustering | Location markers with zoom clustering | 2 days | Map |
+| 5 | Location detail | Info + verse refs on marker tap | 1 day | Repository |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Journey routes | Draw travel routes (Paul's journeys, Exodus) | 3 days | Map |
+| 2 | High-res tiles | Download on demand | 2 days | Map |
+| 3 | Cross-link knowledge graph | Locations ↔ entities | 1 day | Knowledge graph |
 
 ---
 
-## 2. Absorbed Features
+## 2. Comparison with Logos Bible Software
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
-
-| Logos Feature | BibleStudio Status | Priority | Notes |
-|--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Logos Feature | BibleStudio Status | Priority |
+|--------------|-------------------|----------|
+| Bible atlas | Planned | P0 |
+| Location markers | Planned | P0 |
+| Journey routes | P1 | P1 |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Total effort | Prerequisites |
+|-------|-------------|--------------|
+| **Phase 5** | 10 days | Phase 1 DB |
+| **Phase 6** | 6 days | P0 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created | — |

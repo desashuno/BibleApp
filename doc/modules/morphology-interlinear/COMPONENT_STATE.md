@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Morphology / Interlinear — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -8,120 +8,93 @@
 
 | Component | Scope | File | Description |
 |-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| `DefaultInterlinearComponent` | Scoped (per pane) | `shared/.../features/morphology/component/DefaultInterlinearComponent.kt` | Interlinear display with VerseBus subscription |
 
 ---
 
-## 2. {Module}Component
+## 2. InterlinearComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface InterlinearComponent {
+    val state: StateFlow<InterlinearState>
+    fun onWordSelected(word: MorphWord)
+    fun onDisplayModeChanged(mode: InterlinearDisplayMode)
+}
+
+enum class InterlinearDisplayMode { Interlinear, Parallel, Inline }
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class InterlinearState(
+    val isLoading: Boolean = false,
+    val verse: Int? = null,
+    val words: List<MorphWord> = emptyList(),
+    val displayMode: InterlinearDisplayMode = InterlinearDisplayMode.Interlinear,
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
+Initial (no verse selected)
   │
-  │ onLoad()
+  │ VerseBus: VerseSelected
   ▼
-Loading (loading=true)
+Loading (isLoading=true)
   │
-  ├── success ──→ Content (items populated)
+  ├── success ──→ Content (words populated, parsed)
   │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
+  │                ├── onWordSelected(w) ──→ VerseBus StrongsSelected
+  │                ├── onDisplayModeChanged(m) ──→ Content (mode updated)
+  │                └── VerseBus VerseSelected ──→ Loading (new verse)
   │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+  └── failure ──→ Error
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| VerseBus `VerseSelected` | DB query | Loads morphology for verse |
+| `onWordSelected` | VerseBus publish | Publishes `LinkEvent.StrongsSelected(strongsNumber)` |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | ↔ Bidirectional | `SharedFlow<LinkEvent>` | Subscribes `VerseSelected`; publishes `StrongsSelected` |
+| `BibleReaderComponent` | ← Receives | VerseBus | Verse selection triggers morphology load |
+| `WordStudyComponent` | → Triggers | VerseBus | Word tap triggers word study |
 
 ---
 
-## 5. Component Registration (Koin)
-
-<!-- How the component is registered and resolved in the DI container. -->
+## 5. Testing
 
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
-```
-
----
-
-## 6. Testing
-
-<!-- Testing strategy for the component. -->
-
-```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `VerseSelected loads morphology words in order`() = runTest {
+    val verseBus = VerseBus()
+    val component = DefaultInterlinearComponent(
+        componentContext = TestComponentContext(),
+        repository = FakeMorphologyRepository(testWords),
+        parsingDecoder = ParsingDecoder(),
+        verseBus = verseBus,
+    )
+    component.state.test {
+        verseBus.publish(LinkEvent.VerseSelected(globalVerseId = 01001001))
+        assertThat(awaitItem().isLoading).isTrue()
+        val content = awaitItem()
+        assertThat(content.words).hasSize(10) // Gen 1:1
+        assertThat(content.words.first().wordPosition).isEqualTo(1)
+    }
+}
 ```

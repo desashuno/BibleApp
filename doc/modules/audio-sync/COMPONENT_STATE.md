@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Audio Sync — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,99 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultAudioSyncComponent` | Scoped | Audio playback, verse sync, VerseBus |
 
 ---
 
-## 2. {Module}Component
+## 2. AudioSyncComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface AudioSyncComponent {
+    val state: StateFlow<AudioSyncState>
+    fun onLoad(bibleId: Long, globalVerseId: Int)
+    fun onPlay()
+    fun onPause()
+    fun onSeek(positionMs: Long)
+    fun onSpeedChanged(speed: Float)
+    fun onNextChapter()
+    fun onPrevChapter()
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class AudioSyncState(
+    val loading: Boolean = false,
+    val playing: Boolean = false,
+    val currentVerseId: Int? = null,
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+    val speed: Float = 1.0f,
+    val audioAvailable: Boolean = false,
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Initial --> Loading --> Ready --> Playing --> Paused --> Playing
+                   +-> NoAudio               +-> Seeking --> Playing
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onLoad` | DB query + audio init | Load timestamps + prepare player |
+| `onPlay` | Platform audio | Start/resume playback |
+| `onPause` | Platform audio | Pause playback |
+| Sync timer | VerseBus publish | Emit `VerseSelected` as audio advances |
+| VerseBus `VerseSelected` | Seek | Jump to verse position |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | Bidirectional | SharedFlow | Receive verse → seek; publish as audio advances |
+| `PlatformAudioPlayer` | → Controls | expect/actual | Platform audio API |
+| `BibleReaderComponent` | Via VerseBus | SharedFlow | Highlight current verse in reader |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val audioSyncModule = module {
+    factory<AudioSyncComponent> { (ctx: ComponentContext) ->
+        DefaultAudioSyncComponent(ctx, get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `sync timer emits verse changes`() = runTest {
+    val player = FakeAudioPlayer()
+    val component = DefaultAudioSyncComponent(TestComponentContext(), FakeAudioRepo(testTimestamps), player, VerseBus())
+    component.onLoad(1L, 01001001)
+    component.onPlay()
+    player.advanceTo(5000) // 5 seconds
+    component.state.test {
+        assertThat(awaitItem().currentVerseId).isEqualTo(01001003) // verse 3 at 5s
+    }
+}
 ```

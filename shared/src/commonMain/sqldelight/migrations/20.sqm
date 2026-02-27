@@ -1,0 +1,2 @@
+-- Migration 20: Add format column to notes table
+ALTER TABLE notes ADD COLUMN format TEXT NOT NULL DEFAULT 'markdown';

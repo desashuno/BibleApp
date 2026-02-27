@@ -1,0 +1,8 @@
+-- Migration 23: Navigation history table
+CREATE TABLE navigation_history (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    global_verse_id INTEGER NOT NULL,
+    visited_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_history_visited ON navigation_history(visited_at DESC);

@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Reading Plans — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,92 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultReadingPlansComponent` | Scoped | Plan selection, daily reading, progress |
 
 ---
 
-## 2. {Module}Component
+## 2. ReadingPlansComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface ReadingPlansComponent {
+    val state: StateFlow<ReadingPlansState>
+    fun onLoad()
+    fun onActivatePlan(planId: Long)
+    fun onMarkDayComplete(dayNumber: Int)
+    fun onOpenPassage(startVerseId: Int, endVerseId: Int)
+    fun onBrowsePlans()
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class ReadingPlansState(
+    val loading: Boolean = false,
+    val availablePlans: List<ReadingPlan> = emptyList(),
+    val activePlan: ReadingPlan? = null,
+    val currentDay: Int = 1,
+    val progress: List<ReadingProgress> = emptyList(),
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Initial --> Loading --> NoPlan --> BrowsePlans --> PlanActivated --> DailyReading
+                                                                +-> AllComplete
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onLoad` | DB query | Load active plan + progress |
+| `onActivatePlan` | DB write | Set plan active + start date |
+| `onMarkDayComplete` | DB insert | Record progress |
+| `onOpenPassage` | VerseBus publish | Open Bible Reader to passage |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | → Publisher | SharedFlow | Open passage in reader |
+| `BibleReaderComponent` | → Reads | Via VerseBus | Reader navigates to passage |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val readingPlansModule = module {
+    factory<ReadingPlansComponent> { (ctx: ComponentContext) ->
+        DefaultReadingPlansComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `onMarkDayComplete advances progress`() = runTest {
+    val repo = FakeReadingPlanRepository(activePlan = testPlan)
+    val component = DefaultReadingPlansComponent(TestComponentContext(), repo, VerseBus())
+    component.onLoad()
+    component.onMarkDayComplete(1)
+    component.state.test {
+        assertThat(awaitItem().progress).hasSize(1)
+    }
+}
 ```

@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Cross-References — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,48 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Implement `CrossRefRepository` | `getReferences(verseId)` with dual-index queries | 1.5 days | Phase 1 DB |
+| 2 | Load TSK data | Seed ~100K cross-references from bundled JSON | 1 day | Repository |
+| 3 | Create `CrossReferenceComponent` | Subscribe to VerseBus, manage state | 2 days | Repository + VerseBus |
+| 4 | Create `CrossReferencePane` | Reference list with type badges and previews | 2 days | Component |
+| 5 | Reference tap → VerseBus | Publish `VerseSelected(targetVerseId)` | 0.5 days | VerseBus |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Inline expansion | Show full target verse text on tap | 1 day | Basic pane |
+| 2 | Reference type filtering | Filter by parallel/quotation/allusion | 0.5 days | Reference types |
+| 3 | Parallel passages section | Synoptic parallel group cards | 1.5 days | ParallelRepository |
 
 ---
 
-## 2. Absorbed Features
-
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
+## 2. Comparison with Logos Bible Software
 
 | Logos Feature | BibleStudio Status | Priority | Notes |
 |--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Cross-reference panel | Planned (TSK + custom types) | P0 | TSK provides comprehensive base |
+| Parallel passages | Planned (synoptic groups) | P1 | — |
+| Bidirectional refs | Planned (dual-index) | P0 | Both source→target and target→source |
+| Reference confidence | Planned (score column) | P0 | Unique to BibleStudio |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Improvements | Total effort | Prerequisites |
+|-------|-------------|-------------|--------------|
+| **Phase 3** | P0 #1–5 | ~7 days | Phase 2 (VerseBus) |
+| **Phase 3.5** | P1 #1–3 | ~3 days | Phase 3 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created from Phase 3 tasks | — |

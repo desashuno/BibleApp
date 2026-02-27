@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Import / Export — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,94 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  ImportExportPane                                 |
+|  FormatPicker / ExportProgress / ImportPreview    |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultImportExportComponent (Decompose)         |
+|  +-- Manages StateFlow<ImportExportState>         |
+|  +-- Delegates to format-specific parsers         |
+|  OsisParser / UsfmParser / SwordParser            |
++---------------------------------------------------+
+|                      DATA                         |
+|  DataExporter / DataImporter                      |
+|  +-- BibleQueries / AnnotationQueries             |
+|  +-- kotlinx.serialization (JSON export)          |
+|  +-- File system (file read/write)                |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Import
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User selects file** — File picker with OSIS/USFM/Sword filter.
+2. **Format detection** — File extension and header analysis.
+3. **Parsing** — Format-specific parser converts to internal entities.
+4. **Preview** — User reviews parsed data before confirming import.
+5. **Insert** — Data inserted into SQLite within transaction.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Export** — User selects data scope and format → serialized to file.
+- **Sync export** — Generates JSON envelope for device-to-device sync.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
-| `.sq` File | Query | Parameters | Return | Description |
-|-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `.sq` File | Query | Description |
+|-----------|-------|-------------|
+| `Bible.sq` | `insertBible` / `insertVerse` | Bible import |
+| `Annotation.sq` | `allNotes` / `allHighlights` / `allBookmarks` | Annotation export |
+| `Writing.sq` | `allSermons` | Sermon export |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val importExportModule = module {
+    singleOf(::OsisParser)
+    singleOf(::UsfmParser)
+    singleOf(::SwordParser)
+    singleOf(::DataExporter)
+    singleOf(::DataImporter)
+    factory { (ctx: ComponentContext) ->
+        DefaultImportExportComponent(ctx, get(), get(), get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Strategy | Format parsers | Pluggable import per format |
+| Pipeline | Import flow | Validate → parse → preview → insert |
+| Transaction | DB writes | Atomicity |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **OSIS import** — Streaming XML parser avoids loading entire file into memory.
+- **Batch inserts** — 1000 rows per batch within transaction.
+- **Export** — Streaming JSON writer for large datasets.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| OSIS + USFM + Sword | Proprietary formats | Open standards; broad compatibility |
+| JSON sync export | Binary | Human-readable; debuggable; kotlinx.serialization |
+| Preview before import | Direct import | User validation prevents bad data |

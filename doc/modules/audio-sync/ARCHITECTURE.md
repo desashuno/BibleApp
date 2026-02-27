@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Audio Sync — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,94 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  AudioSyncPane                                    |
+|  AudioPlayer / SyncHighlight / SpeedControl       |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultAudioSyncComponent (Decompose)            |
+|  +-- Manages StateFlow<AudioSyncState>            |
+|  +-- Subscribes to VerseBus VerseSelected         |
+|  +-- Audio playback via platform player           |
+|  +-- Sync engine maps position to verse           |
++---------------------------------------------------+
+|                      DATA                         |
+|  AudioSyncRepository (interface)                  |
+|  AudioSyncRepositoryImpl                          |
+|  +-- AudioQueries (SQLDelight)                    |
+|       +-- SQLite (audio_timestamps)               |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Synced Playback
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User navigates to passage** — VerseBus `VerseSelected` received.
+2. **Load timestamps** — Query `audio_timestamps` for verse range.
+3. **Audio play** — Platform audio player starts at verse offset.
+4. **Sync loop** — Timer polls position; maps to current verse; highlights in reader.
+5. **VerseBus publish** — Emits `VerseSelected` as audio advances.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Speed control** — 0.5x / 1.0x / 1.5x / 2.0x playback speed.
+- **Manual seek** — User drags progress bar; snaps to nearest verse boundary.
+- **Chapter navigation** — Previous/next chapter buttons.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Audio.sq` | `timestampsForChapter` | `bibleId, bookNum, chapterNum` | `List<AudioTimestamp>` | All verse timings |
+| `Audio.sq` | `timestampForVerse` | `bibleId, globalVerseId` | `AudioTimestamp?` | Single verse timing |
+| `Audio.sq` | `audioFileForChapter` | `bibleId, bookNum, chapterNum` | `String?` | Audio file path |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val audioSyncModule = module {
+    singleOf(::AudioSyncRepositoryImpl) bind AudioSyncRepository::class
+    single { PlatformAudioPlayer() }
+    factory { (ctx: ComponentContext) ->
+        DefaultAudioSyncComponent(ctx, get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `AudioSyncRepositoryImpl` | Abstracts timestamp queries |
+| Observer | VerseBus bidirectional | Receives verse; publishes as audio advances |
+| Platform abstraction | `PlatformAudioPlayer` | expect/actual for Android/iOS/Desktop |
+| Sync engine | Polling timer | Maps audio position to verse timestamps |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Timestamp load < 5 ms** — Indexed per chapter.
+- **Sync polling** — 100ms interval; lightweight position check.
+- **Audio buffering** — Platform player handles buffering; app only manages sync.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Polling sync (100ms) | Callback-based | Cross-platform consistency; simple implementation |
+| Per-chapter audio files | Per-book / per-verse | Balance between file count and granularity |
+| Platform audio player | Custom decoder | Leverage OS audio stack; codec support |

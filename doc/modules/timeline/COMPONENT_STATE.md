@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Timeline — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,93 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultTimelineComponent` | Scoped | Timeline browsing, era filtering, VerseBus |
 
 ---
 
-## 2. {Module}Component
+## 2. TimelineComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface TimelineComponent {
+    val state: StateFlow<TimelineState>
+    fun onLoad()
+    fun onEraSelected(era: String?)
+    fun onEventSelected(eventId: Long)
+    fun onZoomChanged(level: ZoomLevel)
+}
+
+enum class ZoomLevel { Overview, Era, Year }
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class TimelineState(
+    val loading: Boolean = false,
+    val events: List<TimelineEvent> = emptyList(),
+    val selectedEvent: TimelineEvent? = null,
+    val eraFilter: String? = null,
+    val zoomLevel: ZoomLevel = ZoomLevel.Overview,
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Initial --> Loading --> Content --> (zoom/filter) --> Content
+                               +-> EventDetail
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onLoad` | DB query | Load all events |
+| `onEraSelected` | DB query | Filter by era |
+| `onEventSelected` | DB query | Load event detail |
+| VerseBus `VerseSelected` | DB query | Find events for verse |
+| Verse ref tap | VerseBus publish | Navigate reader |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | Bidirectional | SharedFlow | Subscribe + publish |
+| `KnowledgeGraphComponent` | → Cross-link | Navigation | Events are entities too |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val timelineModule = module {
+    factory<TimelineComponent> { (ctx: ComponentContext) ->
+        DefaultTimelineComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `onEraSelected filters events`() = runTest {
+    val repo = FakeTimelineRepository(events = testEvents)
+    val component = DefaultTimelineComponent(TestComponentContext(), repo, VerseBus())
+    component.onEraSelected("Patriarchs")
+    component.state.test {
+        assertThat(awaitItem().events.all { it.era == "Patriarchs" }).isTrue()
+    }
+}
 ```

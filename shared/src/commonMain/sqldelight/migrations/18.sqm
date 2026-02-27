@@ -1,0 +1,13 @@
+-- Migration 18: Create alignment_words table for Reverse Interlinear
+-- Pre-computed mapping between English translation tokens and Strong's numbers.
+
+CREATE TABLE alignment_words (
+    id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    global_verse_id   INTEGER NOT NULL,
+    english_position  INTEGER NOT NULL,
+    english_token     TEXT    NOT NULL,
+    original_position INTEGER NOT NULL,
+    strongs_number    TEXT    NOT NULL
+);
+
+CREATE INDEX idx_alignment_verse ON alignment_words(global_verse_id);

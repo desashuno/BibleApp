@@ -6,7 +6,11 @@
 
 ## 1. Overview
 
-<!-- Morphological and interlinear analysis with inline display in the reader. Includes reverse interlinear sub-feature. -->
+The Morphology / Interlinear module provides detailed linguistic analysis of biblical text at the word level. For any selected verse, it displays the original-language words (Hebrew or Greek) in an interlinear grid showing the surface form, transliteration, Strong's number, grammatical parsing, and English gloss.
+
+Three display modes are supported: **Interlinear** (vertically stacked rows per word), **Parallel** (side-by-side original and translation), and **Inline** (tooltip popovers on hover/tap). The module includes a parsing decoder that converts morphology codes (e.g. `V-AAI-3S`) into human-readable descriptions.
+
+The module subscribes to `VerseSelected` events and publishes `StrongsSelected` when a user taps a word, enabling seamless navigation to the Word Study pane.
 
 ---
 
@@ -14,9 +18,9 @@
 
 | Field | Value |
 |-------|-------|
-| **PaneType** | `PaneType.morphologyInterlinear` |
+| **PaneType** | `PaneType.morphology` |
 | **Category** | Study |
-| **Accent color** | Scholarly Purple `#7B6BA3` |
+| **Accent color** | Muted Purple `#6B5B8A` (`paneStudy`) |
 | **Icon** | `Icons.translate` |
 
 ---
@@ -39,13 +43,16 @@
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| `bible-reader` | Verse Bus | Subscribes to `VerseSelected` to load morphology data |
+| `word-study` | Data | Shares `lexicon_entries` and `word_occurrences` tables |
 
 ### 4.2 Modules that depend on this (provides)
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| `word-study` | Verse Bus | Publishes `StrongsSelected` on word tap |
+| `passage-guide` | Data | Passage guide may reference morphology analysis |
+| `exegetical-guide` | Data | Exegetical guide grammatical section uses morphology |
 
 ---
 
@@ -53,15 +60,12 @@
 
 | File | Layer | Purpose |
 |---------|------|-----------|
-| <!-- TBD --> | | |
-
----
-
-## 6. Integrated Sub-features
-
-| Sub-feature | Origin | Description |
-|-----------|--------|-------------|
-| **Reverse Interlinear** | missing-p0/reverse-interlinear | Shows original-language words aligned under English/Spanish text for readers without Greek/Hebrew knowledge |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/morphology/component/InterlinearComponent.kt` | Logic | Component interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/morphology/component/DefaultInterlinearComponent.kt` | Logic | Decompose implementation |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/morphology/model/MorphologyData.kt` | Model | MorphWord domain entity |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/morphology/repository/MorphologyRepository.kt` | Data | Repository interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/morphology/util/ParsingDecoder.kt` | Logic | Morphology code decoder |
+| `composeApp/src/commonMain/kotlin/org/biblestudio/features/morphology/ui/InterlinearPane.kt` | UI | Main pane |
 
 ---
 
@@ -70,8 +74,8 @@
 | Document | Contents |
 |-----------|-----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Internal architecture, layers, data flow |
-| [ROUTES.md](ROUTES.md) | Routes exposed and consumed for inter-module communication |
-| [DATA_MODEL.md](DATA_MODEL.md) | Entities, SQLite tables, repositories, queries |
-| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Composables, screens, PaneRegistry registration |
-| [COMPONENT_STATE.md](COMPONENT_STATE.md) | Decompose components, StateFlow, side effects |
-| [ROADMAP.md](ROADMAP.md) | Prioritized pending improvements |
+| [ROUTES.md](ROUTES.md) | Routes exposed and consumed |
+| [DATA_MODEL.md](DATA_MODEL.md) | Entities, SQLite tables, repositories |
+| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Composables, PaneRegistry, wireframes |
+| [COMPONENT_STATE.md](COMPONENT_STATE.md) | Components, StateFlow, side effects |
+| [ROADMAP.md](ROADMAP.md) | Pending improvements |

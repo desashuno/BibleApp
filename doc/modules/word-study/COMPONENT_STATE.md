@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Word Study — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -8,120 +8,90 @@
 
 | Component | Scope | File | Description |
 |-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| `DefaultWordStudyComponent` | Scoped (per pane) | `shared/.../features/wordstudy/component/DefaultWordStudyComponent.kt` | Strong's lookup, occurrences, frequency |
 
 ---
 
-## 2. {Module}Component
+## 2. WordStudyComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface WordStudyComponent {
+    val state: StateFlow<WordStudyState>
+    fun onOccurrenceSelected(globalVerseId: Int)
+    fun onSearchLexicon(query: String)
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class WordStudyState(
+    val isLoading: Boolean = false,
+    val entry: LexiconEntry? = null,
+    val occurrences: List<WordOccurrence> = emptyList(),
+    val occurrenceCount: Int = 0,
+    val relatedWords: List<LexiconEntry> = emptyList(),
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
+Initial (no word selected)
   │
-  │ onLoad()
+  │ VerseBus: StrongsSelected
   ▼
-Loading (loading=true)
+Loading (isLoading=true)
   │
-  ├── success ──→ Content (items populated)
+  ├── success ──→ Content (entry, occurrences, relatedWords)
   │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
+  │                ├── onOccurrenceSelected(verseId) ──→ VerseBus publish
+  │                └── VerseBus StrongsSelected ──→ Loading (new word)
   │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+  └── failure ──→ Error
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| VerseBus `StrongsSelected` | DB queries | Loads lexicon entry + occurrences + related words |
+| `onOccurrenceSelected` | VerseBus publish | Publishes `LinkEvent.VerseSelected(globalVerseId)` |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | ↔ Bidirectional | `SharedFlow<LinkEvent>` | Subscribes `StrongsSelected`; publishes `VerseSelected` |
+| `MorphologyComponent` | ← Receives | VerseBus | Morphology pane triggers word study via `StrongsSelected` |
+| `BibleReaderComponent` | ← Receives | VerseBus | Reader triggers via HTML Strong's links |
 
 ---
 
-## 5. Component Registration (Koin)
-
-<!-- How the component is registered and resolved in the DI container. -->
+## 5. Testing
 
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
-```
-
----
-
-## 6. Testing
-
-<!-- Testing strategy for the component. -->
-
-```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `StrongsSelected loads lexicon entry`() = runTest {
+    val verseBus = VerseBus()
+    val component = DefaultWordStudyComponent(
+        componentContext = TestComponentContext(),
+        repository = FakeWordStudyRepository(testEntry, testOccurrences),
+        verseBus = verseBus,
+    )
+    component.state.test {
+        verseBus.publish(LinkEvent.StrongsSelected("H1254"))
+        assertThat(awaitItem().isLoading).isTrue()
+        val content = awaitItem()
+        assertThat(content.entry?.strongsNumber).isEqualTo("H1254")
+        assertThat(content.occurrences).isNotEmpty()
+    }
+}
 ```

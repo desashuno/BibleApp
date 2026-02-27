@@ -1,0 +1,83 @@
+-- Settings.sq
+-- Query group: User preferences, workspaces, layouts
+-- Generated class: SettingsQueries
+
+-- ═══════════════════════════ Settings ═══════════════════════════
+
+getSetting:
+SELECT *
+FROM settings
+WHERE key = :key;
+
+getAllSettings:
+SELECT *
+FROM settings
+ORDER BY category ASC, key ASC;
+
+getSettingsByCategory:
+SELECT *
+FROM settings
+WHERE category = :category
+ORDER BY key ASC;
+
+setSetting:
+INSERT OR REPLACE INTO settings(key, value, type, category)
+VALUES (:key, :value, :type, :category);
+
+deleteSetting:
+DELETE FROM settings
+WHERE key = :key;
+
+-- ═══════════════════════════ Workspaces ═══════════════════════════
+
+allWorkspaces:
+SELECT *
+FROM workspaces
+WHERE deleted_at IS NULL
+ORDER BY name ASC;
+
+activeWorkspace:
+SELECT *
+FROM workspaces
+WHERE is_active = 1 AND deleted_at IS NULL
+LIMIT 1;
+
+workspaceByUuid:
+SELECT *
+FROM workspaces
+WHERE uuid = :uuid;
+
+insertWorkspace:
+INSERT INTO workspaces(uuid, name, is_active, created_at, updated_at, device_id)
+VALUES (:uuid, :name, :isActive, :createdAt, :updatedAt, :deviceId);
+
+updateWorkspace:
+UPDATE workspaces
+SET name = :name, is_active = :isActive, updated_at = :updatedAt, device_id = :deviceId
+WHERE uuid = :uuid;
+
+setActiveWorkspace:
+UPDATE workspaces SET is_active = 0 WHERE is_active = 1;
+
+softDeleteWorkspace:
+UPDATE workspaces
+SET deleted_at = :deletedAt
+WHERE uuid = :uuid;
+
+-- ═══════════════════════════ Workspace Layouts ═══════════════════════════
+
+layoutForWorkspace:
+SELECT *
+FROM workspace_layouts
+WHERE workspace_id = :workspaceId
+ORDER BY updated_at DESC
+LIMIT 1;
+
+insertLayout:
+INSERT INTO workspace_layouts(workspace_id, layout_json, updated_at)
+VALUES (:workspaceId, :layoutJson, :updatedAt);
+
+updateLayout:
+UPDATE workspace_layouts
+SET layout_json = :layoutJson, updated_at = :updatedAt
+WHERE id = :id;

@@ -1,0 +1,58 @@
+-- 15.sqm: Add word_occurrences, fts_lexicon, fts_sermons; add html_text to verses (v14 → v15)
+
+CREATE TABLE word_occurrences (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    strongs_number TEXT NOT NULL,
+    global_verse_id INTEGER NOT NULL,
+    word_position INTEGER NOT NULL
+);
+
+CREATE INDEX idx_word_occ_strongs ON word_occurrences(strongs_number);
+CREATE INDEX idx_word_occ_verse ON word_occurrences(global_verse_id);
+
+ALTER TABLE verses ADD COLUMN html_text TEXT;
+
+-- FTS5: lexicon full-text search
+CREATE VIRTUAL TABLE fts_lexicon USING fts5(
+    definition, usage_notes,
+    content=lexicon_entries, content_rowid=rowid
+);
+
+CREATE TRIGGER fts_lexicon_ai AFTER INSERT ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(rowid, definition, usage_notes)
+    VALUES (new.rowid, new.definition, new.usage_notes);
+END;
+
+CREATE TRIGGER fts_lexicon_ad AFTER DELETE ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(fts_lexicon, rowid, definition, usage_notes)
+    VALUES ('delete', old.rowid, old.definition, old.usage_notes);
+END;
+
+CREATE TRIGGER fts_lexicon_au AFTER UPDATE ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(fts_lexicon, rowid, definition, usage_notes)
+    VALUES ('delete', old.rowid, old.definition, old.usage_notes);
+    INSERT INTO fts_lexicon(rowid, definition, usage_notes)
+    VALUES (new.rowid, new.definition, new.usage_notes);
+END;
+
+-- FTS5: sermon content full-text search
+CREATE VIRTUAL TABLE fts_sermons USING fts5(
+    content,
+    content=sermon_sections, content_rowid=id
+);
+
+CREATE TRIGGER fts_sermons_ai AFTER INSERT ON sermon_sections BEGIN
+    INSERT INTO fts_sermons(rowid, content) VALUES (new.id, new.content);
+END;
+
+CREATE TRIGGER fts_sermons_ad AFTER DELETE ON sermon_sections BEGIN
+    INSERT INTO fts_sermons(fts_sermons, rowid, content) VALUES ('delete', old.id, old.content);
+END;
+
+CREATE TRIGGER fts_sermons_au AFTER UPDATE ON sermon_sections BEGIN
+    INSERT INTO fts_sermons(fts_sermons, rowid, content) VALUES ('delete', old.id, old.content);
+    INSERT INTO fts_sermons(rowid, content) VALUES (new.id, new.content);
+END;
+
+-- Note: Data migration (populate word_occurrences from morphology)
+-- and FTS rebuild commands are executed at runtime, not in schema migration.

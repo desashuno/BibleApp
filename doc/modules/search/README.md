@@ -6,7 +6,9 @@
 
 ## 1. Overview
 
-<!-- Search system with book/testament filters, saved searches, result sorting. Includes syntax search sub-feature for morphological patterns. -->
+The Search module provides full-text search across all Bible text, user notes, resource entries, lexicon definitions, and sermon content using SQLite FTS5. It supports advanced query syntax including `AND`, `OR`, `NOT`, `NEAR`, and prefix matching, as well as book range and testament filters.
+
+Search results are ranked by BM25 relevance and displayed with highlighted match snippets. The module also maintains a history of the last 20 queries for quick re-search. A Syntax Search sub-feature allows morphology-aware queries using a custom grammar (e.g. `[LEMMA:H1234]`, `[POS:Noun]`).
 
 ---
 
@@ -15,8 +17,8 @@
 | Field | Value |
 |-------|-------|
 | **PaneType** | `PaneType.search` |
-| **Category** | Tools |
-| **Accent color** | Utility Amber `#A38B5B` |
+| **Category** | Tool |
+| **Accent color** | Dusty Rose `#7A5A5A` (`paneTool`) |
 | **Icon** | `Icons.search` |
 
 ---
@@ -25,7 +27,7 @@
 
 | Aspect | Status |
 |---------|--------|
-| SQLite Schema | Defined (FTS5) |
+| SQLite Schema | Defined |
 | Component(s) | Implemented |
 | UI / Pane | Functional |
 | Tests | Partial |
@@ -39,13 +41,17 @@
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| `bible-reader` | Data (FTS5) | Searches `fts_verses` virtual table backed by `verses` |
+| `note-editor` | Data (FTS5) | Searches `fts_notes` virtual table backed by `notes` |
+| `resource-library` | Data (FTS5) | Searches `fts_resources` virtual table backed by `resource_entries` |
+| `word-study` | Data (FTS5) | Searches `fts_lexicon` virtual table backed by `lexicon_entries` |
+| `sermon-editor` | Data (FTS5) | Searches `fts_sermons` virtual table backed by `sermon_sections` |
 
 ### 4.2 Modules that depend on this (provides)
 
 | Module | Dependency type | Description |
 |--------|-------------------|-------------|
-| <!-- TBD --> | | |
+| `bible-reader` | Verse Bus | Publishes `SearchResult` event → reader scrolls to result verse |
 
 ---
 
@@ -53,15 +59,13 @@
 
 | File | Layer | Purpose |
 |---------|------|-----------|
-| <!-- TBD --> | | |
-
----
-
-## 6. Integrated Sub-features
-
-| Sub-feature | Origin | Description |
-|-----------|--------|-------------|
-| **Syntax Search** | missing-p0/syntax-search | Advanced search by grammatical and morphological patterns integrated as a search mode |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/search/component/SearchComponent.kt` | Logic | Component interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/search/component/DefaultSearchComponent.kt` | Logic | Decompose component implementation |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/search/model/SearchResult.kt` | Model | Search result domain entity |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/search/repository/SearchRepository.kt` | Data | Repository interface |
+| `shared/src/commonMain/kotlin/org/biblestudio/features/search/repository/SearchRepositoryImpl.kt` | Data | SQLDelight FTS5 implementation |
+| `composeApp/src/commonMain/kotlin/org/biblestudio/features/search/ui/SearchPane.kt` | UI | Main search pane |
+| `composeApp/src/commonMain/kotlin/org/biblestudio/features/search/ui/SyntaxSearchPane.kt` | UI | Syntax search sub-feature |
 
 ---
 

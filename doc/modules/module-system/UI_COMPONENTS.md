@@ -1,4 +1,4 @@
-# {Module Name} — UI Components
+# Module System — UI Components
 
 > Composables, PaneRegistry registration, and responsive behavior.
 
@@ -6,136 +6,107 @@
 
 ## 1. PaneRegistry Registration
 
-<!-- How this module is registered in the global pane catalog. -->
-
 ```kotlin
-// PaneRegistry.register("{module}") { config ->
-//     {Module}Pane(config = config)
-// }
+PaneRegistry.register("module_system") { config -> ModuleSystemPane(config) }
 ```
 
 | Field | Value |
 |-------|-------|
-| **Type key** | `{module}` |
-| **Builder** | `{Module}Pane` |
-| **Category** | {Read / Study / Write / Tools / Resources / Media} |
+| **Type key** | `module_system` |
+| **Category** | Tools |
 
 ---
 
 ## 2. Screens / Panes
 
-### 2.1 {Module}Pane (workspace pane)
-
-<!-- Description of the composable when rendered as a pane in the multi-pane workspace. -->
+### 2.1 ModuleSystemPane
 
 | Aspect | Detail |
 |--------|--------|
-| Pane Header | {Title, icon, header actions} |
-| Toolbar | {Yes/No} — {buttons/actions} |
-| Min width | {N}dp |
-| Min height | {N}dp |
-
-### 2.2 {Module}Content (full-screen on mobile)
-
-<!-- Description of the full-screen layout on mobile. -->
-
-| Aspect | Detail |
-|--------|--------|
-| Top App Bar | {Yes/No} — {description} |
-| FAB | {Yes/No} — {action} |
-| Bottom Sheet | {Yes/No} — {content} |
+| Pane Header | "Modules", `extension` icon |
+| Toolbar | [Install] button, search field |
+| Min width | 300dp |
 
 ---
 
 ## 3. Key Composables
 
-<!-- List of composable functions that make up this module's UI. -->
-
-| Composable | File | Description | Reusable |
-|------------|------|-------------|----------|
-| `{Module}Pane` | `composeApp/.../features/{module}/ui/{Module}Pane.kt` | Main pane container | No |
-| `{Composable1}` | `composeApp/.../features/{module}/ui/{Composable1}.kt` | {description} | {Yes/No} |
-| `{Composable2}` | `composeApp/.../features/{module}/ui/{Composable2}.kt` | {description} | {Yes/No} |
+| Composable | Description | Reusable |
+|------------|-------------|----------|
+| `ModuleSystemPane` | Main pane container | No |
+| `ModuleCard` | Installed module card | Yes |
+| `ModuleDetail` | Module info + uninstall | No |
+| `InstallProgress` | Import progress bar | No |
+| `ModuleBrowser` | Filterable module list | No |
 
 ---
 
 ## 4. Descriptive Wireframe
 
-<!-- Text-based wireframe of the main UI layout. -->
-
 ```
-┌─────────────────────────────────────────┐
-│ [Icon] {Pane Title}          [⋮] [✕]   │  ← Pane Header
-├─────────────────────────────────────────┤
-│ [Toolbar: contextual actions]           │  ← Toolbar (optional)
-├─────────────────────────────────────────┤
-│                                         │
-│         Main content area               │
-│         of the module                   │
-│                                         │
-│                                         │
-├─────────────────────────────────────────┤
-│ [Status / Footer info]                  │  ← Footer (optional)
-└─────────────────────────────────────────┘
++------------------------------------------+
+| [E] Modules                    [v] [x]   |
++------------------------------------------+
+| [Search...]              [+ Install]      |
++------------------------------------------+
+| +- Bible ----------------------------+   |
+| | [B] King James Version    v1.0.0   |   |
+| |     66 books  |  4.5 MB            |   |
+| +------------------------------------+   |
+| +- Lexicon ---------------------------+  |
+| | [L] Strong's Hebrew    v1.0.0       |  |
+| |     8,674 entries  |  1.8 MB        |  |
+| +------------------------------------+   |
+| 2 modules installed                      |
++------------------------------------------+
 ```
 
 ---
 
 ## 5. Responsive Behavior
 
-<!-- How the UI adapts to different screen sizes. -->
-
 | Breakpoint | Behavior |
 |-----------|----------|
-| **Mobile** (0–599dp) | {Full-screen navigation, simplified layout, etc.} |
-| **Tablet** (600–899dp) | {Side panel, adapted layout, etc.} |
-| **Desktop** (900dp+) | {Workspace pane, multi-pane, etc.} |
+| **Mobile** (0–599dp) | Full-screen list; detail as new screen |
+| **Tablet** (600–899dp) | List-detail side-by-side |
+| **Desktop** (900dp+) | Workspace pane; detail in dialog |
 
 ---
 
 ## 6. Verse Bus Interaction
 
-<!-- How the module reacts to verse changes in other panes. -->
-
 | Event | UI Action |
 |-------|-----------|
-| Receives `VerseSelected` from VerseBus | {Scroll to verse, highlight, load data, etc.} |
-| User selects a verse | {Publishes `VerseSelected` to VerseBus} |
+| N/A | Module system does not interact with VerseBus |
 
 ---
 
 ## 7. UI States
 
-<!-- Different visual states of the module. -->
-
 | State | Visual | Trigger |
 |-------|--------|---------|
-| **Loading** | {Skeleton / Spinner / Shimmer} | Initial load or data change |
-| **Empty** | {Message + illustration + CTA} | No data to display |
-| **Error** | {Error message + retry button} | Load failure |
-| **Content** | {Main UI with data} | Data loaded successfully |
-| **Searching** | {Active input + progressive results} | User searches within module |
+| **Loading** | Shimmer cards | Initial load |
+| **Content** | Module card list | Loaded |
+| **Empty** | "No modules installed" + CTA | No modules |
+| **Installing** | Progress bar | Import in progress |
+| **Error** | Error message + retry | Validation failure |
 
 ---
 
 ## 8. Animations & Transitions
 
-<!-- Module-specific animations. -->
-
 | Transition | Duration | Easing | Description |
 |-----------|---------|--------|-------------|
-| {Panel entry} | `200ms` | `EaseOut` | {description} |
-| {Content change} | `150ms` | `EaseInOut` | {description} |
+| Card appear | `200ms` | `EaseOut` | Fade + slide-up |
+| Progress | Continuous | Linear | Determinate bar |
+| Removal | `250ms` | `EaseInOut` | Slide-out |
 
 ---
 
 ## 9. Accessibility
 
-<!-- Module-specific accessibility considerations. -->
-
 | Requirement | Implementation |
 |-------------|----------------|
-| Semantic descriptions | {Composables that require `Modifier.semantics`} |
-| Keyboard navigation | {Shortcuts, tab order} |
-| Contrast | {Verify against DESIGN_SYSTEM §12} |
-| Text scaling | {Respects user's text scale preference} |
+| Semantic descriptions | "Module: [name], [type], [version]" |
+| Keyboard | Tab between modules; Enter for detail |
+| Screen reader | Progress announces percentage |

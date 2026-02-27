@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Workspace — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,120 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────┐
+│                       UI                          │
+│  WorkspaceShell / LayoutNodeRenderer              │
+│  PaneContainer / SplitPane / TabGroupPane         │
+│  └── Observes WorkspaceComponent.state (StateFlow)│
+├───────────────────────────────────────────────────┤
+│                     LOGIC                         │
+│  DefaultWorkspaceComponent (Decompose)            │
+│  ├── Manages StateFlow<WorkspaceState>            │
+│  ├── Builds / mutates LayoutNode tree             │
+│  └── Calls WorkspaceRepository for persistence    │
+│                                                   │
+│  PaneRegistry                                     │
+│  ├── Maps type keys → @Composable builders        │
+│  └── Provides PaneMetadata for activity bar       │
+├───────────────────────────────────────────────────┤
+│                      DATA                         │
+│  WorkspaceRepository (interface)                  │
+│  WorkspaceRepositoryImpl                          │
+│  └── SettingsQueries (SQLDelight)                 │
+│       └── SQLite (workspaces, workspace_layouts)  │
+└───────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
-
 ```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
+User opens/switches workspace
+  → DefaultWorkspaceComponent.loadWorkspace(id)
+    → repository.getWorkspace(id) → Workspace + JSON layout
+      → LayoutNodeDto deserialized → LayoutNode tree
+    → _state.update { it.copy(layout = tree) }
+  → WorkspaceShell recomposes via StateFlow
+    → LayoutNodeRenderer recursively renders tree
+      → PaneRegistry.Build(type) for each Leaf
 ```
 
-### 2.1 Primary Flow
+### 2.1 Primary Flow — Layout Rendering
 
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **Workspace loads** — `WorkspaceComponent` reads serialized layout from `workspace_layouts`.
+2. **Tree built** — JSON deserializes to `LayoutNode` sealed class tree.
+3. **Recursive render** — `LayoutNodeRenderer` renders `Split`, `Tabs`, or `Leaf` nodes.
+4. **Pane instantiation** — Each `Leaf` calls `PaneRegistry.Build(type)` which invokes the registered composable.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Add pane** — User picks a module → `addPane(type)` inserts a new `Leaf` into the tree → layout re-renders.
+- **Resize split** — User drags divider → `resizeSplit(path, newRatio)` mutates the `Split.ratio` → immediate visual update.
+- **Close pane** — User clicks ✕ → `removePane(type)` prunes the `Leaf` from the tree → remaining panes fill space.
+- **Apply preset** — User selects a quickstart layout → `applyPreset(preset)` replaces entire tree.
+- **Save** — `saveWorkspace()` serializes current `LayoutNode` to JSON → stored in `workspace_layouts`.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Settings.sq` | `activeWorkspace` | — | `Workspace` | Gets the currently active workspace |
+| `Settings.sq` | `workspaceById` | `uuid` | `Workspace` | Loads specific workspace |
+| `Settings.sq` | `allWorkspaces` | — | `List<Workspace>` | Lists saved workspaces |
+| `Settings.sq` | `layoutForWorkspace` | `workspaceId` | `WorkspaceLayout` | JSON layout for workspace |
+| `Settings.sq` | `upsertLayout` | `workspaceId`, `json` | — | Save/update layout |
+| `Settings.sq` | `insertWorkspace` | `uuid`, `name` | — | Create new workspace |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val workspaceModule = module {
+    singleOf(::WorkspaceRepositoryImpl) bind WorkspaceRepository::class
+    single { PaneRegistry().apply { init() } }
+    factory { (ctx: ComponentContext) ->
+        DefaultWorkspaceComponent(
+            componentContext = ctx,
+            repository = get(),
+            paneRegistry = get(),
+        )
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `WorkspaceRepositoryImpl` | Abstracts workspace persistence |
+| Sealed class tree | `LayoutNode` | Type-safe recursive layout representation |
+| Visitor (recursive rendering) | `LayoutNodeRenderer` | Each node type rendered differently |
+| Preset / Template | `WorkspacePreset` | Quick-start layouts for new users |
+| JSON serialization | `LayoutNodeDto` ↔ `LayoutNode` | Persistent storage in SQLite TEXT column |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Layout load < 5 ms** — Single JSON column read + deserialization.
+- **Lazy pane initialization** — Only visible `Leaf` nodes instantiate their Compose subtree; tab groups only compose the active tab.
+- **Debounced resize** — Split divider drag events are throttled to avoid excessive DB writes during interaction.
+- **Auto-save** — Layout is persisted on a 2-second debounce after the last mutation, not on every change.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
 | Decision | Alternatives considered | Justification |
 |----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| JSON-serialized layout in SQLite | Normalized relational tables | Tree structure maps naturally to JSON; simpler queries; < 5 KB typical payload |
+| Sealed class `LayoutNode` | Map/dictionary tree | Full type safety; exhaustive `when` matching |
+| PaneRegistry singleton | Direct module imports | Eliminates inter-module coupling; runtime extensibility |
+| Workspace presets | Empty default | Provides immediate value to new users |

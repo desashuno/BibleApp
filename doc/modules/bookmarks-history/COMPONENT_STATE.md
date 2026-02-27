@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Bookmarks & History — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,82 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultBookmarksComponent` | Scoped | Bookmark CRUD, history, folder management |
 
 ---
 
-## 2. {Module}Component
+## 2. BookmarksComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface BookmarksComponent {
+    val state: StateFlow<BookmarksState>
+    fun onLoad()
+    fun onCreateBookmark(globalVerseId: Int, label: String, folderId: String?)
+    fun onDeleteBookmark(uuid: String)
+    fun onBookmarkSelected(bookmark: Bookmark)
+    fun onCreateFolder(name: String)
+    fun onTabChanged(tab: BookmarksTab)
+}
+enum class BookmarksTab { Bookmarks, History }
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class BookmarksState(
+    val loading: Boolean = false,
+    val activeTab: BookmarksTab = BookmarksTab.Bookmarks,
+    val folders: List<BookmarkFolder> = emptyList(),
+    val bookmarks: Map<String?, List<Bookmark>> = emptyMap(),
+    val history: List<HistoryEntry> = emptyList(),
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Initial --> Loading --> Content (bookmarks + folders)
+                   +-> Error
+Content --> Create/Delete --> Content (refreshed)
+Content --> Tab switch --> Content (History tab)
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onCreateBookmark` | DB insert | Persist new bookmark |
+| `onBookmarkSelected` | VerseBus publish | Navigate reader to verse |
+| VerseBus `VerseSelected` | History record | Auto-add to history |
 
 ---
 
-## 4. Interaction with Other Components
-
-<!-- How this component communicates with components in other modules. -->
-
-| External Component | Direction | Mechanism | Description |
-|-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
-
----
-
-## 5. Component Registration (Koin)
-
-<!-- How the component is registered and resolved in the DI container. -->
+## 4. Component Registration (Koin)
 
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val bookmarksModule = module {
+    factory<BookmarksComponent> { (ctx: ComponentContext) ->
+        DefaultBookmarksComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
-## 6. Testing
-
-<!-- Testing strategy for the component. -->
+## 5. Testing
 
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `onCreateBookmark adds to folder`() = runTest {
+    val component = DefaultBookmarksComponent(TestComponentContext(), FakeBookmarkRepository(), VerseBus())
+    component.onCreateBookmark(01001001, "Genesis 1:1", "study-folder")
+    assertThat(component.state.value.bookmarks["study-folder"]).hasSize(1)
+}
 ```

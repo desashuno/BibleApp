@@ -1,0 +1,37 @@
+-- 1.sqm: Initial schema — Bible text tables (v0 → v1)
+
+CREATE TABLE bibles (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    abbreviation TEXT NOT NULL,
+    name TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'en',
+    text_direction TEXT NOT NULL DEFAULT 'ltr'
+);
+
+CREATE TABLE books (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    bible_id INTEGER NOT NULL REFERENCES bibles(id) ON DELETE CASCADE,
+    book_number INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    testament TEXT NOT NULL
+);
+
+CREATE TABLE chapters (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    chapter_number INTEGER NOT NULL,
+    verse_count INTEGER NOT NULL
+);
+
+CREATE TABLE verses (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    chapter_id INTEGER NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL,
+    verse_number INTEGER NOT NULL,
+    text TEXT NOT NULL
+);
+
+CREATE INDEX idx_verses_global ON verses(global_verse_id);
+CREATE INDEX idx_verses_chapter ON verses(chapter_id, verse_number);
+CREATE INDEX idx_books_bible ON books(bible_id, book_number);
+CREATE INDEX idx_chapters_book ON chapters(book_id, chapter_number);

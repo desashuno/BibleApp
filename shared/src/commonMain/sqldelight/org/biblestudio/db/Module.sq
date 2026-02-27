@@ -1,0 +1,41 @@
+-- Module.sq: Module management queries
+
+allModules:
+SELECT * FROM installed_modules
+WHERE is_active = 1
+ORDER BY name;
+
+modulesByType:
+SELECT * FROM installed_modules
+WHERE type = ? AND is_active = 1
+ORDER BY name;
+
+moduleByUuid:
+SELECT * FROM installed_modules
+WHERE uuid = ?;
+
+insertModule:
+INSERT INTO installed_modules(uuid, name, abbreviation, language, type, version, size_bytes, description, source_type)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateModule:
+UPDATE installed_modules
+SET name = ?, abbreviation = ?, language = ?, type = ?, version = ?, size_bytes = ?, description = ?
+WHERE uuid = ?;
+
+softDeleteModule:
+UPDATE installed_modules
+SET is_active = 0
+WHERE uuid = ?;
+
+hardDeleteModule:
+DELETE FROM installed_modules
+WHERE uuid = ?;
+
+allBackups:
+SELECT * FROM backup_history
+ORDER BY created_at DESC;
+
+insertBackup:
+INSERT INTO backup_history(filename, backup_type, size_bytes, item_count)
+VALUES (?, ?, ?, ?);

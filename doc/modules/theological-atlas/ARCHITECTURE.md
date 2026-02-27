@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Theological Atlas — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,90 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  TheologicalAtlasPane                             |
+|  MapView / LocationDetail / LocationList          |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultAtlasComponent (Decompose)                |
+|  +-- Manages StateFlow<AtlasState>                |
+|  +-- Subscribes to VerseBus VerseSelected         |
+|  +-- Queries AtlasRepository                      |
++---------------------------------------------------+
+|                      DATA                         |
+|  AtlasRepository (interface)                      |
+|  AtlasRepositoryImpl                              |
+|  +-- AtlasQueries (SQLDelight)                    |
+|       +-- SQLite (geographic_locations)           |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Browse Map
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User opens pane** — Loads map tiles + location markers.
+2. **Marker tap** — Shows location detail with verse references.
+3. **Verse link** — Publishes `VerseSelected` on VerseBus.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **VerseBus** — On `VerseSelected`, highlights locations mentioned in the verse.
+- **List view** — Alphabetical location list as alternative to map.
+- **Search** — Filter locations by name.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Atlas.sq` | `allLocations` | — | `List<Location>` | All locations |
+| `Atlas.sq` | `locationById` | `id: Long` | `Location?` | Single location |
+| `Atlas.sq` | `locationsForVerse` | `globalVerseId: Int` | `List<Location>` | Locations in verse |
+| `Atlas.sq` | `searchLocations` | `query: String` | `List<Location>` | Name search |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val atlasModule = module {
+    singleOf(::AtlasRepositoryImpl) bind AtlasRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultAtlasComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `AtlasRepositoryImpl` | Abstracts location queries |
+| Observer | VerseBus subscriber | Auto-highlights verse locations |
+| Tile layer | Map rendering | Efficient large-scale map display |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Location query < 5 ms** — Indexed on lat/lon and `global_verse_id`.
+- **Map tiles** — Bundled low-res; higher-res downloaded on demand.
+- **Marker clustering** — Groups nearby markers at zoom-out levels.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Bundled map tiles | Online-only maps | Offline-first for Bible study anywhere |
+| Pre-populated locations | User-entered | Biblical geography is static reference data |
+| Compose Canvas map | WebView + Leaflet | Native rendering; no WebView dependency |

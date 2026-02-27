@@ -1,0 +1,46 @@
+-- 6.sqm: Add FTS5 virtual tables + triggers (v5 → v6)
+
+CREATE VIRTUAL TABLE fts_verses USING fts5(text, content=verses, content_rowid=id);
+
+CREATE TRIGGER fts_verses_ai AFTER INSERT ON verses BEGIN
+    INSERT INTO fts_verses(rowid, text) VALUES (new.id, new.text);
+END;
+
+CREATE TRIGGER fts_verses_ad AFTER DELETE ON verses BEGIN
+    INSERT INTO fts_verses(fts_verses, rowid, text) VALUES ('delete', old.id, old.text);
+END;
+
+CREATE TRIGGER fts_verses_au AFTER UPDATE ON verses BEGIN
+    INSERT INTO fts_verses(fts_verses, rowid, text) VALUES ('delete', old.id, old.text);
+    INSERT INTO fts_verses(rowid, text) VALUES (new.id, new.text);
+END;
+
+CREATE VIRTUAL TABLE fts_notes USING fts5(title, content, content=notes, content_rowid=rowid);
+
+CREATE TRIGGER fts_notes_ai AFTER INSERT ON notes BEGIN
+    INSERT INTO fts_notes(rowid, title, content) VALUES (new.rowid, new.title, new.content);
+END;
+
+CREATE TRIGGER fts_notes_ad AFTER DELETE ON notes BEGIN
+    INSERT INTO fts_notes(fts_notes, rowid, title, content) VALUES ('delete', old.rowid, old.title, old.content);
+END;
+
+CREATE TRIGGER fts_notes_au AFTER UPDATE ON notes BEGIN
+    INSERT INTO fts_notes(fts_notes, rowid, title, content) VALUES ('delete', old.rowid, old.title, old.content);
+    INSERT INTO fts_notes(rowid, title, content) VALUES (new.rowid, new.title, new.content);
+END;
+
+CREATE VIRTUAL TABLE fts_resources USING fts5(content, content=resource_entries, content_rowid=id);
+
+CREATE TRIGGER fts_resources_ai AFTER INSERT ON resource_entries BEGIN
+    INSERT INTO fts_resources(rowid, content) VALUES (new.id, new.content);
+END;
+
+CREATE TRIGGER fts_resources_ad AFTER DELETE ON resource_entries BEGIN
+    INSERT INTO fts_resources(fts_resources, rowid, content) VALUES ('delete', old.id, old.content);
+END;
+
+CREATE TRIGGER fts_resources_au AFTER UPDATE ON resource_entries BEGIN
+    INSERT INTO fts_resources(fts_resources, rowid, content) VALUES ('delete', old.id, old.content);
+    INSERT INTO fts_resources(rowid, content) VALUES (new.id, new.content);
+END;

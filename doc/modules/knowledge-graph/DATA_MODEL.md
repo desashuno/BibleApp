@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Knowledge Graph — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,43 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 Entity
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class Entity(
+    val id: Long,
+    val name: String,
+    val type: EntityType,
+    val description: String?,
+    val aliases: List<String>,
+    val verseReferences: List<Int>,
+)
+
+enum class EntityType { Person, Place, Event, Object, Concept }
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `id` | `Long` | Auto-increment PK | No |
+| `name` | `String` | Primary name | No |
+| `type` | `EntityType` | Category | No |
+| `description` | `String?` | Brief description | Yes |
+| `aliases` | `List<String>` | Alternative names (JSON) | No |
+| `verseReferences` | `List<Int>` | `BBCCCVVV` list (JSON) | No |
+
+### 1.2 Relationship
+
+```kotlin
+data class Relationship(
+    val id: Long,
+    val sourceEntityId: Long,
+    val targetEntityId: Long,
+    val type: RelationshipType,
+    val description: String?,
+)
+
+enum class RelationshipType { ParentOf, SiblingOf, SpouseOf, LocationOf, PartOf, SuccessorOf, Associated }
+```
 
 ---
 
@@ -34,43 +50,48 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `entities`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE entities (
+    id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name              TEXT    NOT NULL,
+    type              TEXT    NOT NULL,
+    description       TEXT,
+    aliases           TEXT    NOT NULL DEFAULT '[]',
+    verse_references  TEXT    NOT NULL DEFAULT '[]'
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
+#### Table: `relationships`
+
+```sql
+CREATE TABLE relationships (
+    id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    source_entity_id  INTEGER NOT NULL REFERENCES entities(id),
+    target_entity_id  INTEGER NOT NULL REFERENCES entities(id),
+    type              TEXT    NOT NULL,
+    description       TEXT
+);
+```
+
+#### Table: `entity_verse_index` (materialized join)
+
+```sql
+CREATE TABLE entity_verse_index (
+    entity_id       INTEGER NOT NULL REFERENCES entities(id),
+    global_verse_id INTEGER NOT NULL,
+    PRIMARY KEY (entity_id, global_verse_id)
+);
+```
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE INDEX idx_entities_type ON entities(type);
+CREATE INDEX idx_entity_verse ON entity_verse_index(global_verse_id);
+CREATE INDEX idx_relationships_source ON relationships(source_entity_id);
+CREATE INDEX idx_relationships_target ON relationships(target_entity_id);
 ```
 
 ---
@@ -80,60 +101,40 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface KnowledgeGraphRepository {
+    suspend fun getByType(type: EntityType): Result<List<Entity>>
+    suspend fun getById(id: Long): Result<Entity?>
+    suspend fun getRelationshipsFor(entityId: Long): Result<List<Relationship>>
+    suspend fun getEntitiesForVerse(globalVerseId: Int): Result<List<Entity>>
+    suspend fun search(query: String): Result<List<Entity>>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | Parameters | Return | Performance |
+|-------|-----------|--------|-------------|
+| `entitiesByType` | `type` | `List<Entity>` | Indexed on type |
+| `entitiesForVerse` | `globalVerseId` | `List<Entity>` | Via `entity_verse_index` |
+| `relationshipsFor` | `entityId` | `List<Relationship>` | Indexed on source/target |
+| `searchEntities` | FTS query | `List<Entity>` | FTS5 on name/description |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v9 → v10 | Created `entities`, `relationships`, `entity_verse_index` | `9.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `entity_verse_index.global_verse_id` | Convention-based |
+| `geographic_locations` | Places entities link to geo data | Cross-reference |
+| `timeline_events` | Events entities link to timeline | Cross-reference |

@@ -1,0 +1,44 @@
+<resources>
+    <!-- App -->
+    <string name="app_name">BibleStudio</string>
+
+    <!-- General -->
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="close">Cerrar</string>
+    <string name="back">Atrás</string>
+    <string name="settings">Configuración</string>
+    <string name="loading">Cargando…</string>
+    <string name="error_generic">Algo salió mal.</string>
+    <string name="retry">Reintentar</string>
+
+    <!-- Workspace -->
+    <string name="workspace_default_name">Predeterminado</string>
+    <string name="workspace_new">Nuevo espacio de trabajo</string>
+    <string name="workspace_rename">Renombrar espacio de trabajo</string>
+    <string name="workspace_delete_confirm">¿Eliminar este espacio de trabajo?</string>
+    <string name="workspace_preset_default">Predeterminado</string>
+    <string name="workspace_preset_study">Estudio</string>
+    <string name="workspace_preset_exegesis">Exégesis</string>
+    <string name="workspace_preset_writing">Escritura</string>
+    <string name="workspace_preset_research">Investigación</string>
+
+    <!-- Bible Reader -->
+    <string name="chapter_title">%1$s Capítulo %2$d</string>
+    <string name="search_hint">Buscar en la Biblia…</string>
+
+    <!-- Plurals -->
+    <plurals name="results_count">
+        <item quantity="one">%d resultado</item>
+        <item quantity="other">%d resultados</item>
+    </plurals>
+
+    <!-- Activity Bar / Navigation -->
+    <string name="nav_bible_reader">Lector Bíblico</string>
+    <string name="nav_search">Búsqueda</string>
+    <string name="nav_notes">Notas</string>
+    <string name="nav_resources">Recursos</string>
+    <string name="nav_more">Más</string>
+</resources>

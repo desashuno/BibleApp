@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Note Editor — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,54 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Implement `NoteRepository` | CRUD operations with FTS5 sync triggers | 1.5 days | Phase 1 DB |
+| 2 | Create `NoteEditorComponent` | VerseBus subscription, auto-save with 2s debounce | 2 days | Repository |
+| 3 | Create `RichTextEditor` composable | Markdown-like editor with formatting toolbar | 3 days | Compose text input |
+| 4 | Create `NoteEditorPane` | Note list + editor layout | 2 days | Component + Editor |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Note tags/categories | Taggable notes for organization | 1.5 days | Schema change |
+| 2 | Note linking | Cross-link notes to other notes or verses | 1 day | UUID references |
+
+### P2 — Desirable
+
+| # | Improvement | Description | Estimated effort | Dependencies |
+|---|------------|-------------|-----------------|-------------|
+| 1 | Note export | Export notes as Markdown/PDF | 1 day | import-export |
+| 2 | Note templates | Pre-built note templates (sermon notes, study notes) | 1 day | UI |
 
 ---
 
-## 2. Absorbed Features
-
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
+## 2. Comparison with Logos Bible Software
 
 | Logos Feature | BibleStudio Status | Priority | Notes |
 |--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Note editor | Planned | P0 | Rich text with verse linking |
+| Note tags | Planned | P1 | Tag-based organization |
+| Note linking | Planned | P1 | Cross-note references |
+| Note export | Planned | P2 | Markdown + PDF |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Improvements | Total effort | Prerequisites |
+|-------|-------------|-------------|--------------|
+| **Phase 3** | P0 #1-4 | ~8.5 days | Phase 2 complete |
+| **Phase 4** | P1 #1-2 | ~2.5 days | Phase 3 |
+| **Future** | P2 | ~2 days | Phase 4 |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created from Phase 3 tasks | -- |

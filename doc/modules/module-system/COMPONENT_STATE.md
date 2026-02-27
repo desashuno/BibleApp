@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Module System — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,92 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultModuleSystemComponent` | Scoped | Module browsing, install, uninstall |
 
 ---
 
-## 2. {Module}Component
+## 2. ModuleSystemComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface ModuleSystemComponent {
+    val state: StateFlow<ModuleSystemState>
+    fun onLoad()
+    fun onModuleSelected(moduleId: String)
+    fun onInstallFromFile(fileBytes: ByteArray, fileName: String)
+    fun onUninstall(moduleId: String)
+    fun onSearchChanged(query: String)
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class ModuleSystemState(
+    val loading: Boolean = false,
+    val modules: List<InstalledModule> = emptyList(),
+    val selectedModule: InstalledModule? = null,
+    val installProgress: Float? = null,
+    val searchQuery: String = "",
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Initial --> Loading --> Content --> Installing --> Content
+                   |                           +-> Error
+                   +-> Error
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onLoad` | DB read | Loads installed modules |
+| `onInstallFromFile` | File I/O + DB write | Validate, extract, import |
+| `onUninstall` | DB delete (transaction) | Remove module data |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `WorkspaceComponent` | ← Parent | Decompose child | Lifecycle |
+| `BibleRepository` | → Writes | Koin DI | Bible data import |
+| `ResourceRepository` | → Writes | Koin DI | Resource import |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val moduleSystemModule = module {
+    factory<ModuleSystemComponent> { (ctx: ComponentContext) ->
+        DefaultModuleSystemComponent(ctx, get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `onLoad populates installed modules`() = runTest {
+    val component = DefaultModuleSystemComponent(TestComponentContext(), FakeModuleRepository(testModules), ModuleValidator(), FakeImporter())
+    component.state.test {
+        component.onLoad()
+        assertThat(awaitItem().loading).isTrue()
+        assertThat(awaitItem().modules).isEqualTo(testModules)
+    }
+}
 ```

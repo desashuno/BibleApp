@@ -1,4 +1,4 @@
-# {Module Name} — UI Components
+# Note Editor — UI Components
 
 > Composables, PaneRegistry registration, and responsive behavior.
 
@@ -6,136 +6,97 @@
 
 ## 1. PaneRegistry Registration
 
-<!-- How this module is registered in the global pane catalog. -->
-
 ```kotlin
-// PaneRegistry.register("{module}") { config ->
-//     {Module}Pane(config = config)
-// }
+PaneRegistry.register("note_editor") { config ->
+    NoteEditorPane(config = config)
+}
 ```
 
 | Field | Value |
 |-------|-------|
-| **Type key** | `{module}` |
-| **Builder** | `{Module}Pane` |
-| **Category** | {Read / Study / Write / Tools / Resources / Media} |
+| **Type key** | `note_editor` |
+| **Builder** | `NoteEditorPane` |
+| **Category** | Writing |
 
 ---
 
-## 2. Screens / Panes
-
-### 2.1 {Module}Pane (workspace pane)
-
-<!-- Description of the composable when rendered as a pane in the multi-pane workspace. -->
-
-| Aspect | Detail |
-|--------|--------|
-| Pane Header | {Title, icon, header actions} |
-| Toolbar | {Yes/No} — {buttons/actions} |
-| Min width | {N}dp |
-| Min height | {N}dp |
-
-### 2.2 {Module}Content (full-screen on mobile)
-
-<!-- Description of the full-screen layout on mobile. -->
-
-| Aspect | Detail |
-|--------|--------|
-| Top App Bar | {Yes/No} — {description} |
-| FAB | {Yes/No} — {action} |
-| Bottom Sheet | {Yes/No} — {content} |
-
----
-
-## 3. Key Composables
-
-<!-- List of composable functions that make up this module's UI. -->
+## 2. Key Composables
 
 | Composable | File | Description | Reusable |
 |------------|------|-------------|----------|
-| `{Module}Pane` | `composeApp/.../features/{module}/ui/{Module}Pane.kt` | Main pane container | No |
-| `{Composable1}` | `composeApp/.../features/{module}/ui/{Composable1}.kt` | {description} | {Yes/No} |
-| `{Composable2}` | `composeApp/.../features/{module}/ui/{Composable2}.kt` | {description} | {Yes/No} |
+| `NoteEditorPane` | `composeApp/.../features/notes/ui/NoteEditorPane.kt` | Main pane with note list + editor | No |
+| `RichTextEditor` | `composeApp/.../features/notes/ui/RichTextEditor.kt` | Markdown-like rich text input | Yes |
+| `NoteListPanel` | `composeApp/.../features/notes/ui/NoteListPanel.kt` | List of notes for verse | No |
+| `FormattingToolbar` | `composeApp/.../features/notes/ui/FormattingToolbar.kt` | Bold/italic/heading/list toolbar | Yes |
 
 ---
 
-## 4. Descriptive Wireframe
-
-<!-- Text-based wireframe of the main UI layout. -->
+## 3. Descriptive Wireframe
 
 ```
-┌─────────────────────────────────────────┐
-│ [Icon] {Pane Title}          [⋮] [✕]   │  ← Pane Header
-├─────────────────────────────────────────┤
-│ [Toolbar: contextual actions]           │  ← Toolbar (optional)
-├─────────────────────────────────────────┤
-│                                         │
-│         Main content area               │
-│         of the module                   │
-│                                         │
-│                                         │
-├─────────────────────────────────────────┤
-│ [Status / Footer info]                  │  ← Footer (optional)
-└─────────────────────────────────────────┘
++------------------------------------------+
+| [Edit] Note Editor — Gen 1:1  [..] [X]   |  <- Pane Header
++------------------------------------------+
+| Notes for Genesis 1:1        [+]         |  <- Note list header
+| > My note on creation *                  |  <- Active note (dirty)
+|   Theological observations               |
++------------------------------------------+
+| [B] [I] [H1] [H2] [UL] [OL]            |  <- Formatting toolbar
++------------------------------------------+
+|                                          |
+| In the beginning, God created...         |
+|                                          |
+| This verse establishes that God is the   |
+| Creator of all things. The Hebrew word   |
+| **bara** (H1254) is used exclusively...  |
+|                                          |
+| - God as Creator                         |
+| - Ex nihilo creation                     |
+|                                          |
++------------------------------------------+
+| Auto-saved 2s ago                        |  <- Status bar
++------------------------------------------+
 ```
 
 ---
 
-## 5. Responsive Behavior
-
-<!-- How the UI adapts to different screen sizes. -->
+## 4. Responsive Behavior
 
 | Breakpoint | Behavior |
 |-----------|----------|
-| **Mobile** (0–599dp) | {Full-screen navigation, simplified layout, etc.} |
-| **Tablet** (600–899dp) | {Side panel, adapted layout, etc.} |
-| **Desktop** (900dp+) | {Workspace pane, multi-pane, etc.} |
+| **Compact** (< 600dp) | Full-screen editor; note list as bottom sheet |
+| **Medium** (600-839dp) | Side-by-side list + editor |
+| **Expanded** (840dp+) | Workspace pane; full editor with toolbar |
 
 ---
 
-## 6. Verse Bus Interaction
-
-<!-- How the module reacts to verse changes in other panes. -->
-
-| Event | UI Action |
-|-------|-----------|
-| Receives `VerseSelected` from VerseBus | {Scroll to verse, highlight, load data, etc.} |
-| User selects a verse | {Publishes `VerseSelected` to VerseBus} |
-
----
-
-## 7. UI States
-
-<!-- Different visual states of the module. -->
+## 5. UI States
 
 | State | Visual | Trigger |
 |-------|--------|---------|
-| **Loading** | {Skeleton / Spinner / Shimmer} | Initial load or data change |
-| **Empty** | {Message + illustration + CTA} | No data to display |
-| **Error** | {Error message + retry button} | Load failure |
-| **Content** | {Main UI with data} | Data loaded successfully |
-| **Searching** | {Active input + progressive results} | User searches within module |
+| **Waiting** | "Select a verse to see notes" | No verse selected |
+| **Empty** | "No notes yet" + create button | Verse has no notes |
+| **List** | Note list for verse | Notes loaded |
+| **Editing** | Rich text editor with toolbar | Note selected |
+| **Saving** | "Saving..." indicator | Auto-save in progress |
 
 ---
 
-## 8. Animations & Transitions
-
-<!-- Module-specific animations. -->
+## 6. Animations & Transitions
 
 | Transition | Duration | Easing | Description |
 |-----------|---------|--------|-------------|
-| {Panel entry} | `200ms` | `EaseOut` | {description} |
-| {Content change} | `150ms` | `EaseInOut` | {description} |
+| Note switch | `200ms` | `EaseOut` | Crossfade editor content |
+| Save indicator | `300ms` | `EaseInOut` | Fade in/out "Saving..." |
+| Toolbar appear | `150ms` | `EaseOut` | Slide down on focus |
 
 ---
 
-## 9. Accessibility
-
-<!-- Module-specific accessibility considerations. -->
+## 7. Accessibility
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Semantic descriptions | {Composables that require `Modifier.semantics`} |
-| Keyboard navigation | {Shortcuts, tab order} |
-| Contrast | {Verify against DESIGN_SYSTEM §12} |
-| Text scaling | {Respects user's text scale preference} |
+| Editor role | `TextField` with `contentDescription` including note title |
+| Formatting toolbar | Each button has semantic label ("Bold", "Italic", etc.) |
+| Save status | Live region announces "Note saved" on auto-save |
+| Keyboard shortcuts | `Ctrl+B` bold, `Ctrl+I` italic, `Ctrl+S` force save |

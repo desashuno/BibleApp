@@ -1,0 +1,39 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Android
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# iOS
+iosApp/Pods/
+iosApp/*.xcworkspace
+iosApp/build/
+*.xcuserdata
+
+# Kotlin/Native
+*.klib
+*.knm
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Misc
+*.log
+*.tmp
+*.swp
+*~

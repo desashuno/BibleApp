@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Settings — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,33 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 AppSettings
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class AppSettings(
+    val theme: ThemeMode = ThemeMode.System,
+    val locale: String = "en",
+    val fontSize: Float = 16f,
+    val fontFamily: String = "default",
+    val defaultBibleId: Long = 1,
+    val textDirection: TextDirection = TextDirection.Ltr,
+    val syncEnabled: Boolean = false,
+    val accessibilityHighContrast: Boolean = false,
+)
+
+enum class ThemeMode { Light, Dark, System }
 ```
 
-| Field | Type | Description | Nullable |
-|-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+### 1.2 SettingEntry (raw)
+
+```kotlin
+data class SettingEntry(
+    val key: String,
+    val value: String,
+    val type: String,
+    val category: String,
+)
+```
 
 ---
 
@@ -34,43 +40,15 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `settings`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
-```
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
-
-#### Indexes
-
-```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE TABLE settings (
+    key      TEXT NOT NULL PRIMARY KEY,
+    value    TEXT NOT NULL,
+    type     TEXT NOT NULL DEFAULT 'string',
+    category TEXT NOT NULL DEFAULT 'general'
+);
 ```
 
 ---
@@ -80,60 +58,37 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
+interface SettingsRepository {
+    fun observeSettings(): Flow<AppSettings>
+    suspend fun getSettings(): Result<AppSettings>
+    suspend fun updateSetting(key: String, value: String): Result<Unit>
+    suspend fun resetToDefaults(): Result<Unit>
+}
 ```
 
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
-```
+Note: `observeSettings()` returns a `Flow<AppSettings>` that emits whenever any setting changes, using SQLDelight's `.asFlow().mapToList()` pattern.
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `allSettings` | `Settings.sq` | -- | `List<SettingEntry>` | Full scan (~20 rows max) |
+| `settingByKey` | `Settings.sq` | `key: String` | `SettingEntry?` | O(1) PK |
+| `upsertSetting` | `Settings.sq` | `key, value, type, category` | `Unit` | O(1) |
+| `deleteAllSettings` | `Settings.sq` | -- | `Unit` | Full delete |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v1 | Created `settings` table | Initial schema |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
-| External Table | Relation | Type |
-|---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+Settings is a **globally consumed** module. All other modules may read settings but none write to them (except Settings itself). The `observeSettings()` Flow is collected by the root component to apply theme/font changes globally.

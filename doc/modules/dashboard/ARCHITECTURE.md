@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Dashboard — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,96 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  DashboardPane                                    |
+|  ReadingPlanWidget / RecentNotesWidget            |
+|  BookmarkWidget / QuickNavWidget                  |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultDashboardComponent (Decompose)            |
+|  +-- Manages StateFlow<DashboardState>            |
+|  +-- Aggregates data from multiple repositories   |
++---------------------------------------------------+
+|                      DATA                         |
+|  No dedicated repository — aggregation layer      |
+|  +-- ReadingPlanRepository (reading-plans)        |
+|  +-- NoteRepository (note-editor)                 |
+|  +-- BookmarkRepository (bookmarks-history)       |
+|  +-- WorkspaceRepository (workspace)              |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Dashboard Load
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
+1. **Pane opens** — Component triggers parallel data load.
+2. **Widget data** — Each widget queries its source repository.
+3. **Render** — Widgets displayed in a responsive grid.
 
-### 2.1 Primary Flow
+### 2.2 Widgets
 
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
-
-### 2.2 Secondary Flows
-
-<!-- Describe alternative or secondary flows. -->
+| Widget | Data Source | Content |
+|--------|-----------|---------|
+| **Reading Plan** | `ReadingPlanRepository` | Today's reading + progress |
+| **Recent Notes** | `NoteRepository` | Last 5 edited notes |
+| **Bookmarks** | `BookmarkRepository` | Pinned/recent bookmarks |
+| **Quick Nav** | `WorkspaceRepository` | Recently opened workspaces |
+| **Verse of the Day** | Static/curated | Daily verse |
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
+Uses queries from other modules. No dedicated `.sq` file.
 
-| `.sq` File | Query | Parameters | Return | Description |
-|-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| Source `.sq` | Query | Usage |
+|-------------|-------|-------|
+| `Plan.sq` | `activePlan` | Reading plan widget |
+| `Annotation.sq` | `recentNotes` | Recent notes widget |
+| `Annotation.sq` | `recentBookmarks` | Bookmark widget |
+| `Workspace.sq` | `recentWorkspaces` | Quick nav widget |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val dashboardModule = module {
+    factory { (ctx: ComponentContext) ->
+        DefaultDashboardComponent(ctx, get(), get(), get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Aggregator | Component logic | Combines 4+ data sources |
+| Widget grid | UI layout | Modular, rearrangeable dashboard |
+| Observer | StateFlow | Reactive updates when underlying data changes |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Dashboard load < 200 ms** — Parallel widget queries.
+- **Lazy widgets** — Below-fold widgets load on scroll.
+- **Stale-while-revalidate** — Shows cached data immediately, refreshes in background.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Widget-based layout | Single list | More informational at-a-glance |
+| Pre-defined widgets | User-created | Simpler; covers common needs |
+| No own tables | Cache table | Keep data authoritative in source modules |

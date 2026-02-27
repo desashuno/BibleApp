@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Workspace — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,34 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 Workspace
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class Workspace(
+    val uuid: String,
+    val name: String,
+    val isActive: Boolean,
+    val createdAt: String,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `uuid` | `String` | Unique identifier (UUID v4) | No |
+| `name` | `String` | User-facing workspace name | No |
+| `isActive` | `Boolean` | Currently active workspace flag | No |
+| `createdAt` | `String` | ISO 8601 creation timestamp | No |
+
+### 1.2 LayoutNode (sealed class)
+
+```kotlin
+sealed class LayoutNode {
+    data class Split(val axis: SplitAxis, val ratio: Float, val first: LayoutNode, val second: LayoutNode) : LayoutNode()
+    data class Leaf(val paneType: String, val config: Map<String, String> = emptyMap()) : LayoutNode()
+    data class Tabs(val children: List<Leaf>, val activeIndex: Int) : LayoutNode()
+}
+enum class SplitAxis { Horizontal, Vertical }
+```
 
 ---
 
@@ -34,43 +41,26 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `workspaces`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE workspaces (
+    uuid       TEXT    NOT NULL PRIMARY KEY,
+    name       TEXT    NOT NULL,
+    is_active  INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
-
-#### Indexes
+#### Table: `workspace_layouts`
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE TABLE workspace_layouts (
+    id           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    workspace_id TEXT    NOT NULL REFERENCES workspaces(uuid),
+    layout_json  TEXT    NOT NULL,
+    updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
 ```
 
 ---
@@ -80,60 +70,42 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface WorkspaceRepository {
+    suspend fun getAll(): Result<List<Workspace>>
+    suspend fun getActive(): Result<Workspace?>
+    suspend fun create(name: String): Result<Workspace>
+    suspend fun setActive(uuid: String): Result<Unit>
+    suspend fun delete(uuid: String): Result<Unit>
+    suspend fun getLayout(workspaceId: String): Result<LayoutNode?>
+    suspend fun saveLayout(workspaceId: String, layout: LayoutNode): Result<Unit>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | `.sq` File | Parameters | Return | Performance |
+|-------|-----------|------------|--------|-------------|
+| `activeWorkspace` | `Settings.sq` | — | `Workspace?` | O(1) |
+| `allWorkspaces` | `Settings.sq` | — | `List<Workspace>` | Small set |
+| `layoutForWorkspace` | `Settings.sq` | `workspaceId` | `WorkspaceLayout` | < 5 ms |
+| `upsertLayout` | `Settings.sq` | `workspaceId`, `json` | — | Single upsert |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v8 → v9 | Created `workspaces` table | `8.sqm` |
+| v13 → v14 | Created `workspace_layouts` table | `13.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
-| External Table | Relation | Type |
-|---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| External Reference | Relation | Type |
+|-------------------|----------|------|
+| PaneRegistry type keys | `layout_json` contains `paneType` strings | Convention-based |
+| `settings` table | Global app settings sibling | Same `Settings.sq` group |

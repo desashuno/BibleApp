@@ -1,4 +1,4 @@
-# {Module Name} — UI Components
+# Search — UI Components
 
 > Composables, PaneRegistry registration, and responsive behavior.
 
@@ -6,136 +6,126 @@
 
 ## 1. PaneRegistry Registration
 
-<!-- How this module is registered in the global pane catalog. -->
-
 ```kotlin
-// PaneRegistry.register("{module}") { config ->
-//     {Module}Pane(config = config)
-// }
+PaneRegistry.register("search") { config ->
+    SearchPane(config = config)
+}
 ```
 
 | Field | Value |
 |-------|-------|
-| **Type key** | `{module}` |
-| **Builder** | `{Module}Pane` |
-| **Category** | {Read / Study / Write / Tools / Resources / Media} |
+| **Type key** | `search` |
+| **Builder** | `SearchPane` |
+| **Category** | Tool |
 
 ---
 
 ## 2. Screens / Panes
 
-### 2.1 {Module}Pane (workspace pane)
-
-<!-- Description of the composable when rendered as a pane in the multi-pane workspace. -->
+### 2.1 SearchPane (workspace pane)
 
 | Aspect | Detail |
 |--------|--------|
-| Pane Header | {Title, icon, header actions} |
-| Toolbar | {Yes/No} — {buttons/actions} |
-| Min width | {N}dp |
-| Min height | {N}dp |
+| Pane Header | "Search" title, `search` icon, scope filter chip row |
+| Toolbar | Yes — Search text field with clear button |
+| Min width | 300dp |
+| Min height | 400dp |
 
-### 2.2 {Module}Content (full-screen on mobile)
-
-<!-- Description of the full-screen layout on mobile. -->
+### 2.2 SearchContent (full-screen on mobile)
 
 | Aspect | Detail |
 |--------|--------|
-| Top App Bar | {Yes/No} — {description} |
-| FAB | {Yes/No} — {action} |
-| Bottom Sheet | {Yes/No} — {content} |
+| Top App Bar | Yes — Integrated search field |
+| FAB | No |
+| Bottom Sheet | No |
 
 ---
 
 ## 3. Key Composables
 
-<!-- List of composable functions that make up this module's UI. -->
-
 | Composable | File | Description | Reusable |
 |------------|------|-------------|----------|
-| `{Module}Pane` | `composeApp/.../features/{module}/ui/{Module}Pane.kt` | Main pane container | No |
-| `{Composable1}` | `composeApp/.../features/{module}/ui/{Composable1}.kt` | {description} | {Yes/No} |
-| `{Composable2}` | `composeApp/.../features/{module}/ui/{Composable2}.kt` | {description} | {Yes/No} |
+| `SearchPane` | `composeApp/.../features/search/ui/SearchPane.kt` | Main search pane | No |
+| `SearchResultItem` | `composeApp/.../features/search/ui/SearchResultItem.kt` | Single result with snippet + highlighted matches | Yes |
+| `SearchFilterBar` | `composeApp/.../features/search/ui/SearchFilterBar.kt` | Scope/book/testament filter chips | Yes |
+| `SearchHistoryDropdown` | `composeApp/.../features/search/ui/SearchHistoryDropdown.kt` | Recent searches dropdown | No |
+| `SyntaxSearchPane` | `composeApp/.../features/search/ui/SyntaxSearchPane.kt` | Morphology-aware query builder | No |
 
 ---
 
 ## 4. Descriptive Wireframe
 
-<!-- Text-based wireframe of the main UI layout. -->
-
 ```
-┌─────────────────────────────────────────┐
-│ [Icon] {Pane Title}          [⋮] [✕]   │  ← Pane Header
-├─────────────────────────────────────────┤
-│ [Toolbar: contextual actions]           │  ← Toolbar (optional)
-├─────────────────────────────────────────┤
-│                                         │
-│         Main content area               │
-│         of the module                   │
-│                                         │
-│                                         │
-├─────────────────────────────────────────┤
-│ [Status / Footer info]                  │  ← Footer (optional)
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ [🔍] Search                    [⋮] [✕]  │  ← Pane Header
+├──────────────────────────────────────────┤
+│ [🔍 Search the Bible...            [✕]] │  ← Search field
+│ [All] [Bible] [Notes] [Resources]       │  ← Scope filter chips
+├──────────────────────────────────────────┤
+│                                          │
+│ Genesis 1:1 — KJV                        │
+│ In the beginning **God created** the     │
+│ heavens and the earth.                   │
+│                                          │
+│ John 1:3 — KJV                           │
+│ All things were made by him; and without │
+│ him was not any thing made that was...   │
+│                                          │
+│ (42 results)                             │
+│                                          │
+├──────────────────────────────────────────┤
+│ 42 results · 23ms                        │  ← Status bar
+└──────────────────────────────────────────┘
 ```
 
 ---
 
 ## 5. Responsive Behavior
 
-<!-- How the UI adapts to different screen sizes. -->
-
 | Breakpoint | Behavior |
 |-----------|----------|
-| **Mobile** (0–599dp) | {Full-screen navigation, simplified layout, etc.} |
-| **Tablet** (600–899dp) | {Side panel, adapted layout, etc.} |
-| **Desktop** (900dp+) | {Workspace pane, multi-pane, etc.} |
+| **Compact** (< 600dp) | Full-screen search with result list; bottom navigation hides during typing |
+| **Medium** (600–839dp) | Sidebar search, results fill content area |
+| **Expanded** (840dp+) | Workspace pane; can sit alongside Bible Reader |
 
 ---
 
 ## 6. Verse Bus Interaction
 
-<!-- How the module reacts to verse changes in other panes. -->
-
 | Event | UI Action |
 |-------|-----------|
-| Receives `VerseSelected` from VerseBus | {Scroll to verse, highlight, load data, etc.} |
-| User selects a verse | {Publishes `VerseSelected` to VerseBus} |
+| User taps search result | Publishes `SearchResult(globalVerseId)` → Bible Reader scrolls to verse |
 
 ---
 
 ## 7. UI States
 
-<!-- Different visual states of the module. -->
-
 | State | Visual | Trigger |
 |-------|--------|---------|
-| **Loading** | {Skeleton / Spinner / Shimmer} | Initial load or data change |
-| **Empty** | {Message + illustration + CTA} | No data to display |
-| **Error** | {Error message + retry button} | Load failure |
-| **Content** | {Main UI with data} | Data loaded successfully |
-| **Searching** | {Active input + progressive results} | User searches within module |
+| **Empty** | Search prompt + illustration | No query entered |
+| **History** | Recent searches dropdown | Search field focused with empty query |
+| **Searching** | Inline progress indicator | Query debounce executing |
+| **Results** | Ranked result list with snippets | Search complete |
+| **No Results** | "No results" message + suggestions | Search returned empty |
+| **Error** | Error message + retry | FTS5 query failure |
 
 ---
 
 ## 8. Animations & Transitions
 
-<!-- Module-specific animations. -->
-
 | Transition | Duration | Easing | Description |
 |-----------|---------|--------|-------------|
-| {Panel entry} | `200ms` | `EaseOut` | {description} |
-| {Content change} | `150ms` | `EaseInOut` | {description} |
+| Result list appear | `200ms` | `EaseOut` | Staggered fade-in of result items |
+| Filter chip select | `150ms` | `EaseInOut` | Color transition on active chip |
+| History dropdown | `200ms` | `EaseOut` | Slide down from search field |
 
 ---
 
 ## 9. Accessibility
 
-<!-- Module-specific accessibility considerations. -->
-
 | Requirement | Implementation |
 |-------------|----------------|
-| Semantic descriptions | {Composables that require `Modifier.semantics`} |
-| Keyboard navigation | {Shortcuts, tab order} |
-| Contrast | {Verify against DESIGN_SYSTEM §12} |
-| Text scaling | {Respects user's text scale preference} |
+| Semantic descriptions | Each result: "Search result: [Book Chapter:Verse] [snippet]" |
+| Keyboard navigation | `Ctrl+F` opens search pane; `Enter` executes; `↑/↓` navigates results |
+| Contrast | Match highlight uses `tertiary` on `surface` (WCAG AA) |
+| Text scaling | Result snippets respect font size setting |

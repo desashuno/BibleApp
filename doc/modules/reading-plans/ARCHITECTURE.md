@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Reading Plans — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,93 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  ReadingPlansPane                                 |
+|  PlanBrowser / PlanDetail / DailyReading          |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultReadingPlansComponent (Decompose)         |
+|  +-- Manages StateFlow<ReadingPlansState>         |
+|  +-- Tracks daily progress                        |
+|  +-- Publishes VerseBus events                    |
++---------------------------------------------------+
+|                      DATA                         |
+|  ReadingPlanRepository (interface)                |
+|  ReadingPlanRepositoryImpl                        |
+|  +-- PlanQueries (SQLDelight)                     |
+|       +-- SQLite (reading_plans,                  |
+|              reading_plan_progress)               |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Follow Reading Plan
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User selects plan** — From pre-built or custom plans.
+2. **Daily view** — Shows today's readings (passage list).
+3. **Read passage** — Tap opens Bible Reader via VerseBus.
+4. **Mark complete** — User marks reading done; progress persisted.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Browse plans** — List all available plans (Read the Bible in 1 Year, Psalms 30-Day, etc.).
+- **Progress tracking** — Calendar view showing completion streaks.
+- **Resume** — Auto-opens next unread day on launch.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Plan.sq` | `allPlans` | — | `List<ReadingPlan>` | Available plans |
+| `Plan.sq` | `planById` | `id: Long` | `ReadingPlan?` | Single plan |
+| `Plan.sq` | `progressForPlan` | `planId: Long` | `List<Progress>` | Completed days |
+| `Plan.sq` | `markDayComplete` | `planId, dayNum` | — | Record completion |
+| `Plan.sq` | `activePlan` | — | `ReadingPlan?` | Currently active plan |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val readingPlansModule = module {
+    singleOf(::ReadingPlanRepositoryImpl) bind ReadingPlanRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultReadingPlansComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `ReadingPlanRepositoryImpl` | Abstracts plan/progress queries |
+| Observer | VerseBus publisher | Opens Bible Reader to today's passage |
+| Seed data | Pre-built plans | Common plans bundled in app |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Plan load < 5 ms** — Small dataset; PK-indexed queries.
+- **Progress query** — Indexed on `(plan_id, day_number)`.
+- **Calendar view** — Computed from progress list in memory.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| Pre-built plans + custom | Only custom | Users expect standard plans (1-year, chronological) |
+| Day-based granularity | Passage-based | Simpler progress; one checkbox per day |
+| VerseBus to open reader | Internal navigation | Consistent with cross-pane communication pattern |

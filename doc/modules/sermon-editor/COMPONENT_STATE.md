@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Sermon Editor — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -6,122 +6,97 @@
 
 ## 1. Components
 
-| Component | Scope | File | Description |
-|-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| Component | Scope | Description |
+|-----------|-------|-------------|
+| `DefaultSermonEditorComponent` | Scoped | Sermon CRUD, section editing, auto-save |
 
 ---
 
-## 2. {Module}Component
+## 2. SermonEditorComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface SermonEditorComponent {
+    val state: StateFlow<SermonEditorState>
+    fun onLoad()
+    fun onSermonSelected(sermonId: Long)
+    fun onCreateSermon(title: String)
+    fun onUpdateTitle(title: String)
+    fun onUpdateSection(sectionId: Long, content: String)
+    fun onAddSection(type: SectionType)
+    fun onDeleteSection(sectionId: Long)
+    fun onDeleteSermon(sermonId: Long)
+    fun onBackToList()
+    fun onSearchChanged(query: String)
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class SermonEditorState(
+    val loading: Boolean = false,
+    val sermons: List<Sermon> = emptyList(),
+    val activeSermon: Sermon? = null,
+    val sections: List<SermonSection> = emptyList(),
+    val isSaving: Boolean = false,
+    val searchQuery: String = "",
+    val error: AppError? = null,
+)
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
-| `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
-  │
-  │ onLoad()
-  ▼
-Loading (loading=true)
-  │
-  ├── success ──→ Content (items populated)
-  │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
-  │
-  └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
+Initial --> Loading --> SermonList --> Editing --> (auto-save) --> Editing
+                                 +-> Create   --> Editing
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onLoad` | DB query | Load sermons list |
+| `onSermonSelected` | DB query | Load sermon + sections |
+| `onUpdateSection` | Debounced DB write | Auto-save 1.5s after typing |
+| `onCreateSermon` | DB insert | Create sermon + default sections |
+| `onDeleteSermon` | DB cascade delete | Delete sermon + all sections |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
-| `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | Bidirectional | SharedFlow | Insert verse ref / navigate to verse |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val sermonEditorModule = module {
+    factory<SermonEditorComponent> { (ctx: ComponentContext) ->
+        DefaultSermonEditorComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `auto-save persists after debounce`() = runTest {
+    val repo = FakeSermonRepository()
+    val component = DefaultSermonEditorComponent(TestComponentContext(), repo, VerseBus())
+    component.onCreateSermon("Test Sermon")
+    component.onUpdateSection(1L, "Updated content")
+    advanceTimeBy(1600) // Past debounce
+    assertThat(repo.lastSavedContent).isEqualTo("Updated content")
+}
 ```

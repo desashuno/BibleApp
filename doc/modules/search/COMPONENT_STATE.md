@@ -1,4 +1,4 @@
-# {Module Name} — Component & State
+# Search — Component & State
 
 > Decompose components, StateFlow state management, and side effects.
 
@@ -8,120 +8,135 @@
 
 | Component | Scope | File | Description |
 |-----------|-------|------|-------------|
-| `Default{Module}Component` | {Global / Scoped} | `shared/.../features/{module}/component/Default{Module}Component.kt` | {main description} |
+| `DefaultSearchComponent` | Scoped (per pane) | `shared/.../features/search/component/DefaultSearchComponent.kt` | Full-text search with debounce, history, filters |
 
 ---
 
-## 2. {Module}Component
+## 2. SearchComponent
 
 ### 2.1 Interface
 
 ```kotlin
-// interface {Module}Component {
-//     val state: StateFlow<{Module}State>
-//     fun onLoad()
-//     fun onFilterChanged(filter: String)
-//     fun onItemSelected(itemId: Long)
-// }
+interface SearchComponent {
+    val state: StateFlow<SearchState>
+    fun onQueryChanged(query: String)
+    fun onSearch()
+    fun onResultSelected(result: SearchResult)
+    fun onFilterChanged(filter: SearchFilter)
+    fun onClearHistory()
+}
 ```
 
 ### 2.2 State
 
 ```kotlin
-// data class {Module}State(
-//     val loading: Boolean = false,
-//     val items: List<{Entity}> = emptyList(),
-//     val selectedItem: {Entity}? = null,
-//     val error: AppError? = null,
-// )
+data class SearchState(
+    val query: String = "",
+    val results: List<SearchResult> = emptyList(),
+    val isSearching: Boolean = false,
+    val resultCount: Int = 0,
+    val filters: SearchFilter = SearchFilter(),
+    val history: List<SearchHistoryEntry> = emptyList(),
+    val error: AppError? = null,
+)
+
+data class SearchFilter(
+    val scope: SearchScope = SearchScope.All,
+    val bookRange: IntRange? = null,
+    val testament: Testament? = null,
+)
+
+enum class SearchScope { All, Bible, Notes, Resources, Lexicon, Sermons }
+enum class Testament { OT, NT }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `loading` | `Boolean` | Whether data is being fetched |
-| `items` | `List<{Entity}>` | Loaded data items |
-| `selectedItem` | `{Entity}?` | Currently selected item, or null |
+| `query` | `String` | Current search input text |
+| `results` | `List<SearchResult>` | Ranked search results |
+| `isSearching` | `Boolean` | Whether a search is in progress |
+| `resultCount` | `Int` | Total results found |
+| `filters` | `SearchFilter` | Active scope, book range, testament filters |
+| `history` | `List<SearchHistoryEntry>` | Recent searches (last 20) |
 | `error` | `AppError?` | Error state, or null |
 
 ### 2.3 State Transitions
 
 ```
-Initial (loading=false, empty)
+Initial (empty query, no results)
   │
-  │ onLoad()
+  │ onQueryChanged(query)
   ▼
-Loading (loading=true)
+Typing (query updated, debounce timer starts)
   │
-  ├── success ──→ Content (items populated)
+  │ 300ms elapsed (debounce)
+  ▼
+Searching (isSearching=true)
+  │
+  ├── success ──→ Results (results populated, resultCount set)
   │                │
-  │                ├── onFilterChanged() ──→ Loading ──→ Content
-  │                ├── onItemSelected() ──→ Content (selectedItem set)
-  │                └── onLoad() (refresh) ──→ Loading
+  │                ├── onResultSelected(r) ──→ Results (VerseBus published)
+  │                ├── onQueryChanged(q) ──→ Typing (new debounce)
+  │                └── onFilterChanged(f) ──→ Searching (re-query with new filter)
   │
   └── failure ──→ Error (error set)
-                   │
-                   └── onLoad() (retry) ──→ Loading
 ```
 
 ---
 
 ## 3. Side Effects
 
-<!-- Side effects the component triggers (Verse Bus publish, navigation, snackbar, etc.). -->
-
 | Action | Side Effect | Description |
 |--------|------------|-------------|
-| `onItemSelected` | Verse Bus publish | Publishes `globalVerseId` to VerseBus |
-| error catch | Logging | Logs error via Napier |
+| `onResultSelected` | VerseBus publish | Publishes `LinkEvent.SearchResult(globalVerseId)` |
+| Debounce elapsed | DB query | Executes FTS5 search across scoped tables |
+| `onSearch` | History insert | Saves query to `search_history` table |
+| Error catch | Logging | Logs via `Napier.e()` |
 
 ---
 
 ## 4. Interaction with Other Components
 
-<!-- How this component communicates with components in other modules. -->
-
 | External Component | Direction | Mechanism | Description |
 |-------------------|-----------|-----------|-------------|
 | `WorkspaceComponent` | ← Receives | Decompose child | Lifecycle managed by workspace |
-| `VerseBus` | ↔ Bidirectional | SharedFlow | Active verse synchronization |
+| `VerseBus` | → Publishes | `SharedFlow<LinkEvent>` | Publishes `SearchResult` on result tap |
+| `BibleReaderComponent` | → Triggers | VerseBus | Reader receives `SearchResult` and scrolls to verse |
 
 ---
 
 ## 5. Component Registration (Koin)
 
-<!-- How the component is registered and resolved in the DI container. -->
-
 ```kotlin
-// In the module's Koin module:
-// val {module}Module = module {
-//     factory<{Module}Component> { (componentContext: ComponentContext) ->
-//         Default{Module}Component(
-//             componentContext = componentContext,
-//             repository = get(),
-//             verseBus = get(),
-//         )
-//     }
-// }
+val searchModule = module {
+    factory<SearchComponent> { (componentContext: ComponentContext) ->
+        DefaultSearchComponent(
+            componentContext = componentContext,
+            repository = get(),
+            verseBus = get(),
+        )
+    }
+}
 ```
 
 ---
 
 ## 6. Testing
 
-<!-- Testing strategy for the component. -->
-
 ```kotlin
-// @Test
-// fun `onLoad emits loading then content`() = runTest {
-//     val component = Default{Module}Component(
-//         componentContext = TestComponentContext(),
-//         repository = FakeRepository(testItems),
-//         verseBus = VerseBus(),
-//     )
-//     component.state.test {
-//         component.onLoad()
-//         assertThat(awaitItem().loading).isTrue()
-//         assertThat(awaitItem().items).isEqualTo(testItems)
-//     }
-// }
+@Test
+fun `search returns ranked results`() = runTest {
+    val component = DefaultSearchComponent(
+        componentContext = TestComponentContext(),
+        repository = FakeSearchRepository(testResults),
+        verseBus = VerseBus(),
+    )
+    component.state.test {
+        component.onQueryChanged("God created")
+        advanceTimeBy(300) // debounce
+        val state = awaitItem()
+        assertThat(state.results).isNotEmpty()
+        assertThat(state.results.first().snippet).contains("God")
+    }
+}
 ```

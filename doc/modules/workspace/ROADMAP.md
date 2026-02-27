@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Workspace — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,63 +6,70 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Layout persistence | Save/restore layouts to SQLite | 2 days | Settings.sq |
+| 2 | LayoutNode renderer | Recursive composable for Split/Tabs/Leaf | 3 days | PaneRegistry |
+| 3 | PaneContainer | Header, close button, drag handle | 1.5 days | Renderer |
+| 4 | Split divider | Draggable resize | 2 days | SplitPane |
+| 5 | Workspace switcher | Create, rename, delete, switch | 1.5 days | Repository |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Quickstart layouts | Preset picker on first launch | 1 day | Workspace |
+| 2 | Tab groups | Merge panes into tabs | 2 days | PaneContainer |
+| 3 | Pane drag & drop | Reorder/move panes | 3 days | Tab groups |
+| 4 | Mobile nav stack | Single-pane mode with back nav | 2 days | Responsive shell |
+
+### P2 — Desirable
+
+| # | Improvement | Description | Estimated effort | Dependencies |
+|---|------------|-------------|-----------------|-------------|
+| 1 | Workspace export/import | Share layouts as JSON | 1 day | Serialization |
+| 2 | Floating panes | Pop-out windows (desktop) | 3 days | Platform-specific |
 
 ---
 
 ## 2. Absorbed Features
 
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
 | Original feature | Origin | Integration | Status |
 |-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
+| Quickstart Layouts | missing-p0/quickstart-layouts | Preset picker | Pending |
 
 ---
 
 ## 3. Comparison with Logos Bible Software
 
-<!-- Gap analysis against Logos for this module's features. -->
-
 | Logos Feature | BibleStudio Status | Priority | Notes |
 |--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Multi-pane workspace | Planned | P0 | Split + Tabs |
+| Workspace presets | Planned | P1 | 5 presets |
+| Tab groups | Planned | P1 | — |
+| Floating panels | P2 | P2 | Desktop-only |
 
 ---
 
 ## 4. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
+| Phase | Improvements | Total effort | Prerequisites |
+|-------|-------------|-------------|--------------|
+| **Phase 2** | P0 #1-5 | 10 days | Phase 1 DB |
+| **Phase 3** | P1 #1-4 | 8 days | Phase 2 |
+| **Phase 5** | P2 #1-2 | 4 days | Phase 3 |
 
 ---
 
 ## 5. Success Metrics
 
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Metric | Current | Target | How to measure |
+|--------|---------|--------|---------------|
+| Layout load time | N/A | < 5 ms | Benchmark |
+| Save reliability | N/A | 100% | Integration test |
+| Preset adoption | N/A | > 80% | Analytics |
 
 ---
 
@@ -70,4 +77,4 @@
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created | — |

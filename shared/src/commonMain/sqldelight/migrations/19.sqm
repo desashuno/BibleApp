@@ -1,0 +1,13 @@
+-- Migration 19: Create outlines table for Passage Guide
+-- Stores passage outline/structure data with verse-range indexing.
+
+CREATE TABLE outlines (
+    id                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    global_verse_start INTEGER NOT NULL,
+    global_verse_end   INTEGER NOT NULL,
+    title              TEXT    NOT NULL,
+    content            TEXT    NOT NULL DEFAULT '',
+    source             TEXT    NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_outline_range ON outlines(global_verse_start, global_verse_end);

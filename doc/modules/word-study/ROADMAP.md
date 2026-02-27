@@ -1,4 +1,4 @@
-# {Module Name} — Roadmap
+# Word Study — Roadmap
 
 > Pending improvements, absorbed features, and effort estimates.
 
@@ -6,68 +6,53 @@
 
 ## 1. Pending Improvements
 
-### P0 — Critical (blockers or high priority)
+### P0 — Critical
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Implement `WordStudyRepository` | Strong's lookup, occurrences, related words | 2 days | Phase 1 DB |
+| 2 | Create `WordStudyComponent` | Subscribe VerseBus `StrongsSelected`, manage state | 2 days | Repository |
+| 3 | Create `WordStudyPane` | Definition card + occurrence list | 2 days | Component |
 
-### P1 — Important (improve user experience)
-
-| # | Improvement | Description | Estimated effort | Dependencies |
-|---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
-
-### P2 — Desirable (nice-to-have)
+### P1 — Important
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | {improvement} | {detailed description} | {hours/days} | {modules or previous tasks} |
+| 1 | Frequency chart | Bar chart of occurrences grouped by book | 2 days | Occurrence data |
+| 2 | Semantic domain grouping | Group occurrences by semantic category | 1.5 days | Lexicon data |
+| 3 | Related words section | Show words sharing same root | 1 day | Lexicon data |
+
+### P2 — Desirable
+
+| # | Improvement | Description | Estimated effort | Dependencies |
+|---|------------|-------------|-----------------|-------------|
+| 1 | Lexicon search | FTS5 search across definitions | 1 day | fts_lexicon |
+| 2 | Strong's number quick-nav | Type a Strong's number directly | 0.5 days | Component |
 
 ---
 
-## 2. Absorbed Features
-
-<!-- Functionality from other plans that was integrated into this module as sub-features. -->
-
-| Original feature | Origin | Integration | Status |
-|-----------------|--------|-------------|--------|
-| {feature} | {original plan, e.g. missing-p0/text-comparison} | {How it integrates as a sub-feature} | {Pending / In progress / Completed} |
-
----
-
-## 3. Comparison with Logos Bible Software
-
-<!-- Gap analysis against Logos for this module's features. -->
+## 2. Comparison with Logos Bible Software
 
 | Logos Feature | BibleStudio Status | Priority | Notes |
 |--------------|-------------------|----------|-------|
-| {feature} | {Not started / Partial / Equivalent / Superior} | {P0/P1/P2} | {notes} |
+| Word study panel | Planned | P0 | Core feature |
+| Frequency chart | Planned | P1 | Bar chart by book |
+| Semantic domains | Planned | P1 | Domain grouping |
+| Reverse interlinear link | Covered by morphology module | — | — |
 
 ---
 
-## 4. Phase Estimates
+## 3. Phase Estimates
 
-| Phase | Improvements included | Total effort | Prerequisites |
-|-------|----------------------|-------------|--------------|
-| **Phase 1** (Foundation) | #{numbers} | {X days} | {prerequisites} |
-| **Phase 2** (Core) | #{numbers} | {X days} | {Phase 1 complete} |
-| **Phase 3** (Advanced) | #{numbers} | {X days} | {Phase 2 complete} |
-
----
-
-## 5. Success Metrics
-
-<!-- How we measure if improvements are working correctly. -->
-
-| Metric | Current value | Target | How to measure |
-|--------|-------------|--------|---------------|
-| {metric} | {value} | {target} | {measurement method} |
+| Phase | Improvements | Total effort | Prerequisites |
+|-------|-------------|-------------|--------------|
+| **Phase 4** | P0 #1–3, P1 #1 | ~8 days | Phase 3 complete |
+| **Phase 4.5** | P1 #2–3, P2 | ~3.5 days | Phase 4 complete |
 
 ---
 
-## 6. Change Log
+## 4. Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
-| {YYYY-MM-DD} | Roadmap created | — |
+| 2026-02-26 | Roadmap created from Phase 4 tasks | — |

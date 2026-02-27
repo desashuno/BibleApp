@@ -1,0 +1,21 @@
+-- 10.sqm: Add timeline events and geographic locations (v9 → v10)
+
+CREATE TABLE timeline_events (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    year_start INTEGER NOT NULL,
+    year_end INTEGER,
+    global_verse_id INTEGER,
+    era TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE geographic_locations (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    global_verse_id INTEGER
+);
+
+CREATE INDEX idx_timeline_verse ON timeline_events(global_verse_id);
+CREATE INDEX idx_geo_verse ON geographic_locations(global_verse_id);

@@ -1,4 +1,4 @@
-# {Module Name} — Data Model
+# Theological Atlas — Data Model
 
 > Domain entities, SQLite schema, repositories, and queries.
 
@@ -6,27 +6,29 @@
 
 ## 1. Domain Entities
 
-<!-- Kotlin data classes representing the module's business data. -->
-
-### 1.1 {EntityName}
+### 1.1 Location
 
 ```kotlin
-// data class {EntityName}(
-//     val id: Long,
-//     val {field1}: String,
-//     val {field2}: String?,
-//     val createdAt: String,
-//     val updatedAt: String,
-// )
+data class Location(
+    val id: Long,
+    val name: String,
+    val modernName: String?,
+    val latitude: Double,
+    val longitude: Double,
+    val description: String?,
+    val verseReferences: List<Int>,
+)
 ```
 
 | Field | Type | Description | Nullable |
 |-------|------|-------------|----------|
-| `id` | `Long` | Unique identifier | No |
-| `{field1}` | `String` | {description} | No |
-| `{field2}` | `String?` | {description} | Yes |
-| `createdAt` | `String` | Creation timestamp | No |
-| `updatedAt` | `String` | Last modification timestamp | No |
+| `id` | `Long` | Auto-increment PK | No |
+| `name` | `String` | Biblical name | No |
+| `modernName` | `String?` | Modern name | Yes |
+| `latitude` | `Double` | Decimal degrees | No |
+| `longitude` | `Double` | Decimal degrees | No |
+| `description` | `String?` | Brief description | Yes |
+| `verseReferences` | `List<Int>` | `BBCCCVVV` list (JSON) | No |
 
 ---
 
@@ -34,43 +36,35 @@
 
 ### 2.1 Tables
 
-#### Table: `{table_name}`
+#### Table: `geographic_locations`
 
 ```sql
--- CREATE TABLE {table_name} (
---   id          INTEGER PRIMARY KEY AUTOINCREMENT,
---   {field1}    TEXT    NOT NULL,
---   {field2}    TEXT,
---   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
---   is_deleted  INTEGER NOT NULL DEFAULT 0
--- );
+CREATE TABLE geographic_locations (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name            TEXT    NOT NULL,
+    modern_name     TEXT,
+    lat             REAL    NOT NULL,
+    lon             REAL    NOT NULL,
+    description     TEXT,
+    verse_references TEXT   NOT NULL DEFAULT '[]'
+);
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `INTEGER` | `PK AUTOINCREMENT` | Unique identifier |
-| `{field1}` | `TEXT` | `NOT NULL` | {description} |
-| `{field2}` | `TEXT` | — | {description} |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT now` | Creation timestamp |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT now` | Modification timestamp |
-| `is_deleted` | `INTEGER` | `NOT NULL DEFAULT 0` | Soft delete (LWW sync) |
+#### Table: `location_verse_index` (materialized join)
+
+```sql
+CREATE TABLE location_verse_index (
+    location_id     INTEGER NOT NULL REFERENCES geographic_locations(id),
+    global_verse_id INTEGER NOT NULL,
+    PRIMARY KEY (location_id, global_verse_id)
+);
+```
 
 #### Indexes
 
 ```sql
--- CREATE INDEX idx_{table}_{field} ON {table_name}({field1});
-```
-
-### 2.2 FTS5 Virtual Tables (if applicable)
-
-```sql
--- CREATE VIRTUAL TABLE {table_name}_fts USING fts5(
---   {field1},
---   {field2},
---   content='{table_name}',
---   content_rowid='id'
--- );
+CREATE INDEX idx_locations_name ON geographic_locations(name);
+CREATE INDEX idx_location_verse ON location_verse_index(global_verse_id);
 ```
 
 ---
@@ -80,60 +74,38 @@
 ### 3.1 Interface
 
 ```kotlin
-// interface {Module}Repository {
-//     suspend fun getAll(): List<{Entity}>
-//     suspend fun getById(id: Long): {Entity}?
-//     suspend fun create(entity: {Entity}): Long
-//     suspend fun update(entity: {Entity})
-//     suspend fun delete(id: Long)
-//     suspend fun search(query: String): List<{Entity}>
-// }
-```
-
-### 3.2 Implementation
-
-```kotlin
-// class {Module}RepositoryImpl(
-//     private val queries: {Group}Queries,
-// ) : {Module}Repository {
-//
-//     override suspend fun getAll(): List<{Entity}> =
-//         queries.{queryAll}().executeAsList().map { it.toEntity() }
-//     // ...
-// }
+interface AtlasRepository {
+    suspend fun getAll(): Result<List<Location>>
+    suspend fun getById(id: Long): Result<Location?>
+    suspend fun getForVerse(globalVerseId: Int): Result<List<Location>>
+    suspend fun search(query: String): Result<List<Location>>
+}
 ```
 
 ---
 
 ## 4. Key Queries
 
-<!-- Most relevant SQLDelight queries used by this module. -->
-
-| Query | Description | Performance |
-|-------|-------------|-------------|
-| `{queryName}` | {description} | {O(1) / O(n) / indexed} |
-| `{ftsQuery}` | Full-text search | FTS5 optimized |
+| Query | Parameters | Return | Performance |
+|-------|-----------|--------|-------------|
+| `allLocations` | — | `List<Location>` | ~200 rows |
+| `locationsForVerse` | `globalVerseId` | `List<Location>` | Via verse index |
+| `searchLocations` | `name LIKE %q%` | `List<Location>` | Indexed on name |
 
 ---
 
 ## 5. Migrations
 
-<!-- History of schema changes for this module. -->
-
 | DB Version | Change | Migration file |
 |-----------|--------|----------------|
-| `v{N}` | Created table `{table}` | `{N}.sqm` |
+| v8 → v9 | Created `geographic_locations` | `8.sqm` |
 
 ---
 
 ## 6. Relations with Other Modules
 
-<!-- References to data in other modules (verse IDs, foreign keys, etc.). -->
-
-```
-{table_name}.global_verse_id → verses.global_verse_id (BBCCCVVV)
-```
-
 | External Table | Relation | Type |
 |---------------|----------|------|
-| `verses` | `{table}.global_verse_id → verses.global_verse_id` | Convention-based reference |
+| `verses` | `location_verse_index.global_verse_id` | Convention-based |
+| `entities` | Place entities link to locations | Cross-reference |
+| `timeline_events` | Events may reference locations | Cross-reference |

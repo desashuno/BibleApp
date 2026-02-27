@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Highlights — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,90 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
++---------------------------------------------------+
+|                       UI                          |
+|  HighlightsPane / HighlightOverlay                |
+|  ColorPicker / HighlightList                      |
++---------------------------------------------------+
+|                     LOGIC                         |
+|  DefaultHighlightsComponent (Decompose)           |
+|  +-- Manages StateFlow<HighlightsState>           |
+|  +-- Subscribes to VerseBus VerseSelected         |
+|  +-- Calls HighlightRepository                    |
++---------------------------------------------------+
+|                      DATA                         |
+|  HighlightRepository (interface)                  |
+|  HighlightRepositoryImpl                          |
+|  +-- AnnotationQueries (SQLDelight)               |
+|       +-- SQLite (highlights)                     |
++---------------------------------------------------+
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Create Highlight
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **User selects text** in Bible Reader with character-level selection.
+2. **Color picker** appears — user chooses from 8 highlight colors.
+3. **Component** calls `HighlightRepository.create()`.
+4. **State updates** — New highlight in list; Bible Reader overlays color.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Browse highlights** — View all highlights filtered by color/book.
+- **Delete highlight** — Soft delete with LWW sync support.
+- **VerseBus** — When a highlighted verse is selected, shows highlight info.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Annotation.sq` | `highlightsForVerse` | `globalVerseId` | `List<Highlight>` | Highlights on a verse |
+| `Annotation.sq` | `allHighlights` | — | `List<Highlight>` | All highlights |
+| `Annotation.sq` | `insertHighlight` | all fields | — | Create highlight |
+| `Annotation.sq` | `deleteHighlight` | `uuid` | — | Soft delete |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val highlightsModule = module {
+    singleOf(::HighlightRepositoryImpl) bind HighlightRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultHighlightsComponent(ctx, get(), get())
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `HighlightRepositoryImpl` | Abstracts highlight queries |
+| Observer | VerseBus subscriber | Auto-loads highlights for selected verse |
+| Soft delete | `is_deleted` + `delete_log` | LWW sync compatibility |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Highlight load < 5 ms** — Indexed on `global_verse_id`.
+- **Overlay rendering** — Bible Reader renders highlights as background spans; no re-query per scroll.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
-| Decision | Alternatives considered | Justification |
-|----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| Decision | Alternatives | Justification |
+|----------|-------------|---------------|
+| 8 fixed colors | Unlimited picker | Consistent palette; matches DESIGN_SYSTEM highlight colors |
+| Character-level selection | Verse-level only | Finer granularity for study |
+| UUID primary key | Auto-increment | Sync-safe across devices |

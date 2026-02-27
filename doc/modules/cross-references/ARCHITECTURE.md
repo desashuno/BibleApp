@@ -1,4 +1,4 @@
-# {Module Name} — Architecture
+# Cross-References — Architecture
 
 > Internal architecture, layers, data flow, and system integration.
 
@@ -6,103 +6,96 @@
 
 ## 1. Layer Diagram
 
-<!-- Data flow within the module following the project's layered architecture. -->
-
 ```
-┌──────────────────────────────────────────────┐
-│                     UI                        │
-│  {Module}Pane / {Module}Content (@Composable) │
-│  └── Observes Component.state (StateFlow)    │
-├──────────────────────────────────────────────┤
-│                   LOGIC                       │
-│  Default{Module}Component (Decompose)        │
-│  ├── Manages StateFlow<{Module}State>        │
-│  └── Calls Repository methods                │
-├──────────────────────────────────────────────┤
-│                    DATA                       │
-│  {Module}Repository (interface)              │
-│  {Module}RepositoryImpl                      │
-│  └── SQLDelight generated Queries            │
-│       └── SQLite (tables: ...)               │
-└──────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────┐
+│                       UI                          │
+│  CrossReferencePane (@Composable)                 │
+│  └── Observes Component.state (StateFlow)         │
+├───────────────────────────────────────────────────┤
+│                     LOGIC                         │
+│  DefaultCrossReferenceComponent (Decompose)       │
+│  ├── Manages StateFlow<CrossReferenceState>       │
+│  ├── Subscribes to VerseBus VerseSelected         │
+│  └── Calls CrossRefRepository + ParallelRepo      │
+├───────────────────────────────────────────────────┤
+│                      DATA                         │
+│  CrossRefRepository / ParallelRepository          │
+│  └── ReferenceQueries (SQLDelight)                │
+│       └── SQLite (cross_references,               │
+│                   parallel_passages)              │
+└───────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 2. Internal Data Flow
 
-<!-- Typical sequence of a user action within this module. -->
+### 2.1 Primary Flow — Load References for Verse
 
-```
-User interacts with Composable UI
-  → Component method called (e.g. onLoad())
-    → coroutineScope.launch { repository.getXxx() }
-      → SQLDelight query executes
-    → _state.update { it.copy(...) }
-  → Composable recomposes via StateFlow collection
-```
-
-### 2.1 Primary Flow
-
-<!-- Describe the main user action flow of the module. -->
-
-1. **{User action}** — {description}
-2. **{Processing}** — {description}
-3. **{Result}** — {description}
+1. **VerseBus event** — Another pane publishes `LinkEvent.VerseSelected(globalVerseId)`.
+2. **Component receives** — `DefaultCrossReferenceComponent` collects the event.
+3. **Query** — `CrossRefRepository.getReferences(verseId)` + `ParallelRepository.getParallels(verseId)` execute.
+4. **State updates** — References and parallels populate `CrossReferenceState`.
+5. **UI renders** — Reference list with type badges and verse preview snippets.
 
 ### 2.2 Secondary Flows
 
-<!-- Describe alternative or secondary flows. -->
+- **Reference tap** — User taps a reference → publishes `LinkEvent.VerseSelected(targetVerseId)` → Bible Reader navigates.
+- **Inline expansion** — User taps expand icon → full target verse text loads inline.
 
 ---
 
 ## 3. SQLDelight Query Integration
 
-<!-- List the SQLDelight query group and key queries this module uses. -->
-
 | `.sq` File | Query | Parameters | Return | Description |
 |-----------|-------|------------|--------|-------------|
-| `{Group}.sq` | `{queryName}` | `{params}` | `{type}` | {description} |
+| `Reference.sq` | `crossRefsForVerse` | `sourceVerseId` | `List<CrossRef>` | References from this verse |
+| `Reference.sq` | `crossRefsToVerse` | `targetVerseId` | `List<CrossRef>` | References to this verse |
+| `Reference.sq` | `parallelsForVerse` | `globalVerseId` | `List<Parallel>` | Synoptic parallels |
 
 ---
 
 ## 4. Dependency Injection
 
-<!-- How the module's dependencies are registered and resolved via Koin. -->
-
 ```kotlin
-// val {module}Module = module {
-//     singleOf(::Default{Module}RepositoryImpl) bind {Module}Repository::class
-//     factory { (ctx: ComponentContext) ->
-//         Default{Module}Component(ctx, get(), get())
-//     }
-// }
+val crossReferencesModule = module {
+    singleOf(::CrossRefRepositoryImpl) bind CrossRefRepository::class
+    singleOf(::ParallelRepositoryImpl) bind ParallelRepository::class
+    factory { (ctx: ComponentContext) ->
+        DefaultCrossReferenceComponent(
+            componentContext = ctx,
+            crossRefRepository = get(),
+            parallelRepository = get(),
+            verseBus = get(),
+        )
+    }
+}
 ```
 
 ---
 
 ## 5. Patterns Applied
 
-<!-- Design patterns specific to this module. -->
-
 | Pattern | Where | Why |
 |---------|-------|-----|
-| Repository | Data layer | Abstracts SQLDelight queries behind interface |
-| Component (Decompose) | Logic layer | Lifecycle-aware state management |
-| StateFlow | Component → UI | Reactive unidirectional data flow |
+| Repository | `CrossRefRepositoryImpl` | Abstracts reference queries |
+| Observer (VerseBus) | Component subscribes | Auto-loads on verse change |
+| Dual-index lookup | `idx_crossref_source` + `idx_crossref_target` | Bidirectional reference resolution |
 
 ---
 
 ## 6. Performance Considerations
 
-<!-- Optimizations, lazy loading, caching, pagination, etc. -->
+- **Cross-ref load < 15 ms**: Dual-column indexes on `source_verse_id` and `target_verse_id`.
+- **TSK dataset**: ~100,000 cross-reference rows seeded at first launch; import < 10 s.
+- **Lazy expansion**: Target verse text loaded only when user expands, not on initial list.
 
 ---
 
 ## 7. Design Decisions
 
-<!-- ADRs (Architecture Decision Records) relevant to this module. -->
-
 | Decision | Alternatives considered | Justification |
 |----------|------------------------|---------------|
-| {decision} | {alternatives} | {why this was chosen} |
+| TSK as bundled seed data | API-fetched references, user-generated | Comprehensive; no network dependency; ~2.1 MB is reasonable |
+| Confidence score column | Boolean relevance | Allows future ranking and filtering by quality |
+| Separate `parallel_passages` table | Combined in `cross_references` | Parallels have group semantics (synoptic grouping) |

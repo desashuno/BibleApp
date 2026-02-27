@@ -1,0 +1,21 @@
+-- 5.sqm: Add cross-references and parallel passages (v4 → v5)
+
+CREATE TABLE cross_references (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    source_verse_id INTEGER NOT NULL,
+    target_verse_id INTEGER NOT NULL,
+    type TEXT NOT NULL DEFAULT 'cross_reference',
+    confidence REAL NOT NULL DEFAULT 1.0
+);
+
+CREATE TABLE parallel_passages (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    global_verse_id INTEGER NOT NULL,
+    label TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_crossref_source ON cross_references(source_verse_id);
+CREATE INDEX idx_crossref_target ON cross_references(target_verse_id);
+CREATE INDEX idx_parallel_group ON parallel_passages(group_id);
+CREATE INDEX idx_parallel_verse ON parallel_passages(global_verse_id);
