@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.highlights.component.HighlightState
 import org.biblestudio.features.highlights.domain.entities.Highlight
 import org.biblestudio.features.highlights.domain.entities.HighlightColor
@@ -142,7 +143,7 @@ private fun HighlightRow(highlight: Highlight, onDelete: () -> Unit) {
                     .padding(horizontal = Spacing.Space8)
             ) {
                 Text(
-                    text = "Verse ${highlight.globalVerseId}",
+                    text = VerseRefFormatter.format(highlight.globalVerseId),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 val range = if (highlight.endOffset == -1L) {

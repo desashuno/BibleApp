@@ -46,13 +46,11 @@ internal class PassageGuideRepositoryImpl(
             val commentaryDeferred = async {
                 val resources = resourceRepository.getByType("commentary")
                     .getOrDefault(emptyList())
-                if (resources.isNotEmpty()) {
-                    resourceRepository.getEntriesForVerse(
-                        resources.first().uuid,
-                        globalVerseId
-                    )
-                } else {
-                    Result.success(emptyList())
+                runCatching {
+                    resources.flatMap { resource ->
+                        resourceRepository.getEntriesForVerse(resource.uuid, globalVerseId)
+                            .getOrDefault(emptyList())
+                    }
                 }
             }
             val notesDeferred = async {

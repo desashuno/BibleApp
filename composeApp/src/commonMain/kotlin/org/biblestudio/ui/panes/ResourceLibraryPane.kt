@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.resource_library.component.ResourceLibraryState
 import org.biblestudio.features.resource_library.domain.entities.Resource
 import org.biblestudio.ui.theme.Spacing
+import org.biblestudio.ui.theme.scaledBodyStyle
 
 /**
  * Resource Library pane: sidebar with installed resources + content area.
@@ -114,7 +115,7 @@ fun ResourceLibraryPane(
                     item {
                         Text(
                             text = entry.content,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = scaledBodyStyle()
                         )
                     }
                 }

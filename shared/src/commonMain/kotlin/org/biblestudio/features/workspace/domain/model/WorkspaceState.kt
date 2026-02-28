@@ -8,7 +8,7 @@ import org.biblestudio.core.error.AppError
  * Components update this via `StateFlow` — they never throw exceptions.
  */
 data class WorkspaceState(
-    val layout: LayoutNode = LayoutNode.Leaf(paneType = "bible-reader"),
+    val layout: LayoutNode? = LayoutNode.Leaf(paneType = "dashboard"),
     val workspaceName: String = "Default",
     val loading: Boolean = false,
     val error: AppError? = null

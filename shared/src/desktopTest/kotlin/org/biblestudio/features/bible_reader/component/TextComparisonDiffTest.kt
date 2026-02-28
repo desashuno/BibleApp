@@ -79,9 +79,9 @@ class TextComparisonDiffTest {
     fun `computeDiff produces segments for two versions`() {
         val versions = mapOf(
             "KJV" to "In the beginning God created",
-            "NIV" to "In the beginning God made"
+            "WEB" to "In the beginning God made"
         )
-        val diff = DefaultTextComparisonComponent.computeDiff(versions, listOf("KJV", "NIV"))
+        val diff = DefaultTextComparisonComponent.computeDiff(versions, listOf("KJV", "WEB"))
         assertTrue(diff.isNotEmpty())
 
         // "In", "the", "beginning", "God" should be EQUAL

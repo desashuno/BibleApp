@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
 import org.biblestudio.features.word_study.component.WordStudyState
 import org.biblestudio.features.word_study.domain.entities.LexiconEntry
@@ -210,7 +211,7 @@ private fun OccurrenceRow(occurrence: WordOccurrence, onClick: () -> Unit) {
             .padding(vertical = Spacing.Space4)
     ) {
         Text(
-            text = "Verse ${occurrence.globalVerseId} (position ${occurrence.wordPosition})",
+            text = "${VerseRefFormatter.formatShort(occurrence.globalVerseId)} (position ${occurrence.wordPosition})",
             style = MaterialTheme.typography.bodyMedium
         )
     }

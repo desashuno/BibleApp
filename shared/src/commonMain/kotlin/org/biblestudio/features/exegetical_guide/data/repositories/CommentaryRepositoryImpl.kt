@@ -26,6 +26,13 @@ internal class CommentaryRepositoryImpl(
                 .map { it.toCommentaryEntry() }
         }
 
+    override suspend fun getAllEntriesForVerse(globalVerseId: Long): Result<List<CommentaryEntry>> = runCatching {
+        database.resourceQueries
+            .commentaryEntriesForVerse(globalVerseId)
+            .executeAsList()
+            .map { it.toCommentaryEntry() }
+    }
+
     override suspend fun search(query: String, maxResults: Long): Result<List<CommentaryEntry>> = runCatching {
         database.resourceQueries
             .searchResources(query, maxResults)

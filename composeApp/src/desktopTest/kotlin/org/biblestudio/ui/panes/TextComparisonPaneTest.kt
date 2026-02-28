@@ -22,7 +22,7 @@ class TextComparisonPaneTest {
                     globalVerseId = 1_001_001,
                     versions = mapOf(
                         "KJV" to "In the beginning God created the heaven and the earth.",
-                        "ESV" to "In the beginning, God created the heavens and the earth."
+                        "ASV" to "In the beginning God created the heavens and the earth."
                     )
                 ),
                 viewMode = ComparisonViewMode.PARALLEL,
@@ -39,10 +39,10 @@ class TextComparisonPaneTest {
         }
 
         onNodeWithText("KJV").assertIsDisplayed()
-        onNodeWithText("ESV").assertIsDisplayed()
+        onNodeWithText("ASV").assertIsDisplayed()
         onNodeWithText("In the beginning God created the heaven and the earth.")
             .assertIsDisplayed()
-        onNodeWithText("In the beginning, God created the heavens and the earth.")
+        onNodeWithText("In the beginning God created the heavens and the earth.")
             .assertIsDisplayed()
     }
 }

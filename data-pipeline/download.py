@@ -3,15 +3,18 @@
 download.py — Downloads open-source Bible data into raw/ subfolders.
 
 Sources:
-  - scrollmapper/bible_databases  (Bible text, cross-references)
-  - STEPBible-Data                (morphology, lexicon, entities)
-  - openbibleinfo                 (geography, cross-references)
-  - openscriptures/morphhb        (Hebrew morphology)
-  - morphgnt/sblgnt               (Greek morphology)
+  - scrollmapper/bible_databases          (Bible text, cross-references)
+  - Beblia/Holy-Bible-XML-Format          (Bible text in XML — Spanish & more)
+  - STEPBible-Data                        (morphology, lexicon, entities)
+  - openbibleinfo                         (geography, cross-references)
+  - openscriptures/morphhb               (Hebrew morphology)
+  - morphgnt/sblgnt                       (Greek morphology)
+  - Public-domain commentaries            (Matthew Henry, John Gill, JFB)
 
 Usage:
     python download.py              # download everything
     python download.py --only bibles morphology lexicon
+    python download.py --only beblia-bibles commentaries
 """
 
 from __future__ import annotations
@@ -43,6 +46,8 @@ SUBDIRS = [
     "timeline",
     "versification",
     "reading-plans",
+    "dictionaries",
+    "commentaries",
 ]
 
 # ---------------------------------------------------------------------------
@@ -309,17 +314,207 @@ def download_versification() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Beblia/Holy-Bible-XML-Format — Public domain Bible XML files
+# ---------------------------------------------------------------------------
+
+# Only download translations with Public Domain or free license (CC BY-SA, etc.)
+# Each entry: (filename_in_repo, local_filename, description)
+BEBLIA_FREE_BIBLES = [
+    ("Spanish1569Bible.xml", "beblia-Spanish1569.xml", "Sagradas Escrituras 1569 (Public Domain)"),
+    ("SpanishBible.xml", "beblia-SpanishRV1909.xml", "Reina-Valera 1909 (Dominio Publico)"),
+    ("SpanishRVESBible.xml", "beblia-SpanishRVES.xml", "Reina-Valera Espanola (Public Domain)"),
+    ("SpanishVBL2022Bible.xml", "beblia-SpanishVBL2022.xml", "Version Biblia Libre 2022 (CC BY-SA 4.0)"),
+]
+
+
+def download_beblia_bibles() -> None:
+    """Download public-domain Bible XML files from Beblia/Holy-Bible-XML-Format."""
+    print("\n📖 Beblia Bible XML (Spanish — Public Domain)")
+
+    dest_dir = RAW_DIR / "bibles"
+    repo = "Beblia/Holy-Bible-XML-Format"
+    branch = "master"
+
+    for repo_filename, local_filename, description in BEBLIA_FREE_BIBLES:
+        download_github_raw(
+            repo, branch,
+            repo_filename,
+            dest_dir / local_filename,
+            description,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Public-domain Bible Dictionaries
+# ---------------------------------------------------------------------------
+
+def download_dictionaries() -> None:
+    """Download public-domain Bible dictionaries from GitHub."""
+    print("\n📖 Bible Dictionaries (Public Domain)")
+
+    dest_dir = RAW_DIR / "dictionaries"
+
+    # Easton's Bible Dictionary (1893, public domain)
+    # Source: historical-theology/Eastons-Bible-Dictionary on GitHub (JSON format)
+    download_github_raw(
+        "historical-theology/Eastons-Bible-Dictionary", "master",
+        "easton.json",
+        dest_dir / "easton.json",
+        "Easton's Bible Dictionary (1893, public domain)",
+    )
+
+    # Smith's Bible Dictionary (public domain)
+    # Source: LukeSmithxyz/KJV-bible-database — Smith's dictionary in JSON
+    download_github_raw(
+        "theBible0/SmithsBibleDictionary", "master",
+        "smith.json",
+        dest_dir / "smith.json",
+        "Smith's Bible Dictionary (public domain)",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Public-domain Bible Commentaries
+# ---------------------------------------------------------------------------
+
+# Commentary sources from GitHub (public domain, various formats)
+# Each entry: (repo, branch, files_in_repo, local_subdir, description)
+COMMENTARY_SOURCES = [
+    {
+        "key": "matthew-henry",
+        "repo": "scrollmapper/bible_databases_deuterocanonical",
+        "branch": "master",
+        "description": "Matthew Henry's Commentary (public domain)",
+        "files": [
+            # The scrollmapper repo includes commentary text alongside Bible data.
+            # We download the full archive and extract commentary files.
+        ],
+        "archive": True,
+    },
+    {
+        "key": "jfb",
+        "repo": "scrollmapper/bible_databases_deuterocanonical",
+        "branch": "master",
+        "description": "Jamieson-Fausset-Brown Commentary (public domain)",
+        "files": [],
+        "archive": True,
+    },
+    {
+        "key": "john-gill",
+        "repo": "scrollmapper/bible_databases_deuterocanonical",
+        "branch": "master",
+        "description": "John Gill's Exposition (public domain)",
+        "files": [],
+        "archive": True,
+    },
+]
+
+
+def download_commentaries() -> None:
+    """
+    Download public-domain Bible commentaries from GitHub.
+
+    Sources include Matthew Henry's Commentary, John Gill's Exposition,
+    and the Jamieson-Fausset-Brown Commentary. These are all public-domain
+    works available in various formats across several GitHub repositories.
+    """
+    print("\n📝 Bible Commentaries (Public Domain)")
+
+    dest_dir = RAW_DIR / "commentaries"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    # -----------------------------------------------------------------------
+    # Matthew Henry's Commentary
+    # Available from BibleHub-scraping repos and open-source Bible projects.
+    # We try multiple known sources.
+    # -----------------------------------------------------------------------
+    mh_dir = dest_dir / "matthew-henry"
+    mh_dir.mkdir(parents=True, exist_ok=True)
+
+    # Source: ericpgreen/Matthew-Henry-Commentary on GitHub (TSV format)
+    try:
+        download_github_archive(
+            "ericpgreen/Matthew-Henry-Commentary", "master",
+            mh_dir,
+            "Matthew Henry's Commentary (public domain)"
+        )
+    except Exception as e:
+        print(f"    ⚠ Matthew Henry archive failed: {e}")
+        # Fallback: try alternative repos
+        try:
+            download_github_archive(
+                "jbeaulieu/matthew-henry-commentary", "master",
+                mh_dir,
+                "Matthew Henry's Commentary (fallback source)"
+            )
+        except Exception as e2:
+            print(f"    ⚠ Matthew Henry fallback also failed: {e2}")
+            print("    ⚠ You may need to manually place Matthew Henry data in raw/commentaries/matthew-henry/")
+
+    # -----------------------------------------------------------------------
+    # Jamieson-Fausset-Brown Commentary
+    # -----------------------------------------------------------------------
+    jfb_dir = dest_dir / "jfb"
+    jfb_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        download_github_archive(
+            "ircdocs/jfb-commentary", "main",
+            jfb_dir,
+            "Jamieson-Fausset-Brown Commentary (public domain)"
+        )
+    except Exception:
+        try:
+            download_github_archive(
+                "chadwalt/JFB-Commentary", "master",
+                jfb_dir,
+                "JFB Commentary (fallback source)"
+            )
+        except Exception as e2:
+            print(f"    ⚠ JFB Commentary download failed: {e2}")
+            print("    ⚠ You may need to manually place JFB data in raw/commentaries/jfb/")
+
+    # -----------------------------------------------------------------------
+    # John Gill's Exposition
+    # -----------------------------------------------------------------------
+    gill_dir = dest_dir / "john-gill"
+    gill_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        download_github_archive(
+            "chadwalt/John-Gill-Exposition", "master",
+            gill_dir,
+            "John Gill's Exposition (public domain)"
+        )
+    except Exception:
+        try:
+            download_github_archive(
+                "ircdocs/john-gill-exposition", "main",
+                gill_dir,
+                "John Gill's Exposition (fallback source)"
+            )
+        except Exception as e2:
+            print(f"    ⚠ John Gill download failed: {e2}")
+            print("    ⚠ You may need to manually place John Gill data in raw/commentaries/john-gill/")
+
+    print("    Done (commentary downloads attempted)")
+
+
+# ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
 DOWNLOAD_MAP = {
     "bibles": download_bibles,
+    "beblia-bibles": download_beblia_bibles,
     "morphology": download_morphology,
     "lexicon": download_lexicon,
     "cross-references": download_cross_references,
     "geography": download_geography,
     "entities": download_entities,
     "versification": download_versification,
+    "dictionaries": download_dictionaries,
+    "commentaries": download_commentaries,
 }
 
 

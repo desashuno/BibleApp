@@ -46,7 +46,7 @@ class HighlightsPaneTest {
         }
 
         onNodeWithText("Highlights").assertIsDisplayed()
-        onNodeWithText("Verse 1001001").assertIsDisplayed()
+        onNodeWithText("Genesis 1:1").assertIsDisplayed()
         onNodeWithText("Whole verse").assertIsDisplayed()
     }
 

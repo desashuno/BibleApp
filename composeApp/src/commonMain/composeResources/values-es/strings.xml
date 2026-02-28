@@ -41,4 +41,67 @@
     <string name="nav_notes">Notas</string>
     <string name="nav_resources">Recursos</string>
     <string name="nav_more">Más</string>
+
+    <!-- Pane Names -->
+    <string name="pane_bible_reader">Lector Bíblico</string>
+    <string name="pane_text_comparison">Comparación de Textos</string>
+    <string name="pane_cross_references">Referencias Cruzadas</string>
+    <string name="pane_word_study">Estudio de Palabras</string>
+    <string name="pane_morphology">Morfología</string>
+    <string name="pane_interlinear">Interlineal</string>
+    <string name="pane_passage_guide">Guía de Pasaje</string>
+    <string name="pane_exegetical_guide">Guía Exegética</string>
+    <string name="pane_commentary">Comentario</string>
+    <string name="pane_dictionary">Diccionario</string>
+    <string name="pane_resource_library">Biblioteca de Recursos</string>
+    <string name="pane_note_editor">Notas</string>
+    <string name="pane_sermon_editor">Editor de Sermones</string>
+    <string name="pane_highlights">Resaltados</string>
+    <string name="pane_bookmarks">Marcadores</string>
+    <string name="pane_search">Búsqueda</string>
+    <string name="pane_knowledge_graph">Grafo de Conocimiento</string>
+    <string name="pane_timeline">Línea de Tiempo</string>
+    <string name="pane_theological_atlas">Atlas Teológico</string>
+    <string name="pane_reading_plans">Planes de Lectura</string>
+    <string name="pane_dashboard">Panel Principal</string>
+    <string name="pane_audio_sync">Audio Sincronizado</string>
+
+    <!-- Pane Categories -->
+    <string name="category_text">Texto</string>
+    <string name="category_study">Estudio</string>
+    <string name="category_resource">Recursos</string>
+    <string name="category_writing">Escritura</string>
+    <string name="category_tool">Herramientas</string>
+    <string name="category_media">Medios</string>
+
+    <!-- Welcome Screen -->
+    <string name="welcome_title">Bienvenido a BibleStudio</string>
+    <string name="welcome_subtitle">Abre un panel para empezar</string>
+    <string name="welcome_quick_start">Inicio Rápido</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Apariencia</string>
+    <string name="settings_reading">Lectura</string>
+    <string name="settings_workspace">Espacio de trabajo</string>
+    <string name="settings_data">Datos</string>
+    <string name="settings_about">Acerca de</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_font_size">Tamaño de fuente</string>
+    <string name="settings_default_bible">Biblia predeterminada</string>
+    <string name="settings_show_verse_numbers">Mostrar números de versículo</string>
+    <string name="settings_red_letter">Palabras en rojo</string>
+    <string name="settings_sidebar_collapsed">Barra lateral colapsada por defecto</string>
+    <string name="settings_default_preset">Preset de espacio de trabajo</string>
+    <string name="settings_saved_layouts">Diseños guardados</string>
+    <string name="settings_module_manager">Administrador de Módulos</string>
+    <string name="settings_import_export">Importar / Exportar</string>
+    <string name="settings_clear_cache">Limpiar caché</string>
+    <string name="settings_version">Versión</string>
+    <string name="settings_licenses">Licencias</string>
+    <string name="settings_no_saved_layouts">No hay diseños guardados</string>
+    <string name="settings_layout_name">Nombre del diseño</string>
+    <string name="settings_not_set">No configurado</string>
 </resources>

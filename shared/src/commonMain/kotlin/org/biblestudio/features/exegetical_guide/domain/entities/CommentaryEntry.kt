@@ -14,5 +14,7 @@ data class CommentaryEntry(
     val resourceId: String,
     val globalVerseId: Long,
     val content: String,
-    val sortOrder: Long
+    val sortOrder: Long,
+    val resourceTitle: String = "",
+    val resourceAuthor: String = ""
 )

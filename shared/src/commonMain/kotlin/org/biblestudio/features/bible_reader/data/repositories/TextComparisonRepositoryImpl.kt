@@ -9,17 +9,13 @@ internal class TextComparisonRepositoryImpl(
 ) : TextComparisonRepository {
 
     override suspend fun getVersesForComparison(globalVerseId: Long): Result<VersionComparison> = runCatching {
-        val bibles = database.bibleQueries.allBibles().executeAsList()
-        val versions = mutableMapOf<String, String>()
+        val rows = database.bibleQueries
+            .versesForComparisonByGlobalId(globalVerseId)
+            .executeAsList()
 
-        for (bible in bibles) {
-            val verse = database.bibleQueries
-                .verseByGlobalId(globalVerseId)
-                .executeAsOneOrNull()
-
-            if (verse != null) {
-                versions[bible.abbreviation] = verse.text
-            }
+        val versions = linkedMapOf<String, String>()
+        for (row in rows) {
+            versions[row.abbreviation] = row.text
         }
 
         VersionComparison(

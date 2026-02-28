@@ -51,11 +51,11 @@ class CrossReferencePaneTest {
             )
         }
 
-        onNodeWithText("Cross-References for 1001001").assertIsDisplayed()
+        onNodeWithText("Cross-References for Genesis 1:1").assertIsDisplayed()
         onNodeWithText("Parallel").assertIsDisplayed()
         onNodeWithText("Quotation").assertIsDisplayed()
-        onNodeWithText("Verse 43001001").assertIsDisplayed()
-        onNodeWithText("Verse 58011003").assertIsDisplayed()
+        onNodeWithText("John 1:1").assertIsDisplayed()
+        onNodeWithText("Hebrews 11:3").assertIsDisplayed()
     }
 
     @Test
@@ -80,7 +80,7 @@ class CrossReferencePaneTest {
             )
         }
 
-        onNodeWithText("Verse 43001001").performClick()
+        onNodeWithText("John 1:1").performClick()
         assertEquals(43_001_001L, tappedRef?.targetVerseId)
     }
 }

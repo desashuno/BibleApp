@@ -41,4 +41,67 @@
     <string name="nav_notes">Notes</string>
     <string name="nav_resources">Resources</string>
     <string name="nav_more">More</string>
+
+    <!-- Pane Names -->
+    <string name="pane_bible_reader">Bible Reader</string>
+    <string name="pane_text_comparison">Text Comparison</string>
+    <string name="pane_cross_references">Cross References</string>
+    <string name="pane_word_study">Word Study</string>
+    <string name="pane_morphology">Morphology</string>
+    <string name="pane_interlinear">Interlinear</string>
+    <string name="pane_passage_guide">Passage Guide</string>
+    <string name="pane_exegetical_guide">Exegetical Guide</string>
+    <string name="pane_commentary">Commentary</string>
+    <string name="pane_dictionary">Dictionary</string>
+    <string name="pane_resource_library">Resource Library</string>
+    <string name="pane_note_editor">Notes</string>
+    <string name="pane_sermon_editor">Sermon Editor</string>
+    <string name="pane_highlights">Highlights</string>
+    <string name="pane_bookmarks">Bookmarks</string>
+    <string name="pane_search">Search</string>
+    <string name="pane_knowledge_graph">Knowledge Graph</string>
+    <string name="pane_timeline">Timeline</string>
+    <string name="pane_theological_atlas">Theological Atlas</string>
+    <string name="pane_reading_plans">Reading Plans</string>
+    <string name="pane_dashboard">Dashboard</string>
+    <string name="pane_audio_sync">Audio Sync</string>
+
+    <!-- Pane Categories -->
+    <string name="category_text">Text</string>
+    <string name="category_study">Study</string>
+    <string name="category_resource">Resources</string>
+    <string name="category_writing">Writing</string>
+    <string name="category_tool">Tools</string>
+    <string name="category_media">Media</string>
+
+    <!-- Welcome Screen -->
+    <string name="welcome_title">Welcome to BibleStudio</string>
+    <string name="welcome_subtitle">Open a panel to get started</string>
+    <string name="welcome_quick_start">Quick Start</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_reading">Reading</string>
+    <string name="settings_workspace">Workspace</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_about">About</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_font_size">Font Size</string>
+    <string name="settings_default_bible">Default Bible</string>
+    <string name="settings_show_verse_numbers">Show verse numbers</string>
+    <string name="settings_red_letter">Red-letter words</string>
+    <string name="settings_sidebar_collapsed">Sidebar collapsed by default</string>
+    <string name="settings_default_preset">Default workspace preset</string>
+    <string name="settings_saved_layouts">Saved Layouts</string>
+    <string name="settings_module_manager">Module Manager</string>
+    <string name="settings_import_export">Import / Export</string>
+    <string name="settings_clear_cache">Clear Cache</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_licenses">Licenses</string>
+    <string name="settings_no_saved_layouts">No saved layouts</string>
+    <string name="settings_layout_name">Layout name</string>
+    <string name="settings_not_set">Not set</string>
 </resources>

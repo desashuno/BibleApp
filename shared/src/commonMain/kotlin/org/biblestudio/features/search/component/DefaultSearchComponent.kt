@@ -119,7 +119,7 @@ class DefaultSearchComponent(
                 _state.update {
                     it.copy(
                         isSearching = false,
-                        error = "Search failed."
+                        error = "Search failed for '$query': ${e.message}"
                     )
                 }
             }

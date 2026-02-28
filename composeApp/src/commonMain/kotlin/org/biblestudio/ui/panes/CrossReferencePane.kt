@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.cross_references.component.CrossReferenceState
 import org.biblestudio.features.cross_references.domain.entities.CrossReference
 import org.biblestudio.ui.theme.Spacing
@@ -47,7 +48,7 @@ fun CrossReferencePane(
         // Header
         Text(
             text = if (state.sourceVerseId != null) {
-                "Cross-References for ${state.sourceVerseId}"
+                "Cross-References for ${VerseRefFormatter.format(state.sourceVerseId!!)}"
             } else {
                 "Cross-References"
             },
@@ -134,7 +135,7 @@ private fun CrossReferenceRow(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Verse ${ref.targetVerseId}",
+                    text = VerseRefFormatter.format(ref.targetVerseId),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )

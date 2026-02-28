@@ -93,7 +93,7 @@ class BookmarksPaneTest {
 
         onNodeWithText("History").assertIsDisplayed()
         onNodeWithText("Navigation History").assertIsDisplayed()
-        onNodeWithText("Verse 2001001").assertIsDisplayed()
+        onNodeWithText("Exodus 1:1").assertIsDisplayed()
     }
 
     @Test

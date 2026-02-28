@@ -63,7 +63,7 @@ class DefaultExegeticalGuideComponent(
         scope.launch {
             _state.update { it.copy(globalVerseId = globalVerseId, isLoading = true, error = null) }
 
-            val commentaries = commentaryRepository.getEntriesForVerse("", globalVerseId)
+            val commentaries = commentaryRepository.getAllEntriesForVerse(globalVerseId)
                 .getOrDefault(emptyList())
 
             val crossRefs = crossRefRepository.getAllForVerse(globalVerseId)

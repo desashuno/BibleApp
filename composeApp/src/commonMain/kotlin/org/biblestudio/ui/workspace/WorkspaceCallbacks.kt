@@ -1,5 +1,7 @@
 package org.biblestudio.ui.workspace
 
+import org.biblestudio.features.workspace.domain.model.PanePlacement
+
 /**
  * Bundles all workspace-level callbacks to keep the composable
  * parameter list within detekt's threshold.
@@ -7,9 +9,17 @@ package org.biblestudio.ui.workspace
 data class WorkspaceCallbacks(
     val onPaneSelected: (String) -> Unit = {},
     val onPaneClose: (String) -> Unit = {},
+    val onPaneCloseAtPath: (List<Int>) -> Unit = {},
     val onSplitHorizontal: (String) -> Unit = {},
     val onSplitVertical: (String) -> Unit = {},
     val onResizeSplit: (List<Int>, Float) -> Unit = { _, _ -> },
     val onSwitchTab: (List<Int>, Int) -> Unit = { _, _ -> },
-    val onSettingsClick: () -> Unit = {}
+    val onReorderTab: (List<Int>, Int, Int) -> Unit = { _, _, _ -> },
+    val onRearrangePane: (List<Int>, List<Int>, PanePlacement) -> Unit = { _, _, _ -> },
+    val onSettingsClick: () -> Unit = {},
+    val onTogglePinned: (String) -> Unit = {},
+    val onToggleFavorite: (String) -> Unit = {},
+    val onLoadWorkspace: (String) -> Unit = {},
+    val onCreateWorkspace: (String) -> Unit = {},
+    val onDeleteWorkspace: (String) -> Unit = {}
 )

@@ -100,7 +100,7 @@ class BibleRepositoryImplTest {
     fun `getAvailableBibles returns all bibles`() = runTest {
         val db = testDb.database
         db.bibleQueries.insertBible("KJV", "King James Version", "en", "ltr")
-        db.bibleQueries.insertBible("ESV", "English Standard Version", "en", "ltr")
+        db.bibleQueries.insertBible("ASV", "American Standard Version", "en", "ltr")
 
         val bibles = repo.getAvailableBibles().getOrThrow()
         assertEquals(2, bibles.size)

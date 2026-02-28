@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.exegetical_guide.component.ExegeticalGuideState
 import org.biblestudio.features.exegetical_guide.component.GuideSection
 import org.biblestudio.ui.theme.Spacing
@@ -62,7 +63,7 @@ fun ExegeticalGuidePane(
 
         item {
             Text(
-                text = "Verse ${state.globalVerseId}",
+                text = VerseRefFormatter.format(state.globalVerseId!!),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = Spacing.Space16)
@@ -242,7 +243,7 @@ fun ExegeticalGuidePane(
             } else {
                 items(state.crossReferences, key = { it.id }) { ref ->
                     Text(
-                        text = "→ Verse ${ref.targetVerseId}",
+                        text = "→ ${VerseRefFormatter.format(ref.targetVerseId)}",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(vertical = Spacing.Space2)
                     )

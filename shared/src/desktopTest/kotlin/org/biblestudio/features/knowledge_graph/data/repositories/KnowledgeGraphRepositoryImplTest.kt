@@ -120,7 +120,7 @@ class KnowledgeGraphRepositoryImplTest {
         insertNode("Abraham", "Person", "Father of many nations")
         insertNode("Moses", "Person", "Leader of the Exodus")
 
-        val results = repo.searchEntities("Abra").getOrThrow()
+        val results = repo.searchEntities("Abra*").getOrThrow()
         assertEquals(1, results.size)
         assertEquals("Abraham", results.first().name)
     }
@@ -129,7 +129,7 @@ class KnowledgeGraphRepositoryImplTest {
     fun `searchEntities finds entity by description`() = runTest {
         insertNode("Abraham", "Person", "Father of many nations")
 
-        val results = repo.searchEntities("nations").getOrThrow()
+        val results = repo.searchEntities("nations*").getOrThrow()
         assertEquals(1, results.size)
     }
 

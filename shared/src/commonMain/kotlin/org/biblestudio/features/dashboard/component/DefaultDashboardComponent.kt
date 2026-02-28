@@ -8,8 +8,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import org.biblestudio.core.verse_bus.LinkEvent
+import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
 import org.biblestudio.features.bookmarks_history.domain.repositories.BookmarkRepository
 import org.biblestudio.features.bookmarks_history.domain.repositories.HistoryRepository
 import org.biblestudio.features.highlights.domain.repositories.HighlightRepository
@@ -27,7 +32,9 @@ class DefaultDashboardComponent(
     private val bookmarkRepository: BookmarkRepository,
     private val sermonRepository: SermonRepository,
     private val readingPlanRepository: ReadingPlanRepository,
-    private val historyRepository: HistoryRepository
+    private val historyRepository: HistoryRepository,
+    private val verseBus: VerseBus,
+    private val bibleRepository: BibleRepository
 ) : DashboardComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -36,6 +43,25 @@ class DefaultDashboardComponent(
 
     init {
         refresh()
+        observeVerseBus()
+    }
+
+    private fun observeVerseBus() {
+        scope.launch {
+            verseBus.events
+                .filterIsInstance<LinkEvent.VerseSelected>()
+                .collect { refresh() }
+        }
+    }
+
+    override fun onContinueReading(globalVerseId: Long) {
+        scope.launch {
+            // BBCCCVVV max is 66_167_176 — safely within Int range
+            require(globalVerseId in 1_001_001..66_999_999) {
+                "Invalid global verse ID: $globalVerseId"
+            }
+            verseBus.publish(LinkEvent.VerseSelected(globalVerseId.toInt()))
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -53,8 +79,7 @@ class DefaultDashboardComponent(
                     .map { "Verse ${it.globalVerseId}" }
 
                 // Daily verse — deterministic pseudo-random based on day-of-year
-                val dayHash = (System.currentTimeMillis() / 86_400_000).toInt()
-                val dailyVerse = DAILY_VERSES[dayHash % DAILY_VERSES.size]
+                val dailyVerse = loadDailyVerse()
 
                 // Continue reading — most recent history entry
                 val lastHistory = historyRepository.getHistory(1)
@@ -64,7 +89,7 @@ class DefaultDashboardComponent(
                     ContinueReading(
                         globalVerseId = h.globalVerseId,
                         reference = "Verse ${h.globalVerseId}",
-                        timestamp = h.createdAt
+                        timestamp = h.visitedAt
                     )
                 }
 
@@ -123,20 +148,64 @@ class DefaultDashboardComponent(
         }
     }
 
+    @Suppress("MagicNumber")
+    private suspend fun loadDailyVerse(): DailyVerse? {
+        val dayHash = (Clock.System.now().toEpochMilliseconds() / 86_400_000).toInt()
+        val selectedId = WELL_KNOWN_VERSE_IDS[dayHash.mod(WELL_KNOWN_VERSE_IDS.size)]
+        val verse = bibleRepository.getVerseByGlobalId(selectedId).getOrNull()
+        return verse?.let {
+            DailyVerse(
+                globalVerseId = selectedId,
+                text = it.text,
+                reference = decodeReference(selectedId)
+            )
+        }
+    }
+
     companion object {
         private const val RECENT_HISTORY_LIMIT = 10
         private const val STAT_LIMIT = 10_000L
         private const val RECENT_NOTES_LIMIT = 3L
         private const val PREVIEW_LENGTH = 80
 
-        private val DAILY_VERSES = listOf(
-            DailyVerse(43003016, "For God so loved the world, that he gave his only begotten Son.", "John 3:16"),
-            DailyVerse(19023001, "The LORD is my shepherd; I shall not want.", "Psalm 23:1"),
-            DailyVerse(20003005, "Trust in the LORD with all thine heart.", "Proverbs 3:5"),
-            DailyVerse(45008028, "All things work together for good to them that love God.", "Romans 8:28"),
-            DailyVerse(23041010, "Fear thou not; for I am with thee.", "Isaiah 41:10"),
-            DailyVerse(50004013, "I can do all things through Christ which strengtheneth me.", "Philippians 4:13"),
-            DailyVerse(24029011, "For I know the thoughts that I think toward you.", "Jeremiah 29:11")
+        /** Well-known verse global IDs (BBCCCVVV) used for daily verse rotation. */
+        private val WELL_KNOWN_VERSE_IDS = listOf(
+            43003016L, // John 3:16
+            19023001L, // Psalm 23:1
+            20003005L, // Proverbs 3:5
+            45008028L, // Romans 8:28
+            23041010L, // Isaiah 41:10
+            50004013L, // Philippians 4:13
+            24029011L  // Jeremiah 29:11
         )
+
+        /** Book names indexed by book number (1-66). */
+        private val BOOK_NAMES = listOf(
+            "", // 0 placeholder
+            "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
+            "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel",
+            "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
+            "Nehemiah", "Esther", "Job", "Psalms", "Proverbs",
+            "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations",
+            "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+            "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk",
+            "Zephaniah", "Haggai", "Zechariah", "Malachi",
+            "Matthew", "Mark", "Luke", "John", "Acts",
+            "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
+            "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy",
+            "2 Timothy", "Titus", "Philemon", "Hebrews", "James",
+            "1 Peter", "2 Peter", "1 John", "2 John", "3 John",
+            "Jude", "Revelation"
+        )
+
+        /** Decodes a BBCCCVVV global verse ID to a human-readable reference. */
+        @Suppress("MagicNumber")
+        internal fun decodeReference(globalVerseId: Long): String {
+            val book = (globalVerseId / 1_000_000).toInt()
+            val chapter = ((globalVerseId % 1_000_000) / 1_000).toInt()
+            val verse = (globalVerseId % 1_000).toInt()
+            val bookName = if (book in 1..66) BOOK_NAMES[book] else "Book $book"
+            return "$bookName $chapter:$verse"
+        }
     }
 }

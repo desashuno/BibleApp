@@ -90,3 +90,24 @@ GROUP BY strongs_number;
 insertOccurrence:
 INSERT INTO word_occurrences(strongs_number, global_verse_id, word_position)
 VALUES (:strongsNumber, :globalVerseId, :wordPosition);
+
+-- ═══════════════════════════ Audit / Counts ═══════════════════════════
+
+lexiconCount:
+SELECT COUNT(*) FROM lexicon_entries;
+
+emptyDefinitionCount:
+SELECT COUNT(*) FROM lexicon_entries WHERE definition = '' OR definition IS NULL;
+
+morphologyWordCount:
+SELECT COUNT(*) FROM morphology;
+
+totalOccurrenceCount:
+SELECT COUNT(*) FROM word_occurrences;
+
+orphanedMorphologyStrongs:
+SELECT DISTINCT m.strongs_number
+FROM morphology m
+LEFT JOIN lexicon_entries l ON m.strongs_number = l.strongs_number
+WHERE l.strongs_number IS NULL
+LIMIT :maxResults;

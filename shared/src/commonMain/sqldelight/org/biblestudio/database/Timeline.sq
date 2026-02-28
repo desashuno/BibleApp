@@ -73,7 +73,7 @@ SELECT te.*
 FROM timeline_events te
 INNER JOIN fts_timeline_events fts ON te.id = fts.rowid
 WHERE fts_timeline_events MATCH :query
-ORDER BY rank
+ORDER BY bm25(fts_timeline_events)
 LIMIT :maxResults;
 
 -- ═══════════════════════════ Aggregates ═══════════════════════════
@@ -84,3 +84,12 @@ SELECT COUNT(*) FROM timeline_events;
 yearRange:
 SELECT MIN(start_year) AS min_year, MAX(COALESCE(end_year, start_year)) AS max_year
 FROM timeline_events;
+
+-- ═══════════════════════════ Audit / Validation ═══════════════════════════
+
+orphanedEventVerseLinks:
+SELECT tev.event_id, tev.global_verse_id
+FROM timeline_event_verses tev
+LEFT JOIN timeline_events te ON tev.event_id = te.id
+WHERE te.id IS NULL
+LIMIT :maxResults;

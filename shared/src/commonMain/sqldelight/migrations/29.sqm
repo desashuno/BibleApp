@@ -1,0 +1,10 @@
+-- Reading plan day-to-verse entries
+CREATE TABLE IF NOT EXISTS reading_plan_entries (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    plan_id TEXT NOT NULL,
+    day INTEGER NOT NULL,
+    start_verse_id INTEGER NOT NULL,
+    end_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_plan_entries_plan_day ON reading_plan_entries(plan_id, day);

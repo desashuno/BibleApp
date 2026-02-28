@@ -4,7 +4,9 @@ import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.bible_reader.domain.entities.Bible
 import org.biblestudio.features.bible_reader.domain.entities.Book
 import org.biblestudio.features.bible_reader.domain.entities.Verse
+import org.biblestudio.features.cross_references.domain.entities.CrossReference
 import org.biblestudio.features.highlights.domain.entities.Highlight
+import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
 
 /**
  * Observable state for the Bible Reader pane.
@@ -21,6 +23,9 @@ data class BibleReaderState(
     val showBookPicker: Boolean = false,
     val selectedVerseRange: VerseSelectionRange? = null,
     val highlights: Map<Long, List<Highlight>> = emptyMap(),
+    val crossReferences: Map<Long, List<CrossReference>> = emptyMap(),
+    val morphology: Map<Long, List<MorphWord>> = emptyMap(),
+    val continuousScroll: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -66,4 +71,10 @@ interface BibleReaderComponent {
 
     /** Clears the current verse selection. */
     fun clearSelection()
+
+    /** Returns formatted text for the currently selected verse range, for copy/share. */
+    fun getSelectedVerseText(): String
+
+    /** Toggles continuous scroll mode (shows entire book with chapter dividers). */
+    fun setContinuousScroll(enabled: Boolean)
 }

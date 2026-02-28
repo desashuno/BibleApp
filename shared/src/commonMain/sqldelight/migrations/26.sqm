@@ -1,4 +1,7 @@
 -- Migration 26: Theological Atlas tables (atlas_locations, atlas_location_verses, atlas_regions)
+-- Drop legacy geographic_locations from migration 10 (superseded by atlas_locations)
+DROP INDEX IF EXISTS idx_geo_verse;
+DROP TABLE IF EXISTS geographic_locations;
 
 CREATE TABLE atlas_locations (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,

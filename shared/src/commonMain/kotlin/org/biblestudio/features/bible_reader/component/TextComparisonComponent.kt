@@ -1,6 +1,7 @@
 package org.biblestudio.features.bible_reader.component
 
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.features.bible_reader.domain.entities.Bible
 import org.biblestudio.features.bible_reader.domain.entities.VersionComparison
 
 /**
@@ -19,6 +20,7 @@ enum class ComparisonViewMode {
  */
 data class TextComparisonState(
     val comparison: VersionComparison? = null,
+    val availableBibles: List<Bible> = emptyList(),
     val selectedVersions: List<String> = emptyList(),
     val viewMode: ComparisonViewMode = ComparisonViewMode.PARALLEL,
     val diffHighlights: List<DiffSegment> = emptyList(),
@@ -59,4 +61,10 @@ interface TextComparisonComponent {
 
     /** Selects which versions to display. */
     fun setSelectedVersions(versions: List<String>)
+
+    /** Navigates to the next verse. */
+    fun nextVerse()
+
+    /** Navigates to the previous verse. */
+    fun previousVerse()
 }

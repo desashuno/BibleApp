@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.cross_references.domain.entities.CrossReference
 import org.biblestudio.features.passage_guide.component.PassageGuideState
 import org.biblestudio.ui.theme.Spacing
@@ -104,7 +105,7 @@ fun PassageGuidePane(
                         ) {
                             report.crossReferences.forEach { ref ->
                                 Text(
-                                    text = "Verse ${ref.targetVerseId} (${ref.type})",
+                                    text = "${VerseRefFormatter.format(ref.targetVerseId)} (${ref.type})",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier

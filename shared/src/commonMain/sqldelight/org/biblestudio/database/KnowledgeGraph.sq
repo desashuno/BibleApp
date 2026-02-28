@@ -94,7 +94,7 @@ SELECT gn.*
 FROM graph_nodes gn
 INNER JOIN fts_graph_nodes fts ON gn.id = fts.rowid
 WHERE fts_graph_nodes MATCH :query
-ORDER BY rank
+ORDER BY bm25(fts_graph_nodes)
 LIMIT :maxResults;
 
 -- ═══════════════════════════ Graph Traversal Helpers ═══════════════════════════
@@ -111,3 +111,12 @@ SELECT COUNT(*) FROM graph_nodes;
 
 edgeCount:
 SELECT COUNT(*) FROM graph_edges;
+
+-- ═══════════════════════════ Audit / Validation ═══════════════════════════
+
+orphanedNodeVerseLinks:
+SELECT gnv.node_id, gnv.global_verse_id
+FROM graph_node_verses gnv
+LEFT JOIN graph_nodes gn ON gnv.node_id = gn.id
+WHERE gn.id IS NULL
+LIMIT :maxResults;

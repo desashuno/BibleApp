@@ -73,7 +73,8 @@ val componentModule = module {
     factory<WorkspaceComponent> { (componentContext: ComponentContext) ->
         DefaultWorkspaceComponent(
             componentContext = componentContext,
-            repository = get()
+            repository = get(),
+            verseBus = get()
         )
     }
 
@@ -82,7 +83,10 @@ val componentModule = module {
             componentContext = componentContext,
             repository = get(),
             verseBus = get(),
-            highlightRepository = get()
+            highlightRepository = get(),
+            crossRefRepository = get(),
+            morphologyRepository = get(),
+            settingsRepository = get()
         )
     }
 
@@ -90,6 +94,7 @@ val componentModule = module {
         DefaultTextComparisonComponent(
             componentContext = componentContext,
             repository = get(),
+            bibleRepository = get(),
             verseBus = get()
         )
     }
@@ -203,14 +208,16 @@ val componentModule = module {
     factory<SermonEditorComponent> { (componentContext: ComponentContext) ->
         DefaultSermonEditorComponent(
             componentContext = componentContext,
-            repository = get()
+            repository = get(),
+            verseBus = get()
         )
     }
 
     factory<ReadingPlanComponent> { (componentContext: ComponentContext) ->
         DefaultReadingPlanComponent(
             componentContext = componentContext,
-            repository = get()
+            repository = get(),
+            verseBus = get()
         )
     }
 
@@ -222,7 +229,9 @@ val componentModule = module {
             bookmarkRepository = get(),
             sermonRepository = get(),
             readingPlanRepository = get(),
-            historyRepository = get()
+            historyRepository = get(),
+            verseBus = get(),
+            bibleRepository = get()
         )
     }
 
@@ -264,7 +273,8 @@ val componentModule = module {
         DefaultAudioSyncComponent(
             componentContext = componentContext,
             repository = get(),
-            verseBus = get()
+            verseBus = get(),
+            settingsRepository = get()
         )
     }
 }

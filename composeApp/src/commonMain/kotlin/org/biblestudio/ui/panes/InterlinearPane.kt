@@ -93,6 +93,7 @@ fun InterlinearPane(
                 WordGrid(
                     words = state.words,
                     decodedParsings = state.decodedParsings,
+                    displayMode = state.displayMode,
                     onWordSelected = onWordSelected,
                     modifier = Modifier
                         .fillMaxSize()
@@ -134,6 +135,7 @@ private fun DisplayModeSelector(
 private fun WordGrid(
     words: List<MorphWord>,
     decodedParsings: Map<String, String>,
+    displayMode: InterlinearDisplayMode,
     onWordSelected: (MorphWord) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -146,6 +148,7 @@ private fun WordGrid(
             WordCell(
                 word = word,
                 decodedParsing = decodedParsings[word.parsingCode].orEmpty(),
+                displayMode = displayMode,
                 onClick = { onWordSelected(word) }
             )
         }
@@ -154,7 +157,17 @@ private fun WordGrid(
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun WordCell(word: MorphWord, decodedParsing: String, onClick: () -> Unit) {
+private fun WordCell(
+    word: MorphWord,
+    decodedParsing: String,
+    displayMode: InterlinearDisplayMode,
+    onClick: () -> Unit
+) {
+    // Determine which rows to show based on display mode
+    val showTransliteration = displayMode != InterlinearDisplayMode.Inline
+    val showGloss = true
+    val showParsing = displayMode == InterlinearDisplayMode.Interlinear
+
     Card(
         modifier = Modifier
             .width(120.dp)
@@ -171,32 +184,38 @@ private fun WordCell(word: MorphWord, decodedParsing: String, onClick: () -> Uni
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            // Transliteration (lemma)
-            Text(
-                text = word.lemma,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            // Gloss
-            Text(
-                text = word.gloss,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            // Parsing badge
-            Text(
-                text = decodedParsing,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Transliteration (lemma) — hidden in Inline mode
+            if (showTransliteration) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = word.lemma,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            // Gloss — always shown
+            if (showGloss) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = word.gloss,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            // Parsing badge — only shown in Interlinear mode
+            if (showParsing && decodedParsing.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = decodedParsing,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }

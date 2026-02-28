@@ -115,7 +115,7 @@ class PassageGuidePaneTest {
         // Verse text
         onNodeWithText("In the beginning God created the heavens and the earth.").assertIsDisplayed()
         // Cross-ref content
-        onNodeWithText("Verse 43001001 (parallel)", substring = true).assertIsDisplayed()
+        onNodeWithText("John 1:1 (parallel)", substring = true).assertIsDisplayed()
         // Outline content
         onNodeWithText("Creation Account").assertIsDisplayed()
         // Commentary content

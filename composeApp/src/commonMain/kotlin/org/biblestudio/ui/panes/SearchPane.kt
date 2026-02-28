@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.bible_reader.domain.entities.Verse
 import org.biblestudio.features.search.component.SearchScope
 import org.biblestudio.features.search.component.SearchState
@@ -166,7 +167,7 @@ private fun SearchResultRow(verse: Verse, query: String = "", onClick: () -> Uni
             .padding(horizontal = Spacing.Space16, vertical = Spacing.Space8)
     ) {
         Text(
-            text = verse.globalVerseId.toString(),
+            text = VerseRefFormatter.format(verse.globalVerseId),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary
         )

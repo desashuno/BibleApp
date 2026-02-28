@@ -90,10 +90,24 @@ SELECT al.*
 FROM atlas_locations al
 INNER JOIN fts_atlas_locations fts ON al.id = fts.rowid
 WHERE fts_atlas_locations MATCH :query
-ORDER BY rank
+ORDER BY bm25(fts_atlas_locations)
 LIMIT :maxResults;
 
 -- ═══════════════════════════ Aggregates ═══════════════════════════
 
 locationCount:
 SELECT COUNT(*) FROM atlas_locations;
+
+-- ═══════════════════════════ Audit / Validation ═══════════════════════════
+
+orphanedLocationVerseLinks:
+SELECT alv.location_id, alv.global_verse_id
+FROM atlas_location_verses alv
+LEFT JOIN atlas_locations al ON alv.location_id = al.id
+WHERE al.id IS NULL
+LIMIT :maxResults;
+
+invalidCoordinates:
+SELECT id, name, latitude, longitude
+FROM atlas_locations
+WHERE latitude < -90 OR latitude > 90 OR longitude < -180 OR longitude > 180;

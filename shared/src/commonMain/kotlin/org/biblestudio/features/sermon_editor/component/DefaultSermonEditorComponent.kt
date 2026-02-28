@@ -10,9 +10,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.biblestudio.core.verse_bus.LinkEvent
+import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.sermon_editor.domain.entities.Sermon
 import org.biblestudio.features.sermon_editor.domain.entities.SermonSection
 import org.biblestudio.features.sermon_editor.domain.entities.SermonStatus
@@ -24,7 +27,8 @@ import org.biblestudio.features.sermon_editor.domain.repositories.SermonReposito
 @Suppress("TooManyFunctions")
 class DefaultSermonEditorComponent(
     componentContext: ComponentContext,
-    private val repository: SermonRepository
+    private val repository: SermonRepository,
+    private val verseBus: VerseBus
 ) : SermonEditorComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -34,6 +38,17 @@ class DefaultSermonEditorComponent(
 
     init {
         loadSermons()
+        observeVerseBus()
+    }
+
+    private fun observeVerseBus() {
+        scope.launch {
+            verseBus.events
+                .filterIsInstance<LinkEvent.VerseSelected>()
+                .collect { event ->
+                    _state.update { it.copy(currentVerseId = event.globalVerseId.toLong()) }
+                }
+        }
     }
 
     override fun onSermonSelected(uuid: String) {

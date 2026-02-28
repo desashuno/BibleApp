@@ -1,0 +1,18 @@
+-- Add FK constraint to reading_plan_entries.plan_id -> reading_plans.uuid
+DROP INDEX IF EXISTS idx_plan_entries_plan_day;
+
+CREATE TABLE reading_plan_entries_new (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    plan_id TEXT NOT NULL REFERENCES reading_plans(uuid) ON DELETE CASCADE,
+    day INTEGER NOT NULL,
+    start_verse_id INTEGER NOT NULL,
+    end_verse_id INTEGER NOT NULL
+);
+
+INSERT INTO reading_plan_entries_new SELECT * FROM reading_plan_entries;
+
+DROP TABLE reading_plan_entries;
+
+ALTER TABLE reading_plan_entries_new RENAME TO reading_plan_entries;
+
+CREATE INDEX idx_plan_entries_plan_day ON reading_plan_entries(plan_id, day);

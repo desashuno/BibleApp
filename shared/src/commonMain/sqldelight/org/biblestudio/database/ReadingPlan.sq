@@ -50,3 +50,26 @@ markDayCompleted:
 UPDATE reading_plan_progress
 SET completed = 1, completed_at = :completedAt
 WHERE plan_id = :planId AND day = :day;
+
+-- ═══════════════════════════ Reading Plan Entries ═══════════════════════════
+
+entriesForPlanDay:
+SELECT * FROM reading_plan_entries
+WHERE plan_id = ? AND day = ?
+ORDER BY id;
+
+allEntriesForPlan:
+SELECT * FROM reading_plan_entries
+WHERE plan_id = ?
+ORDER BY day, id;
+
+totalDaysForPlan:
+SELECT MAX(day) AS total_days FROM reading_plan_entries
+WHERE plan_id = ?;
+
+insertPlanEntry:
+INSERT INTO reading_plan_entries(plan_id, day, start_verse_id, end_verse_id)
+VALUES (?, ?, ?, ?);
+
+deletePlanEntries:
+DELETE FROM reading_plan_entries WHERE plan_id = ?;

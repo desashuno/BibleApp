@@ -47,8 +47,8 @@ class DefaultSettingsComponentTest {
     fun setDefaultBibleUpdatesState() {
         val (testDb, component) = createComponent()
         try {
-            component.setDefaultBible("ESV")
-            assertEquals("ESV", component.state.value.defaultBible)
+            component.setDefaultBible("ASV")
+            assertEquals("ASV", component.state.value.defaultBible)
         } finally {
             testDb.close()
         }

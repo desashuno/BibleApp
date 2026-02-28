@@ -1,0 +1,85 @@
+-- Dictionary.sq
+-- Query group: Dictionary entries (topic-based) and verse links
+-- Generated class: DictionaryQueries
+
+-- ═══════════════════════════ Entries ═══════════════════════════
+
+getEntryById:
+SELECT * FROM dictionary_entries WHERE id = :entryId;
+
+getEntriesByHeadword:
+SELECT * FROM dictionary_entries
+WHERE resource_id = :resourceId AND headword = :headword
+ORDER BY sort_order ASC;
+
+getAllEntriesForResource:
+SELECT * FROM dictionary_entries
+WHERE resource_id = :resourceId
+ORDER BY headword ASC;
+
+getEntriesForVerse:
+SELECT de.*
+FROM dictionary_entries de
+INNER JOIN dictionary_entry_verses dev ON de.id = dev.entry_id
+WHERE dev.global_verse_id = :globalVerseId
+ORDER BY de.headword ASC;
+
+getAllEntriesForVerseWithResource:
+SELECT de.id, de.resource_id, de.headword, de.content, de.related_strongs, de.sort_order,
+       r.title AS resource_title, r.author AS resource_author
+FROM dictionary_entries de
+INNER JOIN dictionary_entry_verses dev ON de.id = dev.entry_id
+INNER JOIN resources r ON de.resource_id = r.uuid
+WHERE dev.global_verse_id = :globalVerseId
+  AND r.deleted_at IS NULL
+ORDER BY r.title ASC, de.headword ASC;
+
+-- ═══════════════════════════ FTS Search ═══════════════════════════
+
+searchDictionary:
+SELECT de.*
+FROM dictionary_entries de
+INNER JOIN fts_dictionary_entries fts ON de.id = fts.rowid
+WHERE fts_dictionary_entries MATCH :query
+ORDER BY bm25(fts_dictionary_entries)
+LIMIT :maxResults;
+
+-- ═══════════════════════════ Verse Links ═══════════════════════════
+
+getVersesForEntry:
+SELECT global_verse_id FROM dictionary_entry_verses
+WHERE entry_id = :entryId
+ORDER BY global_verse_id ASC;
+
+insertEntryVerse:
+INSERT INTO dictionary_entry_verses(entry_id, global_verse_id)
+VALUES (:entryId, :globalVerseId);
+
+deleteEntryVerse:
+DELETE FROM dictionary_entry_verses
+WHERE entry_id = :entryId AND global_verse_id = :globalVerseId;
+
+-- ═══════════════════════════ Insert / Update / Delete ═══════════════════════════
+
+insertEntry:
+INSERT INTO dictionary_entries(resource_id, headword, content, related_strongs, sort_order)
+VALUES (:resourceId, :headword, :content, :relatedStrongs, :sortOrder);
+
+lastInsertEntryId:
+SELECT last_insert_rowid();
+
+updateEntry:
+UPDATE dictionary_entries
+SET headword = :headword, content = :content, related_strongs = :relatedStrongs, sort_order = :sortOrder
+WHERE id = :entryId;
+
+deleteEntry:
+DELETE FROM dictionary_entries WHERE id = :entryId;
+
+-- ═══════════════════════════ Audit / Counts ═══════════════════════════
+
+entryCount:
+SELECT COUNT(*) FROM dictionary_entries;
+
+entryCountByResource:
+SELECT COUNT(*) FROM dictionary_entries WHERE resource_id = :resourceId;

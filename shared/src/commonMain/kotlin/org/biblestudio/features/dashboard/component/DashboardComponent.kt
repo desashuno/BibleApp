@@ -64,4 +64,7 @@ data class RecentNote(
 interface DashboardComponent {
     val state: StateFlow<DashboardState>
     fun refresh()
+
+    /** Called when the user taps "Resume" on the Continue Reading widget. */
+    fun onContinueReading(globalVerseId: Long)
 }

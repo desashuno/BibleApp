@@ -4,6 +4,7 @@ import org.biblestudio.database.BibleStudioDatabase
 import org.biblestudio.features.resource_library.data.mappers.toResource
 import org.biblestudio.features.resource_library.domain.entities.Resource
 import org.biblestudio.features.word_study.data.mappers.toDictionaryEntry
+import org.biblestudio.features.word_study.data.mappers.toDictionaryEntryWithResource
 import org.biblestudio.features.word_study.domain.entities.DictionaryEntry
 import org.biblestudio.features.word_study.domain.repositories.DictionaryRepository
 
@@ -18,18 +19,31 @@ internal class DictionaryRepositoryImpl(
             .map { it.toResource() }
     }
 
-    override suspend fun getEntriesForVerse(resourceId: String, globalVerseId: Long): Result<List<DictionaryEntry>> =
+    override suspend fun getEntriesForVerse(globalVerseId: Long): Result<List<DictionaryEntry>> = runCatching {
+        database.dictionaryQueries
+            .getAllEntriesForVerseWithResource(globalVerseId)
+            .executeAsList()
+            .map { it.toDictionaryEntryWithResource() }
+    }
+
+    override suspend fun getByHeadword(resourceId: String, headword: String): Result<List<DictionaryEntry>> =
         runCatching {
-            database.resourceQueries
-                .entriesForVerse(resourceId, globalVerseId)
+            database.dictionaryQueries
+                .getEntriesByHeadword(resourceId, headword)
                 .executeAsList()
                 .map { it.toDictionaryEntry() }
         }
 
     override suspend fun search(query: String, maxResults: Long): Result<List<DictionaryEntry>> = runCatching {
-        database.resourceQueries
-            .searchResources(query, maxResults)
+        database.dictionaryQueries
+            .searchDictionary(query, maxResults)
             .executeAsList()
             .map { it.toDictionaryEntry() }
+    }
+
+    override suspend fun getEntryCount(): Result<Long> = runCatching {
+        database.dictionaryQueries
+            .entryCount()
+            .executeAsOne()
     }
 }

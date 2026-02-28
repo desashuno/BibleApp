@@ -21,6 +21,7 @@ data class SermonEditorState(
     val estimatedMinutes: Int = 0,
     val searchQuery: String = "",
     val searchResults: List<Sermon> = emptyList(),
+    val currentVerseId: Long? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )

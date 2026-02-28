@@ -75,6 +75,53 @@ insertVerse:
 INSERT INTO verses(chapter_id, global_verse_id, verse_number, text, html_text)
 VALUES (:chapterId, :globalVerseId, :verseNumber, :text, :htmlText);
 
+-- Text Comparison: single query across all bibles for a given verse
+
+versesForComparisonByGlobalId:
+SELECT b.abbreviation, v.text
+FROM verses v
+INNER JOIN chapters c ON v.chapter_id = c.id
+INNER JOIN books bk ON c.book_id = bk.id
+INNER JOIN bibles b ON bk.bible_id = b.id
+WHERE v.global_verse_id = :globalVerseId
+ORDER BY b.name ASC;
+
+-- Continuous scroll: all verses for an entire book
+
+versesForBook:
+SELECT v.*
+FROM verses v
+INNER JOIN chapters c ON v.chapter_id = c.id
+WHERE c.book_id = :bookId
+ORDER BY c.chapter_number ASC, v.verse_number ASC;
+
+-- Verse navigation: next / previous global verse ID
+
+nextGlobalVerseId:
+SELECT MIN(global_verse_id) AS next_id
+FROM verses
+WHERE global_verse_id > :currentId;
+
+previousGlobalVerseId:
+SELECT MAX(global_verse_id) AS prev_id
+FROM verses
+WHERE global_verse_id < :currentId;
+
+-- ═══════════════════════════ Audit / Counts ═══════════════════════════
+
+bibleCount:
+SELECT COUNT(*) FROM bibles;
+
+bookCountForBible:
+SELECT COUNT(*) FROM books WHERE bible_id = :bibleId;
+
+verseCountForBible:
+SELECT COUNT(*)
+FROM verses v
+INNER JOIN chapters c ON v.chapter_id = c.id
+INNER JOIN books b ON c.book_id = b.id
+WHERE b.bible_id = :bibleId;
+
 -- FTS Search
 
 searchVerses:

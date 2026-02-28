@@ -19,7 +19,6 @@ internal class AtlasRepositoryImpl(
         val verseIds = database.atlasQueries
             .getVersesForLocation(locationId)
             .executeAsList()
-            .map { it.global_verse_id }
 
         row.toAtlasLocation(verseIds)
     }

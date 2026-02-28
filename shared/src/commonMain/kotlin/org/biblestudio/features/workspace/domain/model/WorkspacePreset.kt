@@ -25,7 +25,7 @@ enum class WorkspacePreset(val displayName: String) {
     /** Builds the [LayoutNode] tree for this preset. */
     @Suppress("MagicNumber")
     fun toLayout(): LayoutNode = when (this) {
-        Default -> LayoutNode.Leaf(paneType = "bible-reader")
+        Default -> LayoutNode.Leaf(paneType = "dashboard")
 
         Study -> LayoutNode.Split(
             axis = SplitAxis.Horizontal,

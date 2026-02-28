@@ -29,7 +29,7 @@ class ModuleRepositoryImplTest {
     @Test
     fun `installModule and getInstalledModules round-trip`() = runTest {
         val installed = repo.installModule(
-            ModuleSource.Osis(xmlPath = "/data/ESV.xml")
+            ModuleSource.Osis(xmlPath = "/data/WEB.xml")
         ).getOrThrow()
 
         assertNotNull(installed.uuid)

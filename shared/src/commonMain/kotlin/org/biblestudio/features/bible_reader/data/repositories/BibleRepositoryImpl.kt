@@ -63,6 +63,13 @@ internal class BibleRepositoryImpl(
             .map { it.toVerse() }
     }
 
+    override suspend fun getVersesForBook(bookId: Long): Result<List<Verse>> = runCatching {
+        database.bibleQueries
+            .versesForBook(bookId)
+            .executeAsList()
+            .map { it.toVerse() }
+    }
+
     override suspend fun searchVerses(query: String, maxResults: Long): Result<List<Verse>> = runCatching {
         database.bibleQueries
             .searchVerses(query, maxResults)

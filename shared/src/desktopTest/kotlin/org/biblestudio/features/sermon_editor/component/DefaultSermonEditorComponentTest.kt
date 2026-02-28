@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.biblestudio.features.sermon_editor.domain.entities.Sermon
+import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.sermon_editor.domain.entities.SermonSection
 import org.biblestudio.features.sermon_editor.domain.repositories.SermonRepository
 
@@ -65,7 +66,8 @@ class DefaultSermonEditorComponentTest {
         val context = DefaultComponentContext(lifecycle = lifecycle)
         return DefaultSermonEditorComponent(
             componentContext = context,
-            repository = fakeRepo
+            repository = fakeRepo,
+            verseBus = VerseBus()
         )
     }
 

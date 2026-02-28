@@ -14,7 +14,11 @@ import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.bible_reader.domain.entities.Verse
 import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
+import org.biblestudio.features.cross_references.domain.repositories.CrossRefRepository
 import org.biblestudio.features.highlights.domain.repositories.HighlightRepository
+import org.biblestudio.features.morphology_interlinear.domain.repositories.MorphologyRepository
+import org.biblestudio.features.settings.domain.entities.AppSetting
+import org.biblestudio.features.settings.domain.repositories.SettingsRepository
 
 /**
  * Default [BibleReaderComponent] backed by Decompose lifecycle, [BibleRepository]
@@ -24,7 +28,10 @@ class DefaultBibleReaderComponent(
     componentContext: ComponentContext,
     private val repository: BibleRepository,
     private val verseBus: VerseBus,
-    private val highlightRepository: HighlightRepository
+    private val highlightRepository: HighlightRepository,
+    private val crossRefRepository: CrossRefRepository? = null,
+    private val morphologyRepository: MorphologyRepository? = null,
+    private val settingsRepository: SettingsRepository? = null
 ) : BibleReaderComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -35,6 +42,7 @@ class DefaultBibleReaderComponent(
     init {
         loadBibles()
         observeVerseBus()
+        restoreLastReadPosition()
     }
 
     override fun selectBible(bibleId: Long) {
@@ -70,6 +78,9 @@ class DefaultBibleReaderComponent(
                         )
                     }
                     loadHighlightsForVerses(verses)
+                    loadCrossReferencesForVerses(verses)
+                    loadMorphologyForVerses(verses)
+                    saveLastReadPosition()
                     Napier.d("Loaded ${verses.size} verses for book=$bookId ch=$chapter")
                 }
                 .onFailure { e ->
@@ -77,7 +88,7 @@ class DefaultBibleReaderComponent(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = "Could not load chapter."
+                            error = "Could not load chapter (book=$bookId, ch=$chapter): ${e.message}"
                         )
                     }
                 }
@@ -122,6 +133,39 @@ class DefaultBibleReaderComponent(
 
     override fun clearSelection() {
         _state.update { it.copy(selectedVerseRange = null) }
+    }
+
+    override fun setContinuousScroll(enabled: Boolean) {
+        _state.update { it.copy(continuousScroll = enabled) }
+        if (enabled) {
+            val bookId = _state.value.currentBook?.id ?: return
+            loadBookForContinuousScroll(bookId)
+        } else {
+            val bookId = _state.value.currentBook?.id ?: return
+            goToChapter(bookId, _state.value.currentChapter)
+        }
+    }
+
+    override fun getSelectedVerseText(): String {
+        val s = _state.value
+        val range = s.selectedVerseRange ?: return ""
+        val selectedVerses = s.verses.filter {
+            it.globalVerseId in range.startVerseId..range.endVerseId
+        }
+        if (selectedVerses.isEmpty()) return ""
+
+        val book = s.currentBook?.name ?: ""
+        val chapter = s.currentChapter
+        val abbr = s.currentBible?.abbreviation ?: ""
+        val startVerse = selectedVerses.first().verseNumber
+        val endVerse = selectedVerses.last().verseNumber
+        val ref = if (startVerse == endVerse) {
+            "$book $chapter:$startVerse ($abbr)"
+        } else {
+            "$book $chapter:$startVerse-$endVerse ($abbr)"
+        }
+        val text = selectedVerses.joinToString(" ") { it.text }
+        return "$ref\n$text"
     }
 
     private fun loadBibles() {
@@ -197,5 +241,97 @@ class DefaultBibleReaderComponent(
                     Napier.e("Failed to load highlights", e)
                 }
         }
+    }
+
+    private fun loadCrossReferencesForVerses(verses: List<Verse>) {
+        val repo = crossRefRepository ?: return
+        if (verses.isEmpty()) return
+        scope.launch {
+            val xrefMap = mutableMapOf<Long, List<org.biblestudio.features.cross_references.domain.entities.CrossReference>>()
+            for (verse in verses) {
+                repo.getRefsFromVerse(verse.globalVerseId)
+                    .onSuccess { refs ->
+                        if (refs.isNotEmpty()) {
+                            xrefMap[verse.globalVerseId] = refs
+                        }
+                    }
+            }
+            _state.update { it.copy(crossReferences = xrefMap) }
+        }
+    }
+
+    private fun loadBookForContinuousScroll(bookId: Long) {
+        _state.update { it.copy(isLoading = true, error = null) }
+        scope.launch {
+            repository.getVersesForBook(bookId)
+                .onSuccess { verses ->
+                    _state.update {
+                        it.copy(
+                            verses = verses,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                    loadHighlightsForVerses(verses)
+                    loadCrossReferencesForVerses(verses)
+                    loadMorphologyForVerses(verses)
+                }
+                .onFailure { e ->
+                    Napier.e("Failed to load book for continuous scroll", e)
+                    _state.update {
+                        it.copy(isLoading = false, error = "Could not load book: ${e.message}")
+                    }
+                }
+        }
+    }
+
+    private fun saveLastReadPosition() {
+        val repo = settingsRepository ?: return
+        val firstVerse = _state.value.verses.firstOrNull() ?: return
+        scope.launch {
+            repo.setSetting(
+                AppSetting(
+                    key = KEY_LAST_READ_VERSE,
+                    value = firstVerse.globalVerseId.toString(),
+                    type = "long",
+                    category = "reading"
+                )
+            )
+        }
+    }
+
+    private fun restoreLastReadPosition() {
+        val repo = settingsRepository ?: return
+        scope.launch {
+            repo.getAll()
+                .onSuccess { settings ->
+                    val lastVerse = settings.firstOrNull { it.key == KEY_LAST_READ_VERSE }
+                    val globalId = lastVerse?.value?.toLongOrNull()
+                    if (globalId != null) {
+                        scrollToVerse(globalId)
+                    }
+                }
+        }
+    }
+
+    private fun loadMorphologyForVerses(verses: List<Verse>) {
+        val repo = morphologyRepository ?: return
+        if (verses.isEmpty()) return
+        scope.launch {
+            val morphMap = mutableMapOf<Long, List<org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord>>()
+            for (verse in verses) {
+                repo.getMorphWords(verse.globalVerseId)
+                    .onSuccess { words ->
+                        if (words.isNotEmpty()) {
+                            morphMap[verse.globalVerseId] = words
+                        }
+                    }
+            }
+            _state.update { it.copy(morphology = morphMap) }
+        }
+    }
+
+    companion object {
+        private const val KEY_LAST_READ_VERSE = "last_read_verse_id"
     }
 }

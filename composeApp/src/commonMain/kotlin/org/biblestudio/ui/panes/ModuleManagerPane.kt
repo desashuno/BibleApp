@@ -20,11 +20,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -95,17 +99,37 @@ fun ModuleManagerPane(
         } else {
             Row(modifier = Modifier.fillMaxSize()) {
                 // Module list
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
                 ) {
-                    items(state.installedModules, key = { it.id }) { module ->
-                        ModuleListItem(
-                            module = module,
-                            isSelected = state.selectedModule?.id == module.id,
-                            onClick = { onModuleSelected(module) }
-                        )
+                    var searchQuery by remember { mutableStateOf("") }
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search modules…") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.Space16, vertical = Spacing.Space8)
+                    )
+                    val filteredModules = if (searchQuery.isBlank()) {
+                        state.installedModules
+                    } else {
+                        state.installedModules.filter { module ->
+                            module.name.contains(searchQuery, ignoreCase = true) ||
+                                module.abbreviation.contains(searchQuery, ignoreCase = true)
+                        }
+                    }
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(filteredModules, key = { it.id }) { module ->
+                            ModuleListItem(
+                                module = module,
+                                isSelected = state.selectedModule?.id == module.id,
+                                onClick = { onModuleSelected(module) }
+                            )
+                        }
                     }
                 }
 

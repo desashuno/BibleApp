@@ -8,6 +8,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.coroutines.test.runTest
 import org.biblestudio.features.reading_plans.domain.entities.PlanProgress
+import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.reading_plans.domain.entities.ReadingPlan
 import org.biblestudio.features.reading_plans.domain.repositories.ReadingPlanRepository
 
@@ -50,7 +51,8 @@ class DefaultReadingPlanComponentTest {
         val context = DefaultComponentContext(lifecycle = lifecycle)
         return DefaultReadingPlanComponent(
             componentContext = context,
-            repository = fakeRepo
+            repository = fakeRepo,
+            verseBus = VerseBus()
         )
     }
 
@@ -65,7 +67,8 @@ class DefaultReadingPlanComponentTest {
             kotlinx.coroutines.delay(50)
         }
 
-        assertEquals(1, component.state.value.plans.size)
+        // 1 test plan + 4 built-in plans seeded by the component
+        assertEquals(5, component.state.value.plans.size)
         assertNull(component.state.value.activePlan)
     }
 

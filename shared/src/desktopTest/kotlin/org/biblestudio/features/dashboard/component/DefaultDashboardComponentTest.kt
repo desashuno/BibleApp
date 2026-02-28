@@ -9,6 +9,12 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.features.bible_reader.domain.entities.Bible
+import org.biblestudio.features.bible_reader.domain.entities.Book
+import org.biblestudio.features.bible_reader.domain.entities.Chapter
+import org.biblestudio.features.bible_reader.domain.entities.Verse
+import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
 import org.biblestudio.features.bookmarks_history.domain.entities.Bookmark
 import org.biblestudio.features.bookmarks_history.domain.entities.BookmarkFolder
 import org.biblestudio.features.bookmarks_history.domain.entities.HistoryEntry
@@ -123,6 +129,25 @@ class DefaultDashboardComponentTest {
         override suspend fun clear() = Result.success(Unit)
     }
 
+    private val fakeBibleRepo = object : BibleRepository {
+        override suspend fun getAvailableBibles() = Result.success(emptyList<Bible>())
+        override suspend fun getBooks(bibleId: Long) = Result.success(emptyList<Book>())
+        override suspend fun getChapters(bookId: Long) = Result.success(emptyList<Chapter>())
+        override suspend fun getVerses(bookId: Long, chapter: Long) = Result.success(emptyList<Verse>())
+        override suspend fun getVerseByGlobalId(globalVerseId: Long) = Result.success(
+            Verse(
+                id = 1,
+                chapterId = 1,
+                globalVerseId = globalVerseId,
+                verseNumber = 16,
+                text = "For God so loved the world, that he gave his only begotten Son."
+            )
+        )
+        override suspend fun getVersesInRange(startId: Long, endId: Long) = Result.success(emptyList<Verse>())
+        override suspend fun searchVerses(query: String, maxResults: Long) = Result.success(emptyList<Verse>())
+        override fun watchBibles(): Flow<List<Bible>> = flowOf(emptyList())
+    }
+
     private fun createComponent(): DefaultDashboardComponent {
         val lifecycle = LifecycleRegistry()
         val context = DefaultComponentContext(lifecycle = lifecycle)
@@ -133,7 +158,9 @@ class DefaultDashboardComponentTest {
             bookmarkRepository = fakeBookmarkRepo,
             sermonRepository = fakeSermonRepo,
             readingPlanRepository = fakeReadingPlanRepo,
-            historyRepository = fakeHistoryRepo
+            historyRepository = fakeHistoryRepo,
+            verseBus = VerseBus(),
+            bibleRepository = fakeBibleRepo
         )
     }
 
@@ -174,5 +201,13 @@ class DefaultDashboardComponentTest {
 
         assertEquals(2, state.recentNotes.size)
         assertEquals("Note 1", state.recentNotes[0].title)
+    }
+
+    @Test
+    fun decodeReferenceFormatsCorrectly() {
+        assertEquals("John 3:16", DefaultDashboardComponent.decodeReference(43003016L))
+        assertEquals("Psalms 23:1", DefaultDashboardComponent.decodeReference(19023001L))
+        assertEquals("Proverbs 3:5", DefaultDashboardComponent.decodeReference(20003005L))
+        assertEquals("Romans 8:28", DefaultDashboardComponent.decodeReference(45008028L))
     }
 }

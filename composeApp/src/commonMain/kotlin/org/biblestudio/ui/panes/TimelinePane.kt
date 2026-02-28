@@ -3,6 +3,7 @@ package org.biblestudio.ui.panes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -159,6 +160,16 @@ private fun TimelineCanvas(
                     onDragYear(center)
                 }
             }
+            .pointerInput(events, startYear, endYear) {
+                detectTapGestures { tapOffset ->
+                    val w = size.width.toFloat()
+                    val tapped = events.firstOrNull { event ->
+                        val x = ((event.startYear - startYear).toFloat() / yearRange) * w
+                        kotlin.math.abs(tapOffset.x - x) <= TAP_RADIUS
+                    }
+                    tapped?.let { onEventTapped(it) }
+                }
+            }
     ) {
         val w = size.width
         val h = size.height
@@ -209,6 +220,8 @@ private fun TimelineCanvas(
         }
     }
 }
+
+private const val TAP_RADIUS = 20f
 
 @Suppress("ktlint:standard:function-naming")
 @Composable

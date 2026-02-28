@@ -28,17 +28,25 @@ Open Sources (GitHub, OpenBible.info, etc.)
 |--------|---------|--------|-----|
 | **scrollmapper/bible_databases** | MIT | SQLite, CSV, JSON | https://github.com/scrollmapper/bible_databases |
 | **seven1m/open-bibles** | Public Domain / CC BY | OSIS XML, Zefania XML | https://github.com/seven1m/open-bibles |
-| **CrossWire SWORD modules** | Various (Public Domain) | SWORD/OSIS | https://www.crosswire.org/sword/modules/ |
+| **Beblia/Holy-Bible-XML-Format** | Public Domain (per-file `status` attribute) | XML | https://github.com/Beblia/Holy-Bible-XML-Format |
 
-**Available translations (public domain)**:
+**Available translations (public domain / free license)**:
+
+*English:*
 - **KJV** — King James Version (1769), public domain
 - **ASV** — American Standard Version (1901), public domain
 - **WEB** — World English Bible, public domain
 - **YLT** — Young's Literal Translation, public domain
 - **DRB** — Douay-Rheims Bible, public domain
 - **BBE** — Bible in Basic English, public domain
-- **RVA** — Reina-Valera Antigua (Spanish), public domain
-- **VBL** — Versión Biblia Libre (Spanish), CC BY-SA 4.0
+
+*Spanish (via Beblia):*
+- **SE1569** — Sagradas Escrituras 1569, public domain
+- **RV1909** — Reina-Valera 1909, dominio público
+- **RVES** — Reina-Valera Española, public domain
+- **VBL** — Versión Biblia Libre 2022, CC BY-SA 4.0
+
+*Greek:*
 - **SBLGNT** — SBL Greek New Testament, SBLGNT License (free)
 
 **Raw download location**: `data-pipeline/raw/bibles/`
@@ -225,7 +233,7 @@ Open Sources (GitHub, OpenBible.info, etc.)
 | OpenBible.info Cross-Refs | CC BY 4.0 | ✅ | ✅ |
 | Abbott-Smith Lexicon | Public Domain | ✅ | ❌ |
 | KJV / ASV / WEB / YLT | Public Domain | ✅ | ❌ |
-| CrossWire SWORD | Various (mostly free) | Varies | Varies |
+| Beblia/Holy-Bible-XML-Format | Public Domain (per-file) | ✅ | ❌ |
 | Viz.Bible | Free upon request | ✅ | ✅ |
 
 ---
@@ -264,7 +272,12 @@ Bible text data:
 - King James Version (1769) — Public Domain
 - American Standard Version (1901) — Public Domain
 - World English Bible — Public Domain
-- Reina-Valera Antigua — Public Domain
+- Young's Literal Translation — Public Domain
+- Bible in Basic English — Public Domain
+- Sagradas Escrituras 1569 — Public Domain (via Beblia)
+- Reina-Valera 1909 — Dominio Público (via Beblia)
+- Reina-Valera Española — Public Domain (via Beblia)
+- Versión Biblia Libre 2022 — CC BY-SA 4.0 (via Beblia)
 
 Morphology & Lexicon:
 - STEPBible Data © Tyndale House, Cambridge — CC BY 4.0

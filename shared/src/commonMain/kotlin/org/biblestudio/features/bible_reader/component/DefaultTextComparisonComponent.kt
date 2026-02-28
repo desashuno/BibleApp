@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
 import org.biblestudio.features.bible_reader.domain.repositories.TextComparisonRepository
 
 /**
@@ -21,6 +22,7 @@ import org.biblestudio.features.bible_reader.domain.repositories.TextComparisonR
 class DefaultTextComparisonComponent(
     componentContext: ComponentContext,
     private val repository: TextComparisonRepository,
+    private val bibleRepository: BibleRepository,
     private val verseBus: VerseBus
 ) : TextComparisonComponent, ComponentContext by componentContext {
 
@@ -30,7 +32,17 @@ class DefaultTextComparisonComponent(
     override val state: StateFlow<TextComparisonState> = _state.asStateFlow()
 
     init {
+        loadAvailableBibles()
         observeVerseBus()
+    }
+
+    private fun loadAvailableBibles() {
+        scope.launch {
+            bibleRepository.getAvailableBibles()
+                .onSuccess { bibles ->
+                    _state.update { it.copy(availableBibles = bibles) }
+                }
+        }
     }
 
     override fun loadComparison(globalVerseId: Long) {
@@ -72,6 +84,22 @@ class DefaultTextComparisonComponent(
         }
     }
 
+    override fun nextVerse() {
+        val currentId = _state.value.comparison?.globalVerseId ?: return
+        scope.launch {
+            // Simple approach: increment global verse ID and try to load
+            loadComparison(currentId + 1)
+        }
+    }
+
+    override fun previousVerse() {
+        val currentId = _state.value.comparison?.globalVerseId ?: return
+        if (currentId <= 1) return
+        scope.launch {
+            loadComparison(currentId - 1)
+        }
+    }
+
     private fun observeVerseBus() {
         scope.launch {
             verseBus.events.collect { event ->
@@ -96,17 +124,25 @@ class DefaultTextComparisonComponent(
             return wordDiff(textA.split(" "), textB.split(" "))
         }
 
+        private val PUNCTUATION_REGEX = Regex("[.,;:!?\"'()\\[\\]]")
+
+        /** Strips punctuation for matching but preserves original words in output. */
+        private fun normalize(word: String): String = word.replace(PUNCTUATION_REGEX, "").lowercase()
+
         /**
-         * Simple word-level diff using LCS (Longest Common Subsequence).
+         * Punctuation-aware word-level diff using LCS (Longest Common Subsequence).
+         * Compares normalized forms but outputs original words.
          */
-        internal fun wordDiff(wordsA: List<String>, wordsB: List<String>): List<DiffSegment> {
+        fun wordDiff(wordsA: List<String>, wordsB: List<String>): List<DiffSegment> {
+            val normA = wordsA.map { normalize(it) }
+            val normB = wordsB.map { normalize(it) }
             val m = wordsA.size
             val n = wordsB.size
-            // Build LCS table
+            // Build LCS table using normalized forms
             val dp = Array(m + 1) { IntArray(n + 1) }
             for (i in 1..m) {
                 for (j in 1..n) {
-                    dp[i][j] = if (wordsA[i - 1] == wordsB[j - 1]) {
+                    dp[i][j] = if (normA[i - 1] == normB[j - 1]) {
                         dp[i - 1][j - 1] + 1
                     } else {
                         maxOf(dp[i - 1][j], dp[i][j - 1])
@@ -114,15 +150,15 @@ class DefaultTextComparisonComponent(
                 }
             }
 
-            // Backtrack to produce diff segments
+            // Backtrack to produce diff segments (using original words)
             val segments = mutableListOf<DiffSegment>()
             var i = m
             var j = n
             val stack = mutableListOf<DiffSegment>()
             while (i > 0 || j > 0) {
                 when {
-                    i > 0 && j > 0 && wordsA[i - 1] == wordsB[j - 1] -> {
-                        stack.add(DiffSegment(wordsA[i - 1], DiffType.EQUAL))
+                    i > 0 && j > 0 && normA[i - 1] == normB[j - 1] -> {
+                        stack.add(DiffSegment(wordsB[j - 1], DiffType.EQUAL))
                         i--
                         j--
                     }

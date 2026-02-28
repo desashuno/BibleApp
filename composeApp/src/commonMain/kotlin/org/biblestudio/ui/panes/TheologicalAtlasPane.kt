@@ -25,7 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +58,8 @@ fun TheologicalAtlasPane(
     modifier: Modifier = Modifier
 ) {
     val state by stateFlow.collectAsState()
+
+    var selectedRegion by remember { mutableStateOf<AtlasRegion?>(null) }
 
     // Map state synced with component state
     val mapState = remember {
@@ -106,8 +110,11 @@ fun TheologicalAtlasPane(
             ) {
                 items(state.regions) { region ->
                     FilterChip(
-                        selected = false,
-                        onClick = { onRegionSelected(region) },
+                        selected = selectedRegion?.id == region.id,
+                        onClick = {
+                            selectedRegion = if (selectedRegion?.id == region.id) null else region
+                            onRegionSelected(region)
+                        },
                         label = { Text(region.name) },
                         modifier = Modifier.padding(end = Spacing.Space4)
                     )

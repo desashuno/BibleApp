@@ -57,3 +57,35 @@ INNER JOIN fts_resources fts ON fts.rowid = re.id
 WHERE fts_resources MATCH :query
 ORDER BY bm25(fts_resources)
 LIMIT :maxResults;
+
+-- ═══════════════════════════ Commentary Queries ═══════════════════════════
+
+commentaryEntriesForVerse:
+SELECT re.id, re.resource_id, re.global_verse_id, re.content, re.sort_order,
+       r.title AS resource_title, r.author AS resource_author
+FROM resource_entries re
+INNER JOIN resources r ON re.resource_id = r.uuid
+WHERE re.global_verse_id = :globalVerseId
+  AND r.type = 'commentary'
+  AND r.deleted_at IS NULL
+ORDER BY r.title ASC, re.sort_order ASC;
+
+commentaryEntriesForVerseByResource:
+SELECT re.*
+FROM resource_entries re
+INNER JOIN resources r ON re.resource_id = r.uuid
+WHERE re.resource_id = :resourceId
+  AND re.global_verse_id = :globalVerseId
+  AND r.deleted_at IS NULL
+ORDER BY re.sort_order ASC;
+
+-- ═══════════════════════════ Audit / Counts ═══════════════════════════
+
+resourceCount:
+SELECT COUNT(*) FROM resources WHERE deleted_at IS NULL;
+
+resourceCountByType:
+SELECT COUNT(*) FROM resources WHERE type = :type AND deleted_at IS NULL;
+
+entryCountForResource:
+SELECT COUNT(*) FROM resource_entries WHERE resource_id = :resourceId;

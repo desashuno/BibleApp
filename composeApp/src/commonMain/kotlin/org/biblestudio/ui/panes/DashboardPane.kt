@@ -38,7 +38,6 @@ import org.biblestudio.ui.theme.Spacing
 fun DashboardPane(
     stateFlow: StateFlow<DashboardState>,
     onContinueReading: (Long) -> Unit = {},
-    onStartReading: (Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by stateFlow.collectAsState()

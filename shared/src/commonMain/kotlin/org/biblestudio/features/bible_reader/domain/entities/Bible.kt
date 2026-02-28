@@ -4,7 +4,7 @@ package org.biblestudio.features.bible_reader.domain.entities
  * Represents a Bible version/translation.
  *
  * @param id Auto-generated database ID.
- * @param abbreviation Short code (e.g., "KJV", "ESV", "RVR60").
+ * @param abbreviation Short code (e.g., "KJV", "ASV", "RV1909").
  * @param name Full display name (e.g., "King James Version").
  * @param language ISO 639-1 language code.
  * @param textDirection "ltr" or "rtl".

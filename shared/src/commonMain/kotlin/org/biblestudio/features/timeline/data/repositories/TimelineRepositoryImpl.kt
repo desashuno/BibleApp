@@ -17,7 +17,6 @@ internal class TimelineRepositoryImpl(
                 val verseIds = database.timelineQueries
                     .getVersesForEvent(row.id)
                     .executeAsList()
-                    .map { it.global_verse_id }
                 row.toTimelineEvent(verseIds)
             }
     }
@@ -30,7 +29,6 @@ internal class TimelineRepositoryImpl(
         val verseIds = database.timelineQueries
             .getVersesForEvent(eventId)
             .executeAsList()
-            .map { it.global_verse_id }
 
         row.toTimelineEvent(verseIds)
     }

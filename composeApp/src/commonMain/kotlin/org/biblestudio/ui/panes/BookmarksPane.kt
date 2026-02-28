@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.bookmarks_history.component.BookmarksState
 import org.biblestudio.features.bookmarks_history.component.BookmarksViewMode
 import org.biblestudio.features.bookmarks_history.domain.entities.Bookmark
@@ -261,7 +262,7 @@ private fun BookmarkRow(bookmark: Bookmark, onClick: () -> Unit, onDelete: () ->
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "Verse ${bookmark.globalVerseId}",
+                    text = VerseRefFormatter.format(bookmark.globalVerseId),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -335,7 +336,7 @@ private fun HistoryRow(entry: HistoryEntry, onClick: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Verse ${entry.globalVerseId}",
+                    text = VerseRefFormatter.format(entry.globalVerseId),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(

@@ -23,7 +23,7 @@ object BsIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 // Top line
                 moveTo(3f, 7f)
                 horizontalLineTo(21f)
@@ -55,7 +55,7 @@ object BsIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 // Vertical bars
                 moveTo(8f, 4f)
                 lineTo(10f, 4f)
@@ -91,7 +91,7 @@ object BsIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 moveTo(3f, 11f)
                 horizontalLineTo(18f)
                 lineTo(15f, 8f)
@@ -104,7 +104,7 @@ object BsIcons {
                 horizontalLineTo(3f)
                 close()
             }
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 moveTo(11f, 3f)
                 verticalLineTo(18f)
                 lineTo(8f, 15f)
@@ -129,7 +129,7 @@ object BsIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 // Left column frame
                 moveTo(3f, 3f)
                 horizontalLineTo(10f)
@@ -141,7 +141,7 @@ object BsIcons {
                 horizontalLineTo(3f)
                 close()
             }
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 // Right column frame
                 moveTo(14f, 3f)
                 horizontalLineTo(21f)
@@ -153,7 +153,7 @@ object BsIcons {
                 horizontalLineTo(14f)
                 close()
             }
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 // Left column text lines
                 moveTo(6f, 8f)
                 horizontalLineTo(9f)
@@ -171,7 +171,7 @@ object BsIcons {
                 horizontalLineTo(6f)
                 close()
             }
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 // Right column text lines
                 moveTo(15f, 8f)
                 horizontalLineTo(18f)
@@ -201,21 +201,21 @@ object BsIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 moveTo(6f, 4f)
                 lineTo(8f, 4f)
                 lineTo(18f, 20f)
                 lineTo(16f, 20f)
                 close()
             }
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 moveTo(18f, 4f)
                 lineTo(16f, 4f)
                 lineTo(6f, 20f)
                 lineTo(8f, 20f)
                 close()
             }
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 moveTo(4f, 11f)
                 horizontalLineTo(20f)
                 verticalLineTo(13f)
@@ -234,7 +234,7 @@ object BsIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(fill = SolidColor(Color.Black)) {
+            path(fill = SolidColor(Color.Unspecified)) {
                 moveTo(12f, 3f)
                 lineTo(20f, 21f)
                 lineTo(18f, 21f)

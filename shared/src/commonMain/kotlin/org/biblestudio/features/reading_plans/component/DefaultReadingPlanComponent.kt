@@ -8,9 +8,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.biblestudio.core.verse_bus.LinkEvent
+import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.reading_plans.domain.entities.BuiltInPlans
 import org.biblestudio.features.reading_plans.domain.entities.ReadingPlan
 import org.biblestudio.features.reading_plans.domain.repositories.ReadingPlanRepository
@@ -20,7 +23,8 @@ import org.biblestudio.features.reading_plans.domain.repositories.ReadingPlanRep
  */
 class DefaultReadingPlanComponent(
     componentContext: ComponentContext,
-    private val repository: ReadingPlanRepository
+    private val repository: ReadingPlanRepository,
+    private val verseBus: VerseBus
 ) : ReadingPlanComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -28,8 +32,19 @@ class DefaultReadingPlanComponent(
     override val state: StateFlow<ReadingPlanState> = _state.asStateFlow()
 
     init {
-        seedBuiltInPlans()
-        loadPlans()
+        scope.launch {
+            seedBuiltInPlans()
+            loadPlansAsync()
+        }
+        observeVerseBus()
+    }
+
+    private fun observeVerseBus() {
+        scope.launch {
+            verseBus.events
+                .filterIsInstance<LinkEvent.VerseSelected>()
+                .collect { /* Reserved for future: highlight relevant plan day */ }
+        }
     }
 
     override fun onPlanSelected(uuid: String) {
@@ -64,7 +79,7 @@ class DefaultReadingPlanComponent(
         )
         scope.launch {
             repository.createPlan(plan).onSuccess {
-                loadPlans()
+                loadPlansAsync()
                 _state.update { it.copy(activePlan = plan) }
                 loadProgress(plan)
             }
@@ -86,37 +101,33 @@ class DefaultReadingPlanComponent(
                         )
                     }
                 }
-                loadPlans()
+                loadPlansAsync()
             }
         }
     }
 
-    private fun seedBuiltInPlans() {
-        scope.launch {
-            repository.getPlans().onSuccess { existing ->
-                val existingUuids = existing.map { it.uuid }.toSet()
-                for (plan in BuiltInPlans.ALL) {
-                    if (plan.uuid !in existingUuids) {
-                        repository.createPlan(plan)
-                        Napier.i("Seeded built-in plan: ${plan.title}")
-                    }
+    private suspend fun seedBuiltInPlans() {
+        repository.getPlans().onSuccess { existing ->
+            val existingUuids = existing.map { it.uuid }.toSet()
+            for (plan in BuiltInPlans.ALL) {
+                if (plan.uuid !in existingUuids) {
+                    repository.createPlan(plan)
+                    Napier.i("Seeded built-in plan: ${plan.title}")
                 }
             }
         }
     }
 
-    private fun loadPlans() {
-        scope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            repository.getPlans()
-                .onSuccess { plans ->
-                    _state.update { it.copy(plans = plans, isLoading = false) }
-                }
-                .onFailure { e ->
-                    Napier.e("Failed to load plans", e)
-                    _state.update { it.copy(error = e.message, isLoading = false) }
-                }
-        }
+    private suspend fun loadPlansAsync() {
+        _state.update { it.copy(isLoading = true, error = null) }
+        repository.getPlans()
+            .onSuccess { plans ->
+                _state.update { it.copy(plans = plans, isLoading = false) }
+            }
+            .onFailure { e ->
+                Napier.e("Failed to load plans", e)
+                _state.update { it.copy(error = e.message, isLoading = false) }
+            }
     }
 
     private fun loadProgress(plan: ReadingPlan) {

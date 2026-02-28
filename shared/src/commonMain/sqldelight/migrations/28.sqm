@@ -1,0 +1,45 @@
+-- Migration 28: Dictionary entries tables for topic-based dictionary resources
+
+CREATE TABLE dictionary_entries (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    resource_id TEXT NOT NULL REFERENCES resources(uuid) ON DELETE CASCADE,
+    headword TEXT NOT NULL,
+    content TEXT NOT NULL,
+    related_strongs TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX idx_dict_entries_resource ON dictionary_entries(resource_id);
+CREATE INDEX idx_dict_entries_headword ON dictionary_entries(resource_id, headword);
+
+CREATE TABLE dictionary_entry_verses (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    entry_id INTEGER NOT NULL REFERENCES dictionary_entries(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX idx_dict_entry_verses_entry ON dictionary_entry_verses(entry_id);
+CREATE INDEX idx_dict_entry_verses_verse ON dictionary_entry_verses(global_verse_id);
+
+-- FTS5 for dictionary entries
+CREATE VIRTUAL TABLE fts_dictionary_entries USING fts5(
+    headword, content,
+    content=dictionary_entries, content_rowid=id
+);
+
+CREATE TRIGGER fts_dict_ai AFTER INSERT ON dictionary_entries BEGIN
+    INSERT INTO fts_dictionary_entries(rowid, headword, content)
+    VALUES (new.id, new.headword, new.content);
+END;
+
+CREATE TRIGGER fts_dict_ad AFTER DELETE ON dictionary_entries BEGIN
+    INSERT INTO fts_dictionary_entries(fts_dictionary_entries, rowid, headword, content)
+    VALUES ('delete', old.id, old.headword, old.content);
+END;
+
+CREATE TRIGGER fts_dict_au AFTER UPDATE ON dictionary_entries BEGIN
+    INSERT INTO fts_dictionary_entries(fts_dictionary_entries, rowid, headword, content)
+    VALUES ('delete', old.id, old.headword, old.content);
+    INSERT INTO fts_dictionary_entries(rowid, headword, content)
+    VALUES (new.id, new.headword, new.content);
+END;

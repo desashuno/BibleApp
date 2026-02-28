@@ -18,7 +18,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from normalizers import bible_text, morphology, lexicon, cross_references, geography, entities, timeline, reading_plans
+from normalizers import bible_text, beblia_xml, morphology, lexicon, cross_references, geography, entities, timeline, reading_plans, dictionaries, commentaries
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -377,6 +377,35 @@ CREATE TABLE IF NOT EXISTS reading_plan_progress (
     completed_at TEXT
 );
 
+-- ===== Dictionaries =====
+
+CREATE TABLE IF NOT EXISTS dictionary_entries (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    resource_id     TEXT    NOT NULL REFERENCES resources(uuid) ON DELETE CASCADE,
+    headword        TEXT    NOT NULL,
+    content         TEXT    NOT NULL,
+    related_strongs TEXT,
+    sort_order      INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_dict_entries_resource ON dictionary_entries(resource_id);
+CREATE INDEX IF NOT EXISTS idx_dict_entries_headword ON dictionary_entries(resource_id, headword);
+
+CREATE TABLE IF NOT EXISTS dictionary_entry_verses (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    entry_id        INTEGER NOT NULL REFERENCES dictionary_entries(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_dict_entry_verses_entry ON dictionary_entry_verses(entry_id);
+CREATE INDEX IF NOT EXISTS idx_dict_entry_verses_verse ON dictionary_entry_verses(global_verse_id);
+
+-- FTS5 for dictionary entries
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_dictionary_entries USING fts5(
+    headword, content,
+    content=dictionary_entries, content_rowid=id
+);
+
 -- ===== Modules =====
 
 CREATE TABLE IF NOT EXISTS modules (
@@ -401,6 +430,7 @@ CREATE TABLE IF NOT EXISTS modules (
 
 NORMALIZER_MAP = {
     "bibles": ("Bible Text", bible_text),
+    "beblia-bibles": ("Bible Text — Beblia XML (Spanish)", beblia_xml),
     "morphology": ("Morphology (Hebrew & Greek)", morphology),
     "lexicon": ("Lexicon / Word Study", lexicon),
     "cross-references": ("Cross-References", cross_references),
@@ -408,6 +438,8 @@ NORMALIZER_MAP = {
     "entities": ("Entities (Knowledge Graph)", entities),
     "timeline": ("Timeline Events", timeline),
     "reading-plans": ("Reading Plans", reading_plans),
+    "dictionaries": ("Dictionaries (Easton, Smith)", dictionaries),
+    "commentaries": ("Commentaries (Matthew Henry, Gill, JFB)", commentaries),
 }
 
 
@@ -488,6 +520,7 @@ def main() -> None:
         ("fts_notes", "INSERT INTO fts_notes(fts_notes) VALUES('rebuild')"),
         ("fts_resources", "INSERT INTO fts_resources(fts_resources) VALUES('rebuild')"),
         ("fts_entities", "INSERT INTO fts_entities(fts_entities) VALUES('rebuild')"),
+        ("fts_dictionary_entries", "INSERT INTO fts_dictionary_entries(fts_dictionary_entries) VALUES('rebuild')"),
     ]
     for fts_name, rebuild_sql in fts_rebuilds:
         try:
@@ -521,6 +554,10 @@ def main() -> None:
         ("relationships", "SELECT COUNT(*) FROM relationships"),
         ("timeline_events", "SELECT COUNT(*) FROM timeline_events"),
         ("reading_plans", "SELECT COUNT(*) FROM reading_plans"),
+        ("dictionary_entries", "SELECT COUNT(*) FROM dictionary_entries"),
+        ("dictionary_entry_verses", "SELECT COUNT(*) FROM dictionary_entry_verses"),
+        ("resources", "SELECT COUNT(*) FROM resources"),
+        ("resource_entries", "SELECT COUNT(*) FROM resource_entries"),
     ]
 
     for table, query in stats_queries:

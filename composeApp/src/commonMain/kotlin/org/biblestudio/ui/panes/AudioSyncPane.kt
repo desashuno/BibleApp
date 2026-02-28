@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Slider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -81,13 +81,10 @@ fun AudioSyncPane(
 
         // Playback controls
         if (state.track != null) {
-            // Progress bar
-            val progress = if (state.durationMs > 0) {
-                state.positionMs.toFloat() / state.durationMs.toFloat()
-            } else 0f
-
-            LinearProgressIndicator(
-                progress = { progress },
+            // Seekable progress slider
+            Slider(
+                value = if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs.toFloat() else 0f,
+                onValueChange = { ratio -> onSeek((ratio * state.durationMs).toLong()) },
                 modifier = Modifier.fillMaxWidth()
             )
 

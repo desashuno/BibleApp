@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.audio_sync.domain.repositories.AudioSyncRepository
+import org.biblestudio.features.settings.domain.repositories.SettingsRepository
 
 /**
  * Default [AudioSyncComponent] managing track loading, sync point lookup, and playback state.
@@ -25,7 +26,7 @@ class DefaultAudioSyncComponent(
     componentContext: ComponentContext,
     private val repository: AudioSyncRepository,
     private val verseBus: VerseBus,
-    private val defaultBibleId: String = "KJV"
+    private val settingsRepository: SettingsRepository
 ) : AudioSyncComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -33,8 +34,22 @@ class DefaultAudioSyncComponent(
     private val _state = MutableStateFlow(AudioPlayerState())
     override val state: StateFlow<AudioPlayerState> = _state.asStateFlow()
 
+    private var currentBibleId: String = "KJV"
+
     init {
+        loadDefaultBible()
         observeVerseBus()
+    }
+
+    private fun loadDefaultBible() {
+        scope.launch {
+            settingsRepository.getSetting("default_bible")
+                .onSuccess { setting ->
+                    setting?.value?.takeIf { it.isNotBlank() }?.let {
+                        currentBibleId = it
+                    }
+                }
+        }
     }
 
     override fun onPlay() {
@@ -106,7 +121,7 @@ class DefaultAudioSyncComponent(
 
         scope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            repository.getTrackForChapter(defaultBibleId, book, chapter)
+            repository.getTrackForChapter(currentBibleId, book, chapter)
                 .onSuccess { track ->
                     if (track != null) {
                         repository.getSyncPoints(track.id)

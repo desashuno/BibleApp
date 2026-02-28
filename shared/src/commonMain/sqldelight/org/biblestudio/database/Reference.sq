@@ -46,3 +46,17 @@ ORDER BY global_verse_id ASC;
 insertParallelPassage:
 INSERT INTO parallel_passages(group_id, global_verse_id, label)
 VALUES (:groupId, :globalVerseId, :label);
+
+-- ═══════════════════════════ Audit / Validation ═══════════════════════════
+
+orphanedCrossRefSources:
+SELECT DISTINCT source_verse_id
+FROM cross_references
+WHERE source_verse_id NOT IN (SELECT global_verse_id FROM verses)
+LIMIT :maxResults;
+
+orphanedCrossRefTargets:
+SELECT DISTINCT target_verse_id
+FROM cross_references
+WHERE target_verse_id NOT IN (SELECT global_verse_id FROM verses)
+LIMIT :maxResults;

@@ -26,11 +26,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -157,15 +159,21 @@ private fun GraphCanvas(
     var scale by remember { mutableStateOf(1f) }
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
+    var canvasWidth by remember { mutableFloatStateOf(600f) }
+    var canvasHeight by remember { mutableFloatStateOf(400f) }
 
-    val layout = remember(nodes, edges) {
+    val layout = remember(nodes, edges, canvasWidth, canvasHeight) {
         val nodeIds = nodes.map { it.id }
         val edgePairs = edges.map { it.sourceId to it.targetId }
-        ForceDirectedLayout(width = 600f, height = 400f).compute(nodeIds, edgePairs)
+        ForceDirectedLayout(width = canvasWidth, height = canvasHeight).compute(nodeIds, edgePairs)
     }
 
     Canvas(
         modifier = modifier
+            .onSizeChanged { size ->
+                canvasWidth = size.width.toFloat()
+                canvasHeight = size.height.toFloat()
+            }
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     scale = (scale * zoom).coerceIn(0.3f, 5f)

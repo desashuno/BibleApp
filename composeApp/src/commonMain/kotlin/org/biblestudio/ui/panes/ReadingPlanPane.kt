@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.reading_plans.component.ReadingPlanState
 import org.biblestudio.ui.theme.Spacing
 
@@ -116,6 +117,20 @@ fun ReadingPlanPane(
                         text = "Streak: ${state.currentStreak} days",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.Space8))
+
+                    // Current day passage label (shows verse ref if available via progress entry)
+                    val todayProgress = state.progress.firstOrNull { it.day.toInt() == state.currentDay }
+                    val dayLabel = if (todayProgress != null) {
+                        "Day ${state.currentDay}"
+                    } else {
+                        "Day ${state.currentDay}"
+                    }
+                    Text(
+                        text = "Today: $dayLabel",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(Spacing.Space16))
 

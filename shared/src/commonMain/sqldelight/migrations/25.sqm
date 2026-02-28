@@ -1,4 +1,7 @@
 -- Migration 25: Timeline tables (timeline_events, timeline_event_verses, fts_timeline_events)
+-- Drop legacy timeline_events from migration 10 (old schema with year_start/year_end)
+DROP INDEX IF EXISTS idx_timeline_verse;
+DROP TABLE IF EXISTS timeline_events;
 
 CREATE TABLE timeline_events (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,

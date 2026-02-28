@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,6 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
@@ -252,8 +257,24 @@ private fun SectionList(
                 modifier = Modifier.fillMaxWidth().padding(Spacing.Space8),
                 horizontalArrangement = Arrangement.Center
             ) {
-                IconButton(onClick = { onAddSection("point") }) {
+                var expanded by remember { mutableStateOf(false) }
+                val sectionTypes = listOf("Introduction", "Point", "Application", "Illustration", "Conclusion")
+                IconButton(onClick = { expanded = true }) {
                     Icon(Icons.Default.Add, contentDescription = "Add section")
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    sectionTypes.forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(type) },
+                            onClick = {
+                                expanded = false
+                                onAddSection(type.lowercase())
+                            }
+                        )
+                    }
                 }
             }
         }

@@ -28,6 +28,8 @@ class DefaultExegeticalGuideComponentTest {
         override suspend fun getCommentaries() = Result.success(emptyList<Resource>())
         override suspend fun getEntriesForVerse(resourceId: String, globalVerseId: Long) =
             if (globalVerseId == 1001001L) Result.success(listOf(testCommentary)) else Result.success(emptyList())
+        override suspend fun getAllEntriesForVerse(globalVerseId: Long) =
+            if (globalVerseId == 1001001L) Result.success(listOf(testCommentary)) else Result.success(emptyList())
         override suspend fun search(query: String, maxResults: Long) = Result.success(emptyList<CommentaryEntry>())
     }
 

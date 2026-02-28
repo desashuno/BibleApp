@@ -54,6 +54,7 @@ kotlin {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
+                implementation(compose.materialIconsExtended)
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation(libs.decompose.core)
@@ -123,5 +124,19 @@ android {
 compose.desktop {
     application {
         mainClass = "org.biblestudio.MainKt"
+        nativeDistributions {
+            targetFormats(
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb
+            )
+            packageName = "BibleStudio"
+            packageVersion = "1.0.0"
+            description = "Multi-platform Bible study application"
+            vendor = "BibleStudio"
+            macOS {
+                packageVersion = "1.0.0"
+            }
+        }
     }
 }

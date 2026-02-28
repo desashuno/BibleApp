@@ -29,12 +29,22 @@ data class SettingsState(
     val fontSize: Int = DEFAULT_FONT_SIZE,
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val defaultBible: String = "",
+    val showVerseNumbers: Boolean = true,
+    val redLetter: Boolean = false,
+    val paragraphMode: Boolean = false,
+    val continuousScroll: Boolean = false,
+    val sidebarCollapsed: Boolean = false,
+    val pinnedPanes: Set<String> = DEFAULT_PINNED_PANES,
+    val favoritePanes: Set<String> = emptySet(),
     val savedLayouts: List<SavedLayout> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 ) {
     companion object {
         const val DEFAULT_FONT_SIZE = 16
+        val DEFAULT_PINNED_PANES = setOf(
+            "bible-reader", "search", "note-editor", "dashboard", "cross-references"
+        )
     }
 }
 
@@ -67,6 +77,21 @@ interface SettingsComponent {
     /** Sets the default Bible version. */
     fun setDefaultBible(abbreviation: String)
 
+    /** Sets whether verse numbers are shown. */
+    fun setShowVerseNumbers(show: Boolean)
+
+    /** Sets whether red-letter words are enabled. */
+    fun setRedLetter(enabled: Boolean)
+
+    /** Sets whether paragraph mode is enabled. */
+    fun setParagraphMode(enabled: Boolean)
+
+    /** Sets whether continuous scroll mode is enabled. */
+    fun setContinuousScroll(enabled: Boolean)
+
+    /** Sets whether the sidebar is collapsed by default. */
+    fun setSidebarCollapsed(collapsed: Boolean)
+
     /** Reloads all settings from the database. */
     fun reload()
 
@@ -84,4 +109,10 @@ interface SettingsComponent {
 
     /** Activates a workspace layout. */
     fun activateLayout(layoutId: String)
+
+    /** Toggles whether a pane type is pinned to the sidebar. */
+    fun togglePinned(paneType: String)
+
+    /** Toggles whether a pane type is marked as favorite. */
+    fun toggleFavorite(paneType: String)
 }

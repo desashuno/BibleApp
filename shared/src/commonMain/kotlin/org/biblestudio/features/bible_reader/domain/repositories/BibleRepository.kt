@@ -29,6 +29,9 @@ interface BibleRepository {
     /** Returns verses within a global-ID range (inclusive). */
     suspend fun getVersesInRange(startId: Long, endId: Long): Result<List<Verse>>
 
+    /** Returns all verses for an entire book, ordered by chapter then verse. */
+    suspend fun getVersesForBook(bookId: Long): Result<List<Verse>>
+
     /** Full-text search across verse text. */
     suspend fun searchVerses(query: String, maxResults: Long = 100): Result<List<Verse>>
 

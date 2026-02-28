@@ -20,7 +20,6 @@ internal class KnowledgeGraphRepositoryImpl(
         val verseIds = database.knowledgeGraphQueries
             .getVersesForNode(entityId)
             .executeAsList()
-            .map { it.global_verse_id }
 
         node.toGraphEntity(verseIds)
     }
@@ -50,7 +49,6 @@ internal class KnowledgeGraphRepositoryImpl(
                     val verseIds = database.knowledgeGraphQueries
                         .getVersesForNode(currentId)
                         .executeAsList()
-                        .map { it.global_verse_id }
                     collectedNodes.add(node.toGraphEntity(verseIds))
                 }
 
