@@ -32,6 +32,12 @@ iosApp/build/
 Thumbs.db
 Desktop.ini
 
+# Data Pipeline (downloaded raw data and generated SQLite)
+data-pipeline/raw/*
+!data-pipeline/raw/.gitkeep
+data-pipeline/output/*
+!data-pipeline/output/.gitkeep
+
 # Misc
 *.log
 *.tmp

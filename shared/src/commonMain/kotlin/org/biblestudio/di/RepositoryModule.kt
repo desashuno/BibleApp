@@ -40,6 +40,14 @@ import org.biblestudio.features.word_study.data.repositories.DictionaryRepositor
 import org.biblestudio.features.word_study.data.repositories.WordStudyRepositoryImpl
 import org.biblestudio.features.word_study.domain.repositories.DictionaryRepository
 import org.biblestudio.features.word_study.domain.repositories.WordStudyRepository
+import org.biblestudio.features.knowledge_graph.data.repositories.KnowledgeGraphRepositoryImpl
+import org.biblestudio.features.knowledge_graph.domain.repositories.KnowledgeGraphRepository
+import org.biblestudio.features.audio_sync.data.repositories.AudioSyncRepositoryImpl
+import org.biblestudio.features.audio_sync.domain.repositories.AudioSyncRepository
+import org.biblestudio.features.theological_atlas.data.repositories.AtlasRepositoryImpl
+import org.biblestudio.features.theological_atlas.domain.repositories.AtlasRepository
+import org.biblestudio.features.timeline.data.repositories.TimelineRepositoryImpl
+import org.biblestudio.features.timeline.domain.repositories.TimelineRepository
 import org.biblestudio.features.workspace.data.repositories.WorkspaceRepositoryImpl
 import org.biblestudio.features.workspace.domain.repositories.WorkspaceRepository
 import org.koin.dsl.module
@@ -69,6 +77,10 @@ val repositoryModule = module {
     single<ReadingPlanRepository> { ReadingPlanRepositoryImpl(get()) }
     single<ModuleRepository> { ModuleRepositoryImpl(get()) }
     single<ImportExportRepository> { ImportExportRepositoryImpl(get()) }
+    single<KnowledgeGraphRepository> { KnowledgeGraphRepositoryImpl(get()) }
+    single<TimelineRepository> { TimelineRepositoryImpl(get()) }
+    single<AtlasRepository> { AtlasRepositoryImpl(get()) }
+    single<AudioSyncRepository> { AudioSyncRepositoryImpl(get()) }
     single<PassageGuideRepository> {
         PassageGuideRepositoryImpl(
             database = get(),

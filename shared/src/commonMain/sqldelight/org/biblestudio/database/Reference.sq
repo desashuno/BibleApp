@@ -22,6 +22,9 @@ FROM cross_references
 WHERE source_verse_id = :globalVerseId OR target_verse_id = :globalVerseId
 ORDER BY confidence DESC;
 
+crossRefCount:
+SELECT COUNT(*) FROM cross_references;
+
 insertCrossRef:
 INSERT INTO cross_references(source_verse_id, target_verse_id, type, confidence)
 VALUES (:sourceVerseId, :targetVerseId, :type, :confidence);

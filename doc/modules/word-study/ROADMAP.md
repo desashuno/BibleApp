@@ -26,8 +26,10 @@
 
 | # | Improvement | Description | Estimated effort | Dependencies |
 |---|------------|-------------|-----------------|-------------|
-| 1 | Lexicon search | FTS5 search across definitions | 1 day | fts_lexicon |
-| 2 | Strong's number quick-nav | Type a Strong's number directly | 0.5 days | Component |
+| 1 | Lexicon search | FTS5 search across definitions via fts_lexicon (19,570 entries indexed) | 1 day | fts_lexicon |
+| 2 | Strong's number quick-nav | Type a Strong's number directly to jump to definition | 0.5 days | Component |
+| 3 | Word cloud | Visual cloud of most frequent words in a book/chapter | 2 days | word_occurrences |
+| 4 | Comparative usage | Show how different translations render the same Strong's word | 1.5 days | Multiple Bible texts |
 
 ---
 
@@ -35,10 +37,11 @@
 
 | Logos Feature | BibleStudio Status | Priority | Notes |
 |--------------|-------------------|----------|-------|
-| Word study panel | Planned | P0 | Core feature |
-| Frequency chart | Planned | P1 | Bar chart by book |
+| Word study panel | ✅ Data ready (19,570 lexicon entries: 11,682 Hebrew + 11,035 Greek from STEPBible) | P0 | Pre-seeded by data pipeline |
+| Frequency chart | ✅ Data ready (427,503 word occurrences) | P1 | Bar chart by book |
 | Semantic domains | Planned | P1 | Domain grouping |
 | Reverse interlinear link | Covered by morphology module | — | — |
+| Word cloud | Planned | P2 | Visual frequency display |
 
 ---
 
@@ -47,7 +50,8 @@
 | Phase | Improvements | Total effort | Prerequisites |
 |-------|-------------|-------------|--------------|
 | **Phase 4** | P0 #1–3, P1 #1 | ~8 days | Phase 3 complete |
-| **Phase 4.5** | P1 #2–3, P2 | ~3.5 days | Phase 4 complete |
+| **Phase 4.5** | P1 #2–3, P2 | ~5 days | Phase 4 complete |
+| **Phase 6 (Data Integration)** | Seed DB wiring | ~0.5 days | Data pipeline |
 
 ---
 
@@ -56,3 +60,4 @@
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-02-26 | Roadmap created from Phase 4 tasks | — |
+| 2026-02-28 | Updated with data pipeline stats, added P2 enhancements | — |

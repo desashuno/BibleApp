@@ -1,0 +1,99 @@
+-- Atlas.sq
+-- Query group: Theological Atlas locations, regions, and verse links
+-- Generated class: AtlasQueries
+
+-- ═══════════════════════════ Locations ═══════════════════════════
+
+getLocationById:
+SELECT *
+FROM atlas_locations
+WHERE id = :locationId;
+
+getLocationsByType:
+SELECT *
+FROM atlas_locations
+WHERE type = :type
+ORDER BY name ASC;
+
+getAllLocations:
+SELECT *
+FROM atlas_locations
+ORDER BY name ASC;
+
+getLocationsByBounds:
+SELECT *
+FROM atlas_locations
+WHERE latitude BETWEEN :south AND :north
+  AND longitude BETWEEN :west AND :east
+ORDER BY name ASC;
+
+insertLocation:
+INSERT INTO atlas_locations(name, modern_name, latitude, longitude, type, description, era)
+VALUES (:name, :modernName, :latitude, :longitude, :type, :description, :era);
+
+lastInsertLocationId:
+SELECT last_insert_rowid();
+
+updateLocation:
+UPDATE atlas_locations
+SET name = :name, modern_name = :modernName, latitude = :latitude, longitude = :longitude,
+    type = :type, description = :description, era = :era
+WHERE id = :locationId;
+
+deleteLocation:
+DELETE FROM atlas_locations
+WHERE id = :locationId;
+
+-- ═══════════════════════════ Verse Links ═══════════════════════════
+
+getVersesForLocation:
+SELECT global_verse_id
+FROM atlas_location_verses
+WHERE location_id = :locationId
+ORDER BY global_verse_id ASC;
+
+getLocationsForVerse:
+SELECT al.*
+FROM atlas_locations al
+INNER JOIN atlas_location_verses alv ON al.id = alv.location_id
+WHERE alv.global_verse_id = :globalVerseId
+ORDER BY al.name ASC;
+
+insertLocationVerse:
+INSERT INTO atlas_location_verses(location_id, global_verse_id)
+VALUES (:locationId, :globalVerseId);
+
+deleteLocationVerse:
+DELETE FROM atlas_location_verses
+WHERE location_id = :locationId AND global_verse_id = :globalVerseId;
+
+-- ═══════════════════════════ Regions ═══════════════════════════
+
+getRegionById:
+SELECT *
+FROM atlas_regions
+WHERE id = :regionId;
+
+getAllRegions:
+SELECT *
+FROM atlas_regions
+ORDER BY name ASC;
+
+insertRegion:
+INSERT INTO atlas_regions(name, description, bounds_north, bounds_south, bounds_east, bounds_west)
+VALUES (:name, :description, :boundsNorth, :boundsSouth, :boundsEast, :boundsWest);
+
+-- ═══════════════════════════ FTS Search ═══════════════════════════
+
+searchLocations:
+SELECT al.*
+FROM atlas_locations al
+INNER JOIN fts_atlas_locations fts ON al.id = fts.rowid
+WHERE fts_atlas_locations MATCH :query
+ORDER BY rank
+LIMIT :maxResults;
+
+-- ═══════════════════════════ Aggregates ═══════════════════════════
+
+locationCount:
+SELECT COUNT(*) FROM atlas_locations;

@@ -22,7 +22,10 @@ object PaneRegistration {
         registerBibleReader()
         registerTextComparison()
         registerSearch()
-        registerSyntaxSearch()
+        registerKnowledgeGraph()
+        registerTimeline()
+        registerTheologicalAtlas()
+        registerAudioSync()
         registerCrossReferences()
         registerModuleManager()
         registerSettings()
@@ -63,10 +66,31 @@ object PaneRegistration {
         }
     }
 
-    private fun registerSyntaxSearch() {
+    private fun registerKnowledgeGraph() {
         val meta = PaneRegistry.metadata("knowledge-graph")
         PaneRegistry.register("knowledge-graph", meta) { config ->
-            Napier.d("SyntaxSearchPane activated with config=$config")
+            Napier.d("KnowledgeGraphPane activated with config=$config")
+        }
+    }
+
+    private fun registerTimeline() {
+        val meta = PaneRegistry.metadata("timeline")
+        PaneRegistry.register("timeline", meta) { config ->
+            Napier.d("TimelinePane activated with config=$config")
+        }
+    }
+
+    private fun registerTheologicalAtlas() {
+        val meta = PaneRegistry.metadata("theological-atlas")
+        PaneRegistry.register("theological-atlas", meta) { config ->
+            Napier.d("TheologicalAtlasPane activated with config=$config")
+        }
+    }
+
+    private fun registerAudioSync() {
+        val meta = PaneRegistry.metadata("audio-sync")
+        PaneRegistry.register("audio-sync", meta) { config ->
+            Napier.d("AudioSyncPane activated with config=$config")
         }
     }
 
@@ -174,5 +198,5 @@ object PaneRegistration {
         }
     }
 
-    private const val PANE_COUNT = 17
+    private const val PANE_COUNT = 21
 }

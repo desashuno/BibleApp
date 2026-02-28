@@ -4,6 +4,7 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -159,5 +160,19 @@ class DefaultDashboardComponentTest {
         assertEquals(1, state.activePlans)
         assertEquals(2, state.recentHistory.size)
         assertTrue(state.recentHistory[0].contains("1001001"))
+
+        // Widget assertions
+        assertNotNull(state.dailyVerse)
+        assertTrue(state.dailyVerse!!.text.isNotBlank())
+
+        assertNotNull(state.continueReading)
+        assertEquals(1001001L, state.continueReading!!.globalVerseId)
+
+        assertNotNull(state.readingPlanProgress)
+        assertEquals("Plan 1", state.readingPlanProgress!!.planTitle)
+        assertEquals(30, state.readingPlanProgress!!.totalDays)
+
+        assertEquals(2, state.recentNotes.size)
+        assertEquals("Note 1", state.recentNotes[0].title)
     }
 }

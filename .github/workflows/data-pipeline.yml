@@ -1,0 +1,54 @@
+name: Data Pipeline
+
+on:
+  push:
+    paths:
+      - 'data-pipeline/**'
+  pull_request:
+    paths:
+      - 'data-pipeline/**'
+  workflow_dispatch:
+
+jobs:
+  build-seed-db:
+    name: Build Seed Database
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: data-pipeline
+        run: pip install -r requirements.txt
+
+      - name: Cache raw downloads
+        uses: actions/cache@v4
+        with:
+          path: data-pipeline/raw
+          key: data-pipeline-raw-${{ hashFiles('data-pipeline/download.py') }}
+          restore-keys: data-pipeline-raw-
+
+      - name: Download raw data
+        working-directory: data-pipeline
+        run: python download.py
+
+      - name: Normalize into seed database
+        working-directory: data-pipeline
+        run: python normalize.py
+
+      - name: Verify seed database
+        working-directory: data-pipeline
+        run: python normalize.py --verify
+
+      - name: Upload seed database
+        uses: actions/upload-artifact@v4
+        with:
+          name: biblestudio-seed-db
+          path: data-pipeline/output/biblestudio-seed.db
+          retention-days: 30

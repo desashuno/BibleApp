@@ -34,7 +34,10 @@ BibleStudio is a multi-platform Bible study application targeting Android, iOS, 
 | [Phase 3](phase-3-core-modules.md) | Core modules — Bible Reader, Search, Cross-Refs, Settings, Import/Export |
 | [Phase 4](phase-4-study-writing.md) | Study & Writing — Word Study, Morphology, Passage Guide, Notes, Highlights |
 | [Phase 5](phase-5-advanced.md) | Advanced modules — Knowledge Graph, Timeline, Atlas, Exegetical Guide, Sermons, Reading Plans, Dashboard, Audio |
-| [Phase 6](phase-6-platform-release.md) | Platform release — packaging, CI/CD, security audit, performance, accessibility, launch |
+| [Phase 6](phase-6-data-integration.md) | Data integration — pipeline fixes, seed DB bundling, OSM atlas, module enhancements |
+| [Phase 7](phase-7-integration-verification.md) | Verificación integral — congruencia de módulos, UI funcional, layout VSCode, Biblias en español, auditoría de placeholders |
+| [Phase 8](phase-8-module-review.md) | Revisión de módulos — auditoría individual, nuevas fuentes de datos, validación cruzada |
+| [Build Plan](build-plan.md) | Platform release — packaging, CI/CD, security audit, performance, accessibility, launch |
 
 ### Phase Dependencies
 
@@ -44,7 +47,11 @@ Phase 1 (Foundation)
          └──→ Phase 3 (Core Modules)
                 ├──→ Phase 4 (Study & Writing)
                 │      └──→ Phase 5 (Advanced)
-                └──→ Phase 6 (Platform Release) ← can start in parallel with Phase 4/5
+                ├──→ Phase 6 (Data Integration) ← can start in parallel with Phase 4/5
+                │      └──→ Phase 7 (Verificación Integral) ← after Phase 6
+                │             └──→ Phase 8 (Revisión de Módulos)
+                │                    └──→ Build Plan (Platform Release)
+                └─────────────────────────→ Build Plan ← after Phase 8
 ```
 
 ### How to Use This Roadmap

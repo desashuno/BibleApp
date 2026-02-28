@@ -1,11 +1,11 @@
-# Phase 6 — Platform Packaging & Release
+# Build Plan — Platform Packaging & Release
 
 > Platform builds, CI/CD pipeline, performance optimization, accessibility, security, launch.
-> **Prerequisites**: Phases 3–5 modules functional and tested.
+> **Prerequisites**: Phase 8 (Module Review) complete; all modules verified and data-clean.
 
 ---
 
-## 6.1 Android Build & Packaging
+## Android Build & Packaging
 
 - [ ] Configure `build.gradle.kts` for release signing: keystore, key alias, passwords via environment variables
 - [ ] Enable R8 (ProGuard) code shrinking and obfuscation for release builds
@@ -18,7 +18,7 @@
 - [ ] Write instrumented UI test suite (Compose UI Test on device)
 - [ ] Prepare Google Play Store listing: screenshots (phone + tablet), description, feature graphic
 
-## 6.2 iOS Build & Packaging
+## iOS Build & Packaging
 
 - [ ] Configure Xcode project via KMP `iosArm64` + `iosSimulatorArm64` targets
 - [ ] Generate `linkReleaseFrameworkIosArm64` shared framework
@@ -31,7 +31,7 @@
 - [ ] Write XCTest UI test suite for critical flows
 - [ ] Prepare App Store listing: screenshots (iPhone + iPad), description, preview video
 
-## 6.3 Desktop Builds (Windows, macOS, Linux)
+## Desktop Builds (Windows, macOS, Linux)
 
 - [ ] Configure `compose.desktop` DSL in `build.gradle.kts`
 - [ ] Windows: generate MSI installer with `packageMsi` task
@@ -46,7 +46,7 @@
 - [ ] Verify desktop app cold start < 3 seconds
 - [ ] Implement window state persistence: size, position, maximized/fullscreen
 
-## 6.4 CI/CD Pipeline (GitHub Actions)
+## CI/CD Pipeline (GitHub Actions)
 
 - [ ] Create `.github/workflows/build.yml`: build all targets on push/PR
 - [ ] Configure matrix strategy: `[android, ios, desktop-windows, desktop-macos, desktop-linux]`
@@ -63,7 +63,7 @@
 - [ ] Upload desktop installers to GitHub Releases
 - [ ] Add build status badges to README.md
 
-## 6.5 Performance Optimization
+## Performance Optimization
 
 - [ ] Profile app startup time on all platforms — target < 2s (mobile), < 3s (desktop)
 - [ ] Optimize SQLDelight queries: add missing indexes, analyze `EXPLAIN QUERY PLAN`
@@ -76,7 +76,7 @@
 - [ ] Implement database WAL mode for concurrent read/write performance
 - [ ] Write benchmark tests for critical paths (chapter load, search, graph render)
 
-## 6.6 Accessibility
+## Accessibility
 
 - [ ] Add `contentDescription` / `semantics` to all interactive elements
 - [ ] Verify TalkBack (Android) navigation through Bible Reader, Search, and Notes
@@ -89,7 +89,7 @@
 - [ ] Support dynamic type / system font scaling (up to 2x)
 - [ ] Test with color blindness simulation (protanopia, deuteranopia)
 
-## 6.7 Security
+## Security
 
 - [ ] Audit all platform file access: restrict to app sandbox directories
 - [ ] Validate all module import files: sanitize XML/USFM input, reject malformed data
@@ -102,7 +102,7 @@
 - [ ] Add SBOM (Software Bill of Materials) generation to CI pipeline
 - [ ] Run OWASP dependency check and resolve critical/high vulnerabilities
 
-## 6.8 Launch Preparation
+## Launch Preparation
 
 - [ ] Create app landing page / website with feature overview and download links
 - [ ] Write user documentation: Getting Started guide, feature walkthroughs
@@ -119,7 +119,7 @@
 
 ---
 
-## Phase 6 Exit Criteria
+## Build Plan Exit Criteria
 
 - [ ] Android AAB builds, signs, and installs correctly on API 26–35
 - [ ] iOS framework links and runs on iPhone (iOS 16+) and iPad

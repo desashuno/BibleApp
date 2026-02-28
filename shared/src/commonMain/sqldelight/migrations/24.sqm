@@ -1,0 +1,56 @@
+-- Migration 24: Knowledge Graph tables (graph_nodes, graph_edges, graph_node_verses, fts_graph_nodes)
+
+CREATE TABLE graph_nodes (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    properties TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_graph_nodes_type ON graph_nodes(type);
+CREATE INDEX idx_graph_nodes_name ON graph_nodes(name);
+
+CREATE TABLE graph_edges (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL REFERENCES graph_nodes(id) ON DELETE CASCADE,
+    target_id INTEGER NOT NULL REFERENCES graph_nodes(id) ON DELETE CASCADE,
+    relationship TEXT NOT NULL,
+    weight REAL NOT NULL DEFAULT 1.0
+);
+
+CREATE INDEX idx_graph_edges_source ON graph_edges(source_id);
+CREATE INDEX idx_graph_edges_target ON graph_edges(target_id);
+CREATE INDEX idx_graph_edges_rel ON graph_edges(relationship);
+
+CREATE TABLE graph_node_verses (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL REFERENCES graph_nodes(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX idx_graph_node_verses_node ON graph_node_verses(node_id);
+CREATE INDEX idx_graph_node_verses_verse ON graph_node_verses(global_verse_id);
+
+-- FTS5: full-text search on graph node name and description
+CREATE VIRTUAL TABLE fts_graph_nodes USING fts5(
+    name, description,
+    content=graph_nodes, content_rowid=id
+);
+
+CREATE TRIGGER fts_graph_nodes_ai AFTER INSERT ON graph_nodes BEGIN
+    INSERT INTO fts_graph_nodes(rowid, name, description)
+    VALUES (new.id, new.name, new.description);
+END;
+
+CREATE TRIGGER fts_graph_nodes_ad AFTER DELETE ON graph_nodes BEGIN
+    INSERT INTO fts_graph_nodes(fts_graph_nodes, rowid, name, description)
+    VALUES ('delete', old.id, old.name, old.description);
+END;
+
+CREATE TRIGGER fts_graph_nodes_au AFTER UPDATE ON graph_nodes BEGIN
+    INSERT INTO fts_graph_nodes(fts_graph_nodes, rowid, name, description)
+    VALUES ('delete', old.id, old.name, old.description);
+    INSERT INTO fts_graph_nodes(rowid, name, description)
+    VALUES (new.id, new.name, new.description);
+END;

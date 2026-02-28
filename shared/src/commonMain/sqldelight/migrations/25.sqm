@@ -1,0 +1,46 @@
+-- Migration 25: Timeline tables (timeline_events, timeline_event_verses, fts_timeline_events)
+
+CREATE TABLE timeline_events (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    start_year INTEGER NOT NULL,
+    end_year INTEGER,
+    category TEXT NOT NULL,
+    importance INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX idx_timeline_events_years ON timeline_events(start_year, end_year);
+CREATE INDEX idx_timeline_events_category ON timeline_events(category);
+
+CREATE TABLE timeline_event_verses (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL REFERENCES timeline_events(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX idx_timeline_event_verses_event ON timeline_event_verses(event_id);
+CREATE INDEX idx_timeline_event_verses_verse ON timeline_event_verses(global_verse_id);
+
+-- FTS5: full-text search on timeline event title and description
+CREATE VIRTUAL TABLE fts_timeline_events USING fts5(
+    title, description,
+    content=timeline_events, content_rowid=id
+);
+
+CREATE TRIGGER fts_timeline_events_ai AFTER INSERT ON timeline_events BEGIN
+    INSERT INTO fts_timeline_events(rowid, title, description)
+    VALUES (new.id, new.title, new.description);
+END;
+
+CREATE TRIGGER fts_timeline_events_ad AFTER DELETE ON timeline_events BEGIN
+    INSERT INTO fts_timeline_events(fts_timeline_events, rowid, title, description)
+    VALUES ('delete', old.id, old.title, old.description);
+END;
+
+CREATE TRIGGER fts_timeline_events_au AFTER UPDATE ON timeline_events BEGIN
+    INSERT INTO fts_timeline_events(fts_timeline_events, rowid, title, description)
+    VALUES ('delete', old.id, old.title, old.description);
+    INSERT INTO fts_timeline_events(rowid, title, description)
+    VALUES (new.id, new.title, new.description);
+END;

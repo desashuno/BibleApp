@@ -1,0 +1,113 @@
+-- KnowledgeGraph.sq
+-- Query group: Knowledge graph entities, edges, and verse links
+-- Generated class: KnowledgeGraphQueries
+
+-- ═══════════════════════════ Nodes ═══════════════════════════
+
+getNodeById:
+SELECT *
+FROM graph_nodes
+WHERE id = :nodeId;
+
+getNodesByType:
+SELECT *
+FROM graph_nodes
+WHERE type = :type
+ORDER BY name ASC;
+
+getAllNodes:
+SELECT *
+FROM graph_nodes
+ORDER BY name ASC;
+
+insertNode:
+INSERT INTO graph_nodes(name, type, description, properties)
+VALUES (:name, :type, :description, :properties);
+
+lastInsertNodeId:
+SELECT last_insert_rowid();
+
+updateNode:
+UPDATE graph_nodes
+SET name = :name, type = :type, description = :description, properties = :properties
+WHERE id = :nodeId;
+
+deleteNode:
+DELETE FROM graph_nodes
+WHERE id = :nodeId;
+
+-- ═══════════════════════════ Edges ═══════════════════════════
+
+getEdgesFromNode:
+SELECT *
+FROM graph_edges
+WHERE source_id = :nodeId
+ORDER BY weight DESC;
+
+getEdgesToNode:
+SELECT *
+FROM graph_edges
+WHERE target_id = :nodeId
+ORDER BY weight DESC;
+
+getAllEdgesForNode:
+SELECT *
+FROM graph_edges
+WHERE source_id = :nodeId OR target_id = :nodeId
+ORDER BY weight DESC;
+
+insertEdge:
+INSERT INTO graph_edges(source_id, target_id, relationship, weight)
+VALUES (:sourceId, :targetId, :relationship, :weight);
+
+deleteEdge:
+DELETE FROM graph_edges
+WHERE id = :edgeId;
+
+-- ═══════════════════════════ Verse Links ═══════════════════════════
+
+getVersesForNode:
+SELECT global_verse_id
+FROM graph_node_verses
+WHERE node_id = :nodeId
+ORDER BY global_verse_id ASC;
+
+getNodesForVerse:
+SELECT gn.*
+FROM graph_nodes gn
+INNER JOIN graph_node_verses gnv ON gn.id = gnv.node_id
+WHERE gnv.global_verse_id = :globalVerseId
+ORDER BY gn.name ASC;
+
+insertNodeVerse:
+INSERT INTO graph_node_verses(node_id, global_verse_id)
+VALUES (:nodeId, :globalVerseId);
+
+deleteNodeVerse:
+DELETE FROM graph_node_verses
+WHERE node_id = :nodeId AND global_verse_id = :globalVerseId;
+
+-- ═══════════════════════════ FTS Search ═══════════════════════════
+
+searchNodes:
+SELECT gn.*
+FROM graph_nodes gn
+INNER JOIN fts_graph_nodes fts ON gn.id = fts.rowid
+WHERE fts_graph_nodes MATCH :query
+ORDER BY rank
+LIMIT :maxResults;
+
+-- ═══════════════════════════ Graph Traversal Helpers ═══════════════════════════
+
+getNeighborNodes:
+SELECT DISTINCT gn.*
+FROM graph_nodes gn
+INNER JOIN graph_edges ge ON (ge.target_id = gn.id AND ge.source_id = :nodeId)
+                          OR (ge.source_id = gn.id AND ge.target_id = :nodeId)
+ORDER BY gn.name ASC;
+
+nodeCount:
+SELECT COUNT(*) FROM graph_nodes;
+
+edgeCount:
+SELECT COUNT(*) FROM graph_edges;

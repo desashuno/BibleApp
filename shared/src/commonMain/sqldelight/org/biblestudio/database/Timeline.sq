@@ -1,0 +1,86 @@
+-- Timeline.sq
+-- Query group: Timeline events and verse links
+-- Generated class: TimelineQueries
+
+-- ═══════════════════════════ Events ═══════════════════════════
+
+getEventById:
+SELECT *
+FROM timeline_events
+WHERE id = :eventId;
+
+getEventsByRange:
+SELECT *
+FROM timeline_events
+WHERE start_year >= :startYear AND (end_year IS NULL OR start_year <= :endYear)
+ORDER BY start_year ASC;
+
+getEventsByCategory:
+SELECT *
+FROM timeline_events
+WHERE category = :category
+ORDER BY start_year ASC;
+
+getAllEvents:
+SELECT *
+FROM timeline_events
+ORDER BY start_year ASC;
+
+insertEvent:
+INSERT INTO timeline_events(title, description, start_year, end_year, category, importance)
+VALUES (:title, :description, :startYear, :endYear, :category, :importance);
+
+lastInsertEventId:
+SELECT last_insert_rowid();
+
+updateEvent:
+UPDATE timeline_events
+SET title = :title, description = :description, start_year = :startYear,
+    end_year = :endYear, category = :category, importance = :importance
+WHERE id = :eventId;
+
+deleteEvent:
+DELETE FROM timeline_events
+WHERE id = :eventId;
+
+-- ═══════════════════════════ Verse Links ═══════════════════════════
+
+getVersesForEvent:
+SELECT global_verse_id
+FROM timeline_event_verses
+WHERE event_id = :eventId
+ORDER BY global_verse_id ASC;
+
+getEventsForVerse:
+SELECT te.*
+FROM timeline_events te
+INNER JOIN timeline_event_verses tev ON te.id = tev.event_id
+WHERE tev.global_verse_id = :globalVerseId
+ORDER BY te.start_year ASC;
+
+insertEventVerse:
+INSERT INTO timeline_event_verses(event_id, global_verse_id)
+VALUES (:eventId, :globalVerseId);
+
+deleteEventVerse:
+DELETE FROM timeline_event_verses
+WHERE event_id = :eventId AND global_verse_id = :globalVerseId;
+
+-- ═══════════════════════════ FTS Search ═══════════════════════════
+
+searchEvents:
+SELECT te.*
+FROM timeline_events te
+INNER JOIN fts_timeline_events fts ON te.id = fts.rowid
+WHERE fts_timeline_events MATCH :query
+ORDER BY rank
+LIMIT :maxResults;
+
+-- ═══════════════════════════ Aggregates ═══════════════════════════
+
+eventCount:
+SELECT COUNT(*) FROM timeline_events;
+
+yearRange:
+SELECT MIN(start_year) AS min_year, MAX(COALESCE(end_year, start_year)) AS max_year
+FROM timeline_events;

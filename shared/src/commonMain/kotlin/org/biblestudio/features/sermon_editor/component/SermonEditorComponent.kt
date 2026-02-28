@@ -42,4 +42,6 @@ interface SermonEditorComponent {
     fun onMoveSectionUp(sectionId: Long)
     fun onMoveSectionDown(sectionId: Long)
     fun onSearchQueryChanged(query: String)
+    fun onInsertScriptureReference(globalVerseId: Long)
+    fun onExportMarkdown(): String
 }

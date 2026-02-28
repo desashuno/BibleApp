@@ -1,0 +1,57 @@
+-- Migration 26: Theological Atlas tables (atlas_locations, atlas_location_verses, atlas_regions)
+
+CREATE TABLE atlas_locations (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    modern_name TEXT,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    type TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    era TEXT NOT NULL DEFAULT 'AllEras'
+);
+
+CREATE INDEX idx_atlas_locations_name ON atlas_locations(name);
+CREATE INDEX idx_atlas_locations_type ON atlas_locations(type);
+
+CREATE TABLE atlas_location_verses (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    location_id INTEGER NOT NULL REFERENCES atlas_locations(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX idx_atlas_location_verses_loc ON atlas_location_verses(location_id);
+CREATE INDEX idx_atlas_location_verses_verse ON atlas_location_verses(global_verse_id);
+
+CREATE TABLE atlas_regions (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    bounds_north REAL NOT NULL,
+    bounds_south REAL NOT NULL,
+    bounds_east REAL NOT NULL,
+    bounds_west REAL NOT NULL
+);
+
+-- FTS5: full-text search on atlas location name and description
+CREATE VIRTUAL TABLE fts_atlas_locations USING fts5(
+    name, description,
+    content=atlas_locations, content_rowid=id
+);
+
+CREATE TRIGGER fts_atlas_locations_ai AFTER INSERT ON atlas_locations BEGIN
+    INSERT INTO fts_atlas_locations(rowid, name, description)
+    VALUES (new.id, new.name, new.description);
+END;
+
+CREATE TRIGGER fts_atlas_locations_ad AFTER DELETE ON atlas_locations BEGIN
+    INSERT INTO fts_atlas_locations(fts_atlas_locations, rowid, name, description)
+    VALUES ('delete', old.id, old.name, old.description);
+END;
+
+CREATE TRIGGER fts_atlas_locations_au AFTER UPDATE ON atlas_locations BEGIN
+    INSERT INTO fts_atlas_locations(fts_atlas_locations, rowid, name, description)
+    VALUES ('delete', old.id, old.name, old.description);
+    INSERT INTO fts_atlas_locations(rowid, name, description)
+    VALUES (new.id, new.name, new.description);
+END;

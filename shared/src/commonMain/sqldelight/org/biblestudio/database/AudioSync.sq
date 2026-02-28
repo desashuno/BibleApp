@@ -1,0 +1,70 @@
+-- AudioSync.sq
+-- Query group: Audio tracks and sync points
+-- Generated class: AudioSyncQueries
+
+-- ═══════════════════════════ Tracks ═══════════════════════════
+
+getTrackById:
+SELECT *
+FROM audio_tracks
+WHERE id = :trackId;
+
+getTrackForChapter:
+SELECT *
+FROM audio_tracks
+WHERE bible_id = :bibleId AND book_number = :bookNumber AND chapter_number = :chapterNumber
+LIMIT 1;
+
+getTracksForBook:
+SELECT *
+FROM audio_tracks
+WHERE bible_id = :bibleId AND book_number = :bookNumber
+ORDER BY chapter_number ASC;
+
+insertTrack:
+INSERT INTO audio_tracks(title, file_path, bible_id, book_number, chapter_number, duration_ms, narrator, language)
+VALUES (:title, :filePath, :bibleId, :bookNumber, :chapterNumber, :durationMs, :narrator, :language);
+
+lastInsertTrackId:
+SELECT last_insert_rowid();
+
+deleteTrack:
+DELETE FROM audio_tracks
+WHERE id = :trackId;
+
+-- ═══════════════════════════ Sync Points ═══════════════════════════
+
+getSyncPointsForTrack:
+SELECT *
+FROM audio_sync_points
+WHERE track_id = :trackId
+ORDER BY start_ms ASC;
+
+getSyncPointForVerse:
+SELECT *
+FROM audio_sync_points
+WHERE track_id = :trackId AND global_verse_id = :globalVerseId
+LIMIT 1;
+
+getSyncPointAtTime:
+SELECT *
+FROM audio_sync_points
+WHERE track_id = :trackId AND start_ms <= :positionMs
+ORDER BY start_ms DESC
+LIMIT 1;
+
+insertSyncPoint:
+INSERT INTO audio_sync_points(track_id, global_verse_id, start_ms, end_ms)
+VALUES (:trackId, :globalVerseId, :startMs, :endMs);
+
+deleteSyncPointsForTrack:
+DELETE FROM audio_sync_points
+WHERE track_id = :trackId;
+
+-- ═══════════════════════════ Aggregates ═══════════════════════════
+
+trackCount:
+SELECT COUNT(*) FROM audio_tracks;
+
+syncPointCount:
+SELECT COUNT(*) FROM audio_sync_points WHERE track_id = :trackId;

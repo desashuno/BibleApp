@@ -19,6 +19,7 @@
 | [**TESTING.md**](TESTING.md) | Test pyramid, tools (Turbine, MockK, SQLDelight in-memory driver, Compose UI Test), patterns for Component/Query/Repository/Composable/Migration tests, coverage targets (80%+) | All developers |
 | [**CI_CD.md**](CI_CD.md) | GitHub Actions workflow (Gradle-based), quality gates (detekt, ktlint, Kover), branch protection, release process, versioning | DevOps, maintainers |
 | [**SECURITY.md**](SECURITY.md) | Threat model, data protection, user data inventory, import validation, SQL safety (SQLDelight parameterization), input sanitization, platform permissions, dependency security | All developers, security |
+| [**OPEN_DATA_SOURCES.md**](OPEN_DATA_SOURCES.md) | Open-source data sources per module, licenses, attribution, data pipeline overview | All developers, data |
 
 ---
 
@@ -159,3 +160,4 @@ Go to `modules/{name}/README.md` — each has complete standalone documentation
 | `gradle.properties` | Project root | KMP & Compose flags |
 | `libs.versions.toml` | `gradle/` | Dependency version catalog |
 | `detekt.yml` | Project root | Static analysis rules |
+| `data-pipeline/` | Project root | Download & normalize open-source Bible data into SQLite |

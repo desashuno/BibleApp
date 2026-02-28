@@ -21,6 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.cross_references.component.CrossReferenceState
@@ -110,9 +112,11 @@ private fun CrossReferenceRow(
                 .clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Type badge
+            // Type badge with confidence heatmap color
+            @Suppress("MagicNumber")
+            val badgeColor = confidenceColor(ref.confidence)
             Surface(
-                color = MaterialTheme.colorScheme.secondaryContainer,
+                color = badgeColor,
                 shape = RoundedCornerShape(Spacing.Space4)
             ) {
                 Text(
@@ -166,4 +170,23 @@ private fun CrossReferenceRow(
         }
     }
     HorizontalDivider(modifier = Modifier.padding(horizontal = Spacing.Space16))
+}
+
+/**
+ * Maps a confidence value (0.0–1.0) to a heatmap color.
+ * - 1.0 → green  (high confidence)
+ * - 0.5 → amber
+ * - 0.0 → red    (low confidence)
+ */
+@Suppress("MagicNumber")
+private fun confidenceColor(confidence: Double): Color {
+    val t = confidence.toFloat().coerceIn(0f, 1f)
+    val low = Color(0xFFEF5350)   // Red 400
+    val mid = Color(0xFFFFA726)   // Orange 400
+    val high = Color(0xFF66BB6A)  // Green 400
+    return if (t < 0.5f) {
+        lerp(low, mid, t * 2f)
+    } else {
+        lerp(mid, high, (t - 0.5f) * 2f)
+    }
 }

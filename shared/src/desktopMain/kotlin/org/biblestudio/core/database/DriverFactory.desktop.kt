@@ -8,8 +8,13 @@ import java.io.File
 
 actual fun createSqlDriver(schema: SqlSchema<QueryResult.Value<Unit>>): SqlDriver {
     val dbPath = File(appDataPath(), "biblestudio.db")
+    val seeded = copySeedDatabaseIfNeeded(dbPath.absolutePath)
+    val dbExists = dbPath.exists()
     val driver = JdbcSqliteDriver("jdbc:sqlite:${dbPath.absolutePath}")
-    schema.create(driver)
+    if (!dbExists && !seeded) {
+        // No seed DB available — create empty schema
+        schema.create(driver)
+    }
     return driver
 }
 

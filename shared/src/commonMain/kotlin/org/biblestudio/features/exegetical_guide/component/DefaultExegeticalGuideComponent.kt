@@ -41,6 +41,14 @@ class DefaultExegeticalGuideComponent(
         loadGuide(globalVerseId)
     }
 
+    override fun onToggleSection(section: GuideSection) {
+        _state.update {
+            val sections = it.expandedSections.toMutableSet()
+            if (sections.contains(section)) sections.remove(section) else sections.add(section)
+            it.copy(expandedSections = sections)
+        }
+    }
+
     private fun observeVerseBus() {
         scope.launch {
             verseBus.events

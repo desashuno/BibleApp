@@ -18,6 +18,14 @@ import org.biblestudio.features.exegetical_guide.component.DefaultExegeticalGuid
 import org.biblestudio.features.exegetical_guide.component.ExegeticalGuideComponent
 import org.biblestudio.features.highlights.component.DefaultHighlightComponent
 import org.biblestudio.features.highlights.component.HighlightComponent
+import org.biblestudio.features.knowledge_graph.component.DefaultKnowledgeGraphComponent
+import org.biblestudio.features.knowledge_graph.component.KnowledgeGraphComponent
+import org.biblestudio.features.audio_sync.component.AudioSyncComponent
+import org.biblestudio.features.audio_sync.component.DefaultAudioSyncComponent
+import org.biblestudio.features.theological_atlas.component.AtlasComponent
+import org.biblestudio.features.theological_atlas.component.DefaultAtlasComponent
+import org.biblestudio.features.timeline.component.DefaultTimelineComponent
+import org.biblestudio.features.timeline.component.TimelineComponent
 import org.biblestudio.features.import_export.component.DefaultImportExportComponent
 import org.biblestudio.features.import_export.component.ImportExportComponent
 import org.biblestudio.features.module_system.component.DefaultModuleManagerComponent
@@ -224,6 +232,38 @@ val componentModule = module {
             commentaryRepository = get(),
             crossRefRepository = get(),
             wordStudyRepository = get(),
+            verseBus = get()
+        )
+    }
+
+    factory<KnowledgeGraphComponent> { (componentContext: ComponentContext) ->
+        DefaultKnowledgeGraphComponent(
+            componentContext = componentContext,
+            repository = get(),
+            verseBus = get()
+        )
+    }
+
+    factory<TimelineComponent> { (componentContext: ComponentContext) ->
+        DefaultTimelineComponent(
+            componentContext = componentContext,
+            repository = get(),
+            verseBus = get()
+        )
+    }
+
+    factory<AtlasComponent> { (componentContext: ComponentContext) ->
+        DefaultAtlasComponent(
+            componentContext = componentContext,
+            repository = get(),
+            verseBus = get()
+        )
+    }
+
+    factory<AudioSyncComponent> { (componentContext: ComponentContext) ->
+        DefaultAudioSyncComponent(
+            componentContext = componentContext,
+            repository = get(),
             verseBus = get()
         )
     }

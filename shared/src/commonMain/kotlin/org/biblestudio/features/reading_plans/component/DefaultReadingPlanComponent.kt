@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.biblestudio.features.reading_plans.domain.entities.BuiltInPlans
 import org.biblestudio.features.reading_plans.domain.entities.ReadingPlan
 import org.biblestudio.features.reading_plans.domain.repositories.ReadingPlanRepository
 
@@ -27,6 +28,7 @@ class DefaultReadingPlanComponent(
     override val state: StateFlow<ReadingPlanState> = _state.asStateFlow()
 
     init {
+        seedBuiltInPlans()
         loadPlans()
     }
 
@@ -85,6 +87,20 @@ class DefaultReadingPlanComponent(
                     }
                 }
                 loadPlans()
+            }
+        }
+    }
+
+    private fun seedBuiltInPlans() {
+        scope.launch {
+            repository.getPlans().onSuccess { existing ->
+                val existingUuids = existing.map { it.uuid }.toSet()
+                for (plan in BuiltInPlans.ALL) {
+                    if (plan.uuid !in existingUuids) {
+                        repository.createPlan(plan)
+                        Napier.i("Seeded built-in plan: ${plan.title}")
+                    }
+                }
             }
         }
     }

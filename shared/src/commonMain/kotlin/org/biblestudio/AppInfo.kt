@@ -7,5 +7,5 @@ package org.biblestudio
 object AppInfo {
     const val NAME = "BibleStudio"
     const val VERSION = "0.1.0"
-    const val DATABASE_VERSION = 24
+    const val DATABASE_VERSION = 28
 }

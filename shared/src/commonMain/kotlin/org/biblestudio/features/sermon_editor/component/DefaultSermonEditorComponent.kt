@@ -176,6 +176,50 @@ class DefaultSermonEditorComponent(
         reorderSection(sectionId, delta = 1)
     }
 
+    @Suppress("MagicNumber")
+    override fun onInsertScriptureReference(globalVerseId: Long) {
+        val sections = _state.value.sections
+        if (sections.isEmpty()) return
+        // Decode BBCCCVVV → human-readable reference stub
+        val book = (globalVerseId / 1_000_000).toInt()
+        val chapter = ((globalVerseId % 1_000_000) / 1_000).toInt()
+        val verse = (globalVerseId % 1_000).toInt()
+        val refText = " [${book}:${chapter}:${verse}] "
+
+        // Append to the last section's content
+        val lastSection = sections.last()
+        val updated = lastSection.copy(content = lastSection.content + refText)
+        val updatedSections = sections.toMutableList().apply { set(lastIndex, updated) }
+        val wc = computeWordCount(updatedSections)
+        _state.update {
+            it.copy(
+                sections = updatedSections,
+                isDirty = true,
+                wordCount = wc,
+                estimatedMinutes = estimateMinutes(wc)
+            )
+        }
+        scheduleAutoSave()
+    }
+
+    override fun onExportMarkdown(): String {
+        val s = _state.value
+        val sb = StringBuilder()
+        sb.appendLine("# ${s.editTitle}")
+        if (s.editScriptureRef.isNotBlank()) {
+            sb.appendLine("**Scripture:** ${s.editScriptureRef}")
+        }
+        sb.appendLine()
+        for (section in s.sections) {
+            sb.appendLine("## ${section.type.replaceFirstChar { it.uppercase() }}")
+            sb.appendLine(section.content)
+            sb.appendLine()
+        }
+        sb.appendLine("---")
+        sb.appendLine("_Word count: ${s.wordCount} • Est. ${s.estimatedMinutes} min_")
+        return sb.toString()
+    }
+
     override fun onSearchQueryChanged(query: String) {
         _state.update { it.copy(searchQuery = query) }
         if (query.length >= 2) {
