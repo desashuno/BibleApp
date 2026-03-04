@@ -26,5 +26,22 @@ actual fun copySeedDatabaseIfNeeded(targetPath: String): Boolean {
     return true
 }
 
+actual fun extractSeedToTempFile(): String? {
+    val seedStream = Thread.currentThread().contextClassLoader
+        ?.getResourceAsStream("biblestudio-seed.db")
+        ?: SeedDatabaseHelper::class.java.getResourceAsStream("/biblestudio-seed.db")
+        ?: return null
+
+    val tempFile = File.createTempFile("biblestudio-seed-", ".db")
+    tempFile.deleteOnExit()
+    seedStream.use { input ->
+        tempFile.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    }
+    Napier.i("Extracted seed database to temp file: ${tempFile.absolutePath}")
+    return tempFile.absolutePath
+}
+
 /** Anchor class for classloader resource lookup. */
 private object SeedDatabaseHelper

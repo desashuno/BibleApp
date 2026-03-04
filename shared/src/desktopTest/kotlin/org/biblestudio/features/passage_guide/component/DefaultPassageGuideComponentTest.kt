@@ -1,7 +1,6 @@
 package org.biblestudio.features.passage_guide.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -10,13 +9,13 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.note_editor.domain.entities.Note
 import org.biblestudio.features.passage_guide.domain.entities.Outline
 import org.biblestudio.features.passage_guide.domain.entities.PassageReport
 import org.biblestudio.features.passage_guide.domain.repositories.PassageGuideRepository
 import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 class DefaultPassageGuideComponentTest {
 
@@ -70,8 +69,7 @@ class DefaultPassageGuideComponentTest {
     }
 
     private fun createComponent(verseBus: VerseBus = VerseBus()): DefaultPassageGuideComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultPassageGuideComponent(
             componentContext = context,
             repository = fakeRepo,

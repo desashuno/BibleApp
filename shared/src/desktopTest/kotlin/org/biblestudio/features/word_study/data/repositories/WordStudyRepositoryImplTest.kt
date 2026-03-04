@@ -83,15 +83,36 @@ class WordStudyRepositoryImplTest {
     }
 
     @Test
-    fun relatedWordsSharePrefix() = runTest {
-        seedLexicon()
+    fun `getRelatedWords uses transliteration prefix when available`() = runTest {
+        val db = testDb.database
+        // H1254 bara — the entry we look up (transliteration prefix = "bar")
+        db.studyQueries.insertLexiconEntry("H1254", "בָּרָא", "bara", "to create", null)
+        // H1288 barak — same transliteration prefix "bar" → should be returned
+        db.studyQueries.insertLexiconEntry("H1288", "בָּרַךְ", "barak", "to bless", null)
+        // H1255 Baladan — different prefix "Bal" → should NOT be returned
+        db.studyQueries.insertLexiconEntry("H1255", "בַּלְאָדָן", "Baladan", "Baladan", null)
 
         val result = repo.getRelatedWords("H1254")
         assertTrue(result.isSuccess)
         val related = result.getOrNull() ?: emptyList()
-        // H1255 shares the H125 prefix and should be returned
-        assertTrue(related.any { it.strongsNumber == "H1255" })
-        // H1254 itself should be excluded
-        assertTrue(related.none { it.strongsNumber == "H1254" })
+        assertTrue(related.any { it.strongsNumber == "H1288" }, "H1288 (barak) should match 'bar' prefix")
+        assertTrue(related.none { it.strongsNumber == "H1255" }, "H1255 (Baladan) should not match 'bar' prefix")
+        assertTrue(related.none { it.strongsNumber == "H1254" }, "H1254 itself should be excluded")
+    }
+
+    @Test
+    fun `getRelatedWords falls back to numeric prefix when transliteration is short`() = runTest {
+        val db = testDb.database
+        // Entry with very short transliteration (< 3 chars) → falls back to numeric prefix
+        db.studyQueries.insertLexiconEntry("H430", "אֱלֹהִים", "el", "God", null)
+        db.studyQueries.insertLexiconEntry("H431", "אֱלוּ", "elu", "behold", null)
+        db.studyQueries.insertLexiconEntry("H1254", "בָּרָא", "bara", "to create", null)
+
+        val result = repo.getRelatedWords("H430")
+        assertTrue(result.isSuccess)
+        val related = result.getOrNull() ?: emptyList()
+        // H431 shares numeric prefix "H43" and should be returned via fallback
+        assertTrue(related.any { it.strongsNumber == "H431" }, "H431 should be found via numeric prefix fallback")
+        assertTrue(related.none { it.strongsNumber == "H430" }, "H430 itself should be excluded")
     }
 }

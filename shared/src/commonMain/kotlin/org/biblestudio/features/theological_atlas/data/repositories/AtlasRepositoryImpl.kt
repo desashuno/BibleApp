@@ -31,7 +31,10 @@ internal class AtlasRepositoryImpl(
     }
 
     override suspend fun getLocationsByBounds(
-        north: Double, south: Double, east: Double, west: Double
+        north: Double,
+        south: Double,
+        east: Double,
+        west: Double
     ): Result<List<AtlasLocation>> = runCatching {
         database.atlasQueries
             .getLocationsByBounds(south = south, north = north, west = west, east = east)

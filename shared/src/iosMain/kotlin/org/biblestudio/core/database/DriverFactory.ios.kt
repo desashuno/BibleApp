@@ -11,6 +11,8 @@ import platform.Foundation.NSUserDomainMask
 actual fun createSqlDriver(schema: SqlSchema<QueryResult.Value<Unit>>): SqlDriver {
     val dbDir = appDataPath()
     val dbPath = "$dbDir/biblestudio.db"
+
+    @Suppress("UnusedPrivateProperty")
     val seeded = copySeedDatabaseIfNeeded(dbPath)
     // NativeSqliteDriver always calls schema.create on first open if the DB is new.
     // When the seed DB was copied, the file already exists so NativeSqliteDriver

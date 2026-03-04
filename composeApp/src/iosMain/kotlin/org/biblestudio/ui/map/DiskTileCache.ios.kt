@@ -1,10 +1,12 @@
+@file:Suppress("MatchingDeclarationName")
+
 package org.biblestudio.ui.map
 
 import platform.Foundation.NSCachesDirectory
+import platform.Foundation.NSData
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
-import platform.Foundation.NSData
 import platform.Foundation.dataWithContentsOfFile
 import platform.Foundation.writeToFile
 

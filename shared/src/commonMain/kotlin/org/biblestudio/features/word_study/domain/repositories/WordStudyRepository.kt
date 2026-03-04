@@ -1,7 +1,7 @@
 package org.biblestudio.features.word_study.domain.repositories
 
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.WordOccurrence
+import org.biblestudio.core.study.LexiconEntry
 
 /**
  * Look up and search Strong's concordance entries.
@@ -11,8 +11,12 @@ interface WordStudyRepository {
     /** Finds a lexicon entry by Strong's number. */
     suspend fun lookupByStrongs(strongsNumber: String): Result<LexiconEntry?>
 
-    /** Returns all verse occurrences for a Strong's number. */
-    suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>>
+    /** Returns a paginated list of verse occurrences for a Strong's number. */
+    suspend fun getOccurrences(
+        strongsNumber: String,
+        limit: Long = 100,
+        offset: Long = 0,
+    ): Result<List<WordOccurrence>>
 
     /** Returns the total count of occurrences for a Strong's number. */
     suspend fun getOccurrenceCount(strongsNumber: String): Result<Long>

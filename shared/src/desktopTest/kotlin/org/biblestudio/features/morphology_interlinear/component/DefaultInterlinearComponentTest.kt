@@ -1,7 +1,5 @@
 package org.biblestudio.features.morphology_interlinear.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -11,10 +9,11 @@ import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.morphology_interlinear.domain.ParsingDecoder
 import org.biblestudio.features.morphology_interlinear.domain.entities.AlignmentEntry
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 import org.biblestudio.features.morphology_interlinear.domain.entities.MorphologyData
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 import org.biblestudio.features.morphology_interlinear.domain.repositories.MorphologyRepository
+import org.biblestudio.test.testComponentContext
 
 class DefaultInterlinearComponentTest {
 
@@ -33,8 +32,11 @@ class DefaultInterlinearComponentTest {
         override suspend fun getWordsByStrongs(strongsNumber: String): Result<List<MorphWord>> =
             Result.success(emptyList())
 
-        override suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>> =
-            Result.success(emptyList())
+        override suspend fun getOccurrences(
+            strongsNumber: String,
+            limit: Long,
+            offset: Long,
+        ): Result<List<WordOccurrence>> = Result.success(emptyList())
 
         override suspend fun getOccurrenceCount(strongsNumber: String): Result<Long> = Result.success(0L)
 
@@ -43,8 +45,7 @@ class DefaultInterlinearComponentTest {
     }
 
     private fun createComponent(verseBus: VerseBus = VerseBus()): DefaultInterlinearComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultInterlinearComponent(
             componentContext = context,
             repository = fakeRepo,

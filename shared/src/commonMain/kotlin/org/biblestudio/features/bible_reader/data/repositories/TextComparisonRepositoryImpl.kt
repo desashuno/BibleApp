@@ -1,6 +1,7 @@
 package org.biblestudio.features.bible_reader.data.repositories
 
 import org.biblestudio.database.BibleStudioDatabase
+import org.biblestudio.features.bible_reader.domain.entities.VersionVerse
 import org.biblestudio.features.bible_reader.domain.entities.VersionComparison
 import org.biblestudio.features.bible_reader.domain.repositories.TextComparisonRepository
 
@@ -13,9 +14,12 @@ internal class TextComparisonRepositoryImpl(
             .versesForComparisonByGlobalId(globalVerseId)
             .executeAsList()
 
-        val versions = linkedMapOf<String, String>()
+        val versions = linkedMapOf<String, VersionVerse>()
         for (row in rows) {
-            versions[row.abbreviation] = row.text
+            versions[row.abbreviation] = VersionVerse(
+                text = row.text,
+                htmlText = row.html_text
+            )
         }
 
         VersionComparison(

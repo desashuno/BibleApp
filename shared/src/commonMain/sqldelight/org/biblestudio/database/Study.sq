@@ -9,7 +9,15 @@ SELECT *
 FROM lexicon_entries
 WHERE strongs_number = :strongsNumber;
 
-searchLexicon:
+searchLexiconFts:
+SELECT l.*
+FROM lexicon_entries l
+INNER JOIN fts_lexicon fts ON fts.rowid = l.rowid
+WHERE fts_lexicon MATCH :query
+ORDER BY bm25(fts_lexicon)
+LIMIT :maxResults;
+
+searchLexiconFallback:
 SELECT *
 FROM lexicon_entries
 WHERE original_word LIKE '%' || :query || '%'
@@ -21,6 +29,14 @@ relatedByPrefix:
 SELECT *
 FROM lexicon_entries
 WHERE strongs_number LIKE :prefix || '%'
+  AND strongs_number != :excludeStrongs
+LIMIT :maxResults;
+
+relatedByTransliterationPrefix:
+SELECT *
+FROM lexicon_entries
+WHERE strongs_number LIKE :langPrefix || '%'
+  AND transliteration LIKE :transPrefix || '%'
   AND strongs_number != :excludeStrongs
 LIMIT :maxResults;
 
@@ -75,7 +91,14 @@ VALUES (:globalVerseStart, :globalVerseEnd, :title, :content, :source);
 
 -- ═══════════════════════════ Word Occurrences ═══════════════════════════
 
-occurrencesForWord:
+occurrencesForWordPaged:
+SELECT *
+FROM word_occurrences
+WHERE strongs_number = :strongsNumber
+ORDER BY global_verse_id ASC
+LIMIT :limit OFFSET :offset;
+
+occurrencesForWordAll:
 SELECT *
 FROM word_occurrences
 WHERE strongs_number = :strongsNumber

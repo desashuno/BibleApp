@@ -45,6 +45,54 @@ enum class DiffType {
     REMOVED
 }
 
+private val PUNCTUATION_REGEX = Regex("[.,;:!?\"'()\\[\\]]")
+
+/** Strips punctuation for matching but preserves original words in output. */
+private fun normalize(word: String): String = word.replace(PUNCTUATION_REGEX, "").lowercase()
+
+/**
+ * Punctuation-aware word-level diff using LCS (Longest Common Subsequence).
+ * Compares normalized forms but outputs original words.
+ */
+@Suppress("NestedBlockDepth")
+fun wordDiff(wordsA: List<String>, wordsB: List<String>): List<DiffSegment> {
+    val normA = wordsA.map { normalize(it) }
+    val normB = wordsB.map { normalize(it) }
+    val m = wordsA.size
+    val n = wordsB.size
+    val dp = Array(m + 1) { IntArray(n + 1) }
+    for (i in 1..m) {
+        for (j in 1..n) {
+            dp[i][j] = if (normA[i - 1] == normB[j - 1]) {
+                dp[i - 1][j - 1] + 1
+            } else {
+                maxOf(dp[i - 1][j], dp[i][j - 1])
+            }
+        }
+    }
+    val stack = mutableListOf<DiffSegment>()
+    var i = m
+    var j = n
+    while (i > 0 || j > 0) {
+        when {
+            i > 0 && j > 0 && normA[i - 1] == normB[j - 1] -> {
+                stack.add(DiffSegment(wordsB[j - 1], DiffType.EQUAL))
+                i--
+                j--
+            }
+            j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j]) -> {
+                stack.add(DiffSegment(wordsB[j - 1], DiffType.ADDED))
+                j--
+            }
+            else -> {
+                stack.add(DiffSegment(wordsA[i - 1], DiffType.REMOVED))
+                i--
+            }
+        }
+    }
+    return stack.reversed()
+}
+
 /**
  * Business-logic boundary for the Text Comparison pane.
  */
@@ -67,4 +115,7 @@ interface TextComparisonComponent {
 
     /** Navigates to the previous verse. */
     fun previousVerse()
+
+    /** Returns formatted comparison text for clipboard. */
+    fun copyComparisonText(): String
 }

@@ -1,6 +1,6 @@
 package org.biblestudio.features.cross_references.domain.repositories
 
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 
 /**
  * Access to cross-reference data between Bible verses.

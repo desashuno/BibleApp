@@ -27,7 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.cross_references.component.CrossReferenceState
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
+import org.biblestudio.ui.components.EmptyStateMessage
+import org.biblestudio.ui.components.ErrorMessage
+import org.biblestudio.ui.components.LoadingIndicator
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -58,25 +61,16 @@ fun CrossReferencePane(
         HorizontalDivider()
 
         if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
+            LoadingIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else if (state.error != null) {
-            Text(
-                text = state.error ?: "Error",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
+            ErrorMessage(message = state.error ?: "Error")
         } else if (state.references.isEmpty()) {
-            Text(
-                text = if (state.sourceVerseId != null) {
+            EmptyStateMessage(
+                message = if (state.sourceVerseId != null) {
                     "No cross-references found."
                 } else {
                     "Select a verse to see cross-references."
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(Spacing.Space16)
+                }
             )
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -182,9 +176,9 @@ private fun CrossReferenceRow(
 @Suppress("MagicNumber")
 private fun confidenceColor(confidence: Double): Color {
     val t = confidence.toFloat().coerceIn(0f, 1f)
-    val low = Color(0xFFEF5350)   // Red 400
-    val mid = Color(0xFFFFA726)   // Orange 400
-    val high = Color(0xFF66BB6A)  // Green 400
+    val low = Color(0xFFEF5350) // Red 400
+    val mid = Color(0xFFFFA726) // Orange 400
+    val high = Color(0xFF66BB6A) // Green 400
     return if (t < 0.5f) {
         lerp(low, mid, t * 2f)
     } else {

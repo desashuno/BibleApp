@@ -11,14 +11,13 @@ internal class AudioSyncRepositoryImpl(
     private val database: BibleStudioDatabase
 ) : AudioSyncRepository {
 
-    override suspend fun getTrackForChapter(
-        bibleId: String, bookNumber: Int, chapterNumber: Int
-    ): Result<AudioTrack?> = runCatching {
-        database.audioSyncQueries
-            .getTrackForChapter(bibleId, bookNumber.toLong(), chapterNumber.toLong())
-            .executeAsOneOrNull()
-            ?.toAudioTrack()
-    }
+    override suspend fun getTrackForChapter(bibleId: String, bookNumber: Int, chapterNumber: Int): Result<AudioTrack?> =
+        runCatching {
+            database.audioSyncQueries
+                .getTrackForChapter(bibleId, bookNumber.toLong(), chapterNumber.toLong())
+                .executeAsOneOrNull()
+                ?.toAudioTrack()
+        }
 
     override suspend fun getTracksForBook(bibleId: String, bookNumber: Int): Result<List<AudioTrack>> = runCatching {
         database.audioSyncQueries
@@ -41,12 +40,13 @@ internal class AudioSyncRepositoryImpl(
             .map { it.toAudioSyncPoint() }
     }
 
-    override suspend fun getSyncPointForVerse(trackId: Long, globalVerseId: Long): Result<AudioSyncPoint?> = runCatching {
-        database.audioSyncQueries
-            .getSyncPointForVerse(trackId, globalVerseId)
-            .executeAsOneOrNull()
-            ?.toAudioSyncPoint()
-    }
+    override suspend fun getSyncPointForVerse(trackId: Long, globalVerseId: Long): Result<AudioSyncPoint?> =
+        runCatching {
+            database.audioSyncQueries
+                .getSyncPointForVerse(trackId, globalVerseId)
+                .executeAsOneOrNull()
+                ?.toAudioSyncPoint()
+        }
 
     override suspend fun getSyncPointAtTime(trackId: Long, positionMs: Long): Result<AudioSyncPoint?> = runCatching {
         database.audioSyncQueries

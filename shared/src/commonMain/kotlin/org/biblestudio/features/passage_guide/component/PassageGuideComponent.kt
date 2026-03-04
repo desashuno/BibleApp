@@ -1,7 +1,7 @@
 package org.biblestudio.features.passage_guide.component
 
 import kotlinx.coroutines.flow.StateFlow
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.passage_guide.domain.entities.PassageReport
 
 /**

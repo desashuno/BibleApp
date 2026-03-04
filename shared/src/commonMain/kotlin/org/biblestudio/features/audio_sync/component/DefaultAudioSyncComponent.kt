@@ -1,10 +1,8 @@
 package org.biblestudio.features.audio_sync.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,14 +20,14 @@ import org.biblestudio.features.settings.domain.repositories.SettingsRepository
  * Actual platform audio playback is delegated to the UI layer; this component
  * manages logical state only (play/pause/seek/verse-jump).
  */
-class DefaultAudioSyncComponent(
+internal class DefaultAudioSyncComponent(
     componentContext: ComponentContext,
     private val repository: AudioSyncRepository,
     private val verseBus: VerseBus,
     private val settingsRepository: SettingsRepository
 ) : AudioSyncComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(AudioPlayerState())
     override val state: StateFlow<AudioPlayerState> = _state.asStateFlow()

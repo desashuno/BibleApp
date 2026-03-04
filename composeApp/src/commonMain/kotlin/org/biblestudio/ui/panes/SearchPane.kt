@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -35,6 +34,7 @@ import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.bible_reader.domain.entities.Verse
 import org.biblestudio.features.search.component.SearchScope
 import org.biblestudio.features.search.component.SearchState
+import org.biblestudio.ui.components.LoadingErrorContent
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -85,17 +85,14 @@ fun SearchPane(
 
         HorizontalDivider()
 
-        if (state.isSearching) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
-        } else if (state.error != null) {
-            Text(
-                text = state.error ?: "Error",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
-        } else {
+        LoadingErrorContent(
+            isLoading = state.isSearching,
+            error = state.error,
+            data = state.results,
+            emptyMessage = "",
+            modifier = Modifier.fillMaxSize(),
+            isEmpty = { false },
+        ) { _ ->
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 // Results
                 if (state.results.isNotEmpty()) {

@@ -1,7 +1,6 @@
 package org.biblestudio.features.search.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -11,7 +10,7 @@ import org.biblestudio.features.note_editor.domain.entities.Note
 import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
 import org.biblestudio.features.search.domain.entities.SearchHistoryEntry
 import org.biblestudio.features.search.domain.repositories.SearchRepository
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 /**
  * Tests for [DefaultSearchComponent], specifically the debounce behaviour.
@@ -55,8 +54,7 @@ class DefaultSearchComponentTest {
     }
 
     private fun createComponent(): DefaultSearchComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultSearchComponent(
             componentContext = context,
             repository = fakeRepo,

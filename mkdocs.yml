@@ -1,0 +1,379 @@
+site_name: BibleStudio Documentation
+site_description: Technical documentation for the BibleStudio Kotlin Multiplatform Bible study application
+site_url: https://biblestudio.org/docs/
+repo_url: https://github.com/BibleStudio/BibleStudio
+repo_name: BibleStudio/BibleStudio
+
+docs_dir: doc
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.mark
+  - pymdownx.keys
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      reconfigure_material: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: es
+          name: "Español"
+          build: true
+          theme:
+            language: es
+          nav_translations:
+            # Top-level tabs
+            Home: Inicio
+            Core: Fundamentos
+            "Modules \u2014 Read": "Módulos \u2014 Lectura"
+            "Modules \u2014 Study": "Módulos \u2014 Estudio"
+            "Modules \u2014 Write": "Módulos \u2014 Escritura"
+            "Modules \u2014 Tools": "Módulos \u2014 Herramientas"
+            "Modules \u2014 Resources": "Módulos \u2014 Recursos"
+            "Modules \u2014 Media": "Módulos \u2014 Multimedia"
+            Shared Services: Servicios Compartidos
+            Module Template: Plantilla de Módulo
+            Roadmap: Hoja de Ruta
+            Reports: Informes
+            Testing: Pruebas
+            # Core documents
+            Architecture: Arquitectura
+            Data Layer: Capa de Datos
+            Design System: Sistema de Diseño
+            Platform Strategy: Estrategia de Plataforma
+            Module System: Sistema de Módulos
+            Code Conventions: Convenciones de Código
+            Getting Started: Primeros Pasos
+            Security: Seguridad
+            Open Data Sources: Fuentes de Datos Abiertas
+            # Shared nav labels across modules
+            Overview: Descripción General
+            Data Model: Modelo de Datos
+            Component State: Estado del Componente
+            Routes: Rutas
+            UI Components: Componentes UI
+            # Module names
+            Bible Reader: Lector Bíblico
+            Reading Plans: Planes de Lectura
+            Cross References: Referencias Cruzadas
+            Word Study: Estudio de Palabras
+            "Morphology & Interlinear": "Morfología e Interlineal"
+            Passage Guide: Guía de Pasaje
+            Exegetical Guide: Guía Exegética
+            Knowledge Graph: Grafo de Conocimiento
+            Theological Atlas: Atlas Teológico
+            Note Editor: Editor de Notas
+            Sermon Editor: Editor de Sermones
+            Search: Búsqueda
+            Highlights: Resaltados
+            Workspace: Espacio de Trabajo
+            Module System: Sistema de Módulos
+            "Import/Export": "Importar/Exportar"
+            Settings: Configuración
+            "Bookmarks & History": "Marcadores e Historial"
+            Resource Library: Biblioteca de Recursos
+            Audio Sync: Audio Sincronizado
+            Share Verse: Compartir Versículo
+            Template: Plantilla
+            # Roadmap phases
+            Build Plan: Plan de Construcción
+            "Phase 1 \u2014 Foundation": "Fase 1 \u2014 Fundamentos"
+            "Phase 2 \u2014 Infrastructure": "Fase 2 \u2014 Infraestructura"
+            "Phase 3 \u2014 Core Modules": "Fase 3 \u2014 Módulos Base"
+            "Phase 4 \u2014 Study & Writing": "Fase 4 \u2014 Estudio y Escritura"
+            "Phase 5 \u2014 Advanced": "Fase 5 \u2014 Avanzado"
+            "Phase 6 \u2014 Data Integration": "Fase 6 \u2014 Integración de Datos"
+            "Phase 7 \u2014 Integration Verification": "Fase 7 \u2014 Verificación de Integración"
+            "Phase 8 \u2014 Module Review": "Fase 8 \u2014 Revisión de Módulos"
+            "Phase 9 \u2014 Resource Library Redesign": "Fase 9 \u2014 Rediseño de Biblioteca"
+            "Phase 10 \u2014 Bible Reader Enhancement": "Fase 10 \u2014 Mejora del Lector Bíblico"
+            # Reports
+            Red Letter Issues: Problemas de Letras Rojas
+            Red Letter Solutions: Soluciones de Letras Rojas
+            Red Letter Fix Log: Registro de Correcciones
+            # Testing
+            Phase 8 Manual Checklist: Lista de Verificación Fase 8
+
+nav:
+  - Home: INDEX.md
+  - Core:
+      - Architecture: ARCHITECTURE.md
+      - Data Layer: DATA_LAYER.md
+      - Design System: DESIGN_SYSTEM.md
+      - Platform Strategy: PLATFORM_STRATEGY.md
+      - Module System: MODULE_SYSTEM.md
+      - Code Conventions: CODE_CONVENTIONS.md
+      - Getting Started: GETTING_STARTED.md
+      - Testing: TESTING.md
+      - CI/CD: CI_CD.md
+      - Security: SECURITY.md
+      - Open Data Sources: OPEN_DATA_SOURCES.md
+  - "Modules \u2014 Read":
+      - Bible Reader:
+          - Overview: modules/bible-reader/README.md
+          - Architecture: modules/bible-reader/ARCHITECTURE.md
+          - Data Model: modules/bible-reader/DATA_MODEL.md
+          - Component State: modules/bible-reader/COMPONENT_STATE.md
+          - Routes: modules/bible-reader/ROUTES.md
+          - UI Components: modules/bible-reader/UI_COMPONENTS.md
+          - Roadmap: modules/bible-reader/ROADMAP.md
+      - Reading Plans:
+          - Overview: modules/reading-plans/README.md
+          - Architecture: modules/reading-plans/ARCHITECTURE.md
+          - Data Model: modules/reading-plans/DATA_MODEL.md
+          - Component State: modules/reading-plans/COMPONENT_STATE.md
+          - Routes: modules/reading-plans/ROUTES.md
+          - UI Components: modules/reading-plans/UI_COMPONENTS.md
+          - Roadmap: modules/reading-plans/ROADMAP.md
+  - "Modules \u2014 Study":
+      - Cross References:
+          - Overview: modules/cross-references/README.md
+          - Architecture: modules/cross-references/ARCHITECTURE.md
+          - Data Model: modules/cross-references/DATA_MODEL.md
+          - Component State: modules/cross-references/COMPONENT_STATE.md
+          - Routes: modules/cross-references/ROUTES.md
+          - UI Components: modules/cross-references/UI_COMPONENTS.md
+          - Roadmap: modules/cross-references/ROADMAP.md
+      - Word Study:
+          - Overview: modules/word-study/README.md
+          - Architecture: modules/word-study/ARCHITECTURE.md
+          - Data Model: modules/word-study/DATA_MODEL.md
+          - Component State: modules/word-study/COMPONENT_STATE.md
+          - Routes: modules/word-study/ROUTES.md
+          - UI Components: modules/word-study/UI_COMPONENTS.md
+          - Roadmap: modules/word-study/ROADMAP.md
+      - "Morphology & Interlinear":
+          - Overview: modules/morphology-interlinear/README.md
+          - Architecture: modules/morphology-interlinear/ARCHITECTURE.md
+          - Data Model: modules/morphology-interlinear/DATA_MODEL.md
+          - Component State: modules/morphology-interlinear/COMPONENT_STATE.md
+          - Routes: modules/morphology-interlinear/ROUTES.md
+          - UI Components: modules/morphology-interlinear/UI_COMPONENTS.md
+          - Roadmap: modules/morphology-interlinear/ROADMAP.md
+      - Passage Guide:
+          - Overview: modules/passage-guide/README.md
+          - Architecture: modules/passage-guide/ARCHITECTURE.md
+          - Data Model: modules/passage-guide/DATA_MODEL.md
+          - Component State: modules/passage-guide/COMPONENT_STATE.md
+          - Routes: modules/passage-guide/ROUTES.md
+          - UI Components: modules/passage-guide/UI_COMPONENTS.md
+          - Roadmap: modules/passage-guide/ROADMAP.md
+      - Exegetical Guide:
+          - Overview: modules/exegetical-guide/README.md
+          - Architecture: modules/exegetical-guide/ARCHITECTURE.md
+          - Data Model: modules/exegetical-guide/DATA_MODEL.md
+          - Component State: modules/exegetical-guide/COMPONENT_STATE.md
+          - Routes: modules/exegetical-guide/ROUTES.md
+          - UI Components: modules/exegetical-guide/UI_COMPONENTS.md
+          - Roadmap: modules/exegetical-guide/ROADMAP.md
+      - Knowledge Graph:
+          - Overview: modules/knowledge-graph/README.md
+          - Architecture: modules/knowledge-graph/ARCHITECTURE.md
+          - Data Model: modules/knowledge-graph/DATA_MODEL.md
+          - Component State: modules/knowledge-graph/COMPONENT_STATE.md
+          - Routes: modules/knowledge-graph/ROUTES.md
+          - UI Components: modules/knowledge-graph/UI_COMPONENTS.md
+          - Roadmap: modules/knowledge-graph/ROADMAP.md
+      - Timeline:
+          - Overview: modules/timeline/README.md
+          - Architecture: modules/timeline/ARCHITECTURE.md
+          - Data Model: modules/timeline/DATA_MODEL.md
+          - Component State: modules/timeline/COMPONENT_STATE.md
+          - Routes: modules/timeline/ROUTES.md
+          - UI Components: modules/timeline/UI_COMPONENTS.md
+          - Roadmap: modules/timeline/ROADMAP.md
+      - Theological Atlas:
+          - Overview: modules/theological-atlas/README.md
+          - Architecture: modules/theological-atlas/ARCHITECTURE.md
+          - Data Model: modules/theological-atlas/DATA_MODEL.md
+          - Component State: modules/theological-atlas/COMPONENT_STATE.md
+          - Routes: modules/theological-atlas/ROUTES.md
+          - UI Components: modules/theological-atlas/UI_COMPONENTS.md
+          - Roadmap: modules/theological-atlas/ROADMAP.md
+  - "Modules \u2014 Write":
+      - Note Editor:
+          - Overview: modules/note-editor/README.md
+          - Architecture: modules/note-editor/ARCHITECTURE.md
+          - Data Model: modules/note-editor/DATA_MODEL.md
+          - Component State: modules/note-editor/COMPONENT_STATE.md
+          - Routes: modules/note-editor/ROUTES.md
+          - UI Components: modules/note-editor/UI_COMPONENTS.md
+          - Roadmap: modules/note-editor/ROADMAP.md
+      - Sermon Editor:
+          - Overview: modules/sermon-editor/README.md
+          - Architecture: modules/sermon-editor/ARCHITECTURE.md
+          - Data Model: modules/sermon-editor/DATA_MODEL.md
+          - Component State: modules/sermon-editor/COMPONENT_STATE.md
+          - Routes: modules/sermon-editor/ROUTES.md
+          - UI Components: modules/sermon-editor/UI_COMPONENTS.md
+          - Roadmap: modules/sermon-editor/ROADMAP.md
+  - "Modules \u2014 Tools":
+      - Search:
+          - Overview: modules/search/README.md
+          - Architecture: modules/search/ARCHITECTURE.md
+          - Data Model: modules/search/DATA_MODEL.md
+          - Component State: modules/search/COMPONENT_STATE.md
+          - Routes: modules/search/ROUTES.md
+          - UI Components: modules/search/UI_COMPONENTS.md
+          - Roadmap: modules/search/ROADMAP.md
+      - Highlights:
+          - Overview: modules/highlights/README.md
+          - Architecture: modules/highlights/ARCHITECTURE.md
+          - Data Model: modules/highlights/DATA_MODEL.md
+          - Component State: modules/highlights/COMPONENT_STATE.md
+          - Routes: modules/highlights/ROUTES.md
+          - UI Components: modules/highlights/UI_COMPONENTS.md
+          - Roadmap: modules/highlights/ROADMAP.md
+      - Workspace:
+          - Overview: modules/workspace/README.md
+          - Architecture: modules/workspace/ARCHITECTURE.md
+          - Data Model: modules/workspace/DATA_MODEL.md
+          - Component State: modules/workspace/COMPONENT_STATE.md
+          - Routes: modules/workspace/ROUTES.md
+          - UI Components: modules/workspace/UI_COMPONENTS.md
+          - Roadmap: modules/workspace/ROADMAP.md
+      - Module System:
+          - Overview: modules/module-system/README.md
+          - Architecture: modules/module-system/ARCHITECTURE.md
+          - Data Model: modules/module-system/DATA_MODEL.md
+          - Component State: modules/module-system/COMPONENT_STATE.md
+          - Routes: modules/module-system/ROUTES.md
+          - UI Components: modules/module-system/UI_COMPONENTS.md
+          - Roadmap: modules/module-system/ROADMAP.md
+      - "Import/Export":
+          - Overview: modules/import-export/README.md
+          - Architecture: modules/import-export/ARCHITECTURE.md
+          - Data Model: modules/import-export/DATA_MODEL.md
+          - Component State: modules/import-export/COMPONENT_STATE.md
+          - Routes: modules/import-export/ROUTES.md
+          - UI Components: modules/import-export/UI_COMPONENTS.md
+          - Roadmap: modules/import-export/ROADMAP.md
+      - Settings:
+          - Overview: modules/settings/README.md
+          - Architecture: modules/settings/ARCHITECTURE.md
+          - Data Model: modules/settings/DATA_MODEL.md
+          - Component State: modules/settings/COMPONENT_STATE.md
+          - Routes: modules/settings/ROUTES.md
+          - UI Components: modules/settings/UI_COMPONENTS.md
+          - Roadmap: modules/settings/ROADMAP.md
+      - "Bookmarks & History":
+          - Overview: modules/bookmarks-history/README.md
+          - Architecture: modules/bookmarks-history/ARCHITECTURE.md
+          - Data Model: modules/bookmarks-history/DATA_MODEL.md
+          - Component State: modules/bookmarks-history/COMPONENT_STATE.md
+          - Routes: modules/bookmarks-history/ROUTES.md
+          - UI Components: modules/bookmarks-history/UI_COMPONENTS.md
+          - Roadmap: modules/bookmarks-history/ROADMAP.md
+      - Dashboard:
+          - Overview: modules/dashboard/README.md
+          - Architecture: modules/dashboard/ARCHITECTURE.md
+          - Data Model: modules/dashboard/DATA_MODEL.md
+          - Component State: modules/dashboard/COMPONENT_STATE.md
+          - Routes: modules/dashboard/ROUTES.md
+          - UI Components: modules/dashboard/UI_COMPONENTS.md
+          - Roadmap: modules/dashboard/ROADMAP.md
+  - "Modules \u2014 Resources":
+      - Resource Library:
+          - Overview: modules/resource-library/README.md
+          - Architecture: modules/resource-library/ARCHITECTURE.md
+          - Data Model: modules/resource-library/DATA_MODEL.md
+          - Component State: modules/resource-library/COMPONENT_STATE.md
+          - Routes: modules/resource-library/ROUTES.md
+          - UI Components: modules/resource-library/UI_COMPONENTS.md
+          - Roadmap: modules/resource-library/ROADMAP.md
+  - "Modules \u2014 Media":
+      - Audio Sync:
+          - Overview: modules/audio-sync/README.md
+          - Architecture: modules/audio-sync/ARCHITECTURE.md
+          - Data Model: modules/audio-sync/DATA_MODEL.md
+          - Component State: modules/audio-sync/COMPONENT_STATE.md
+          - Routes: modules/audio-sync/ROUTES.md
+          - UI Components: modules/audio-sync/UI_COMPONENTS.md
+          - Roadmap: modules/audio-sync/ROADMAP.md
+  - Shared Services:
+      - Share Verse:
+          - Overview: modules/_shared/share-verse/README.md
+          - Architecture: modules/_shared/share-verse/ARCHITECTURE.md
+          - Data Model: modules/_shared/share-verse/DATA_MODEL.md
+          - Routes: modules/_shared/share-verse/ROUTES.md
+  - Module Template:
+      - Template: modules/_template/README.md
+      - Architecture: modules/_template/ARCHITECTURE.md
+      - Data Model: modules/_template/DATA_MODEL.md
+      - Component State: modules/_template/COMPONENT_STATE.md
+      - Routes: modules/_template/ROUTES.md
+      - UI Components: modules/_template/UI_COMPONENTS.md
+      - Roadmap: modules/_template/ROADMAP.md
+  - Roadmap:
+      - Overview: roadmap/README.md
+      - Build Plan: roadmap/build-plan.md
+      - "Phase 1 \u2014 Foundation": roadmap/phase-1-foundation.md
+      - "Phase 2 \u2014 Infrastructure": roadmap/phase-2-infrastructure.md
+      - "Phase 3 \u2014 Core Modules": roadmap/phase-3-core-modules.md
+      - "Phase 4 \u2014 Study & Writing": roadmap/phase-4-study-writing.md
+      - "Phase 5 \u2014 Advanced": roadmap/phase-5-advanced.md
+      - "Phase 6 \u2014 Data Integration": roadmap/phase-6-data-integration.md
+      - "Phase 7 \u2014 Integration Verification": roadmap/phase-7-integration-verification.md
+      - "Phase 8 \u2014 Module Review": roadmap/phase-8-module-review.md
+      - "Phase 9 \u2014 Resource Library Redesign": roadmap/phase-9-resource-library-redesign.md
+      - "Phase 10 \u2014 Bible Reader Enhancement": roadmap/phase-10-bible-reader-enhancement.md
+  - Reports:
+      - Red Letter Issues: reports/issues/red-letter-issues.md
+      - Red Letter Solutions: reports/issues/red-letter-solutions.md
+      - Red Letter Fix Log: reports/issues/red-letter-fix-log.md
+  - Testing:
+      - Phase 8 Manual Checklist: testing/phase-8-manual-checklist.md

@@ -2,7 +2,6 @@ package org.biblestudio.ui.panes
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,9 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +27,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.morphology_interlinear.component.InterlinearDisplayMode
 import org.biblestudio.features.morphology_interlinear.component.InterlinearState
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
+import org.biblestudio.ui.components.LoadingErrorContent
+import org.biblestudio.ui.components.PaneHeader
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -49,11 +48,7 @@ fun InterlinearPane(
     val state by stateFlow.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = "Interlinear",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(Spacing.Space16)
-        )
+        PaneHeader(title = "Interlinear")
 
         // Display mode chip row
         DisplayModeSelector(
@@ -62,45 +57,24 @@ fun InterlinearPane(
             modifier = Modifier.padding(horizontal = Spacing.Space16)
         )
 
-        HorizontalDivider()
-
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            state.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = state.error.orEmpty(), color = MaterialTheme.colorScheme.error)
-                }
-            }
-            state.words.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "Select a verse to view interlinear")
-                }
-            }
-            else -> {
-                WordGrid(
-                    words = state.words,
-                    decodedParsings = state.decodedParsings,
-                    displayMode = state.displayMode,
-                    onWordSelected = onWordSelected,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(Spacing.Space16)
-                )
-            }
+        LoadingErrorContent(
+            isLoading = state.isLoading,
+            error = state.error,
+            data = state.words,
+            emptyMessage = "Select a verse to view interlinear",
+            modifier = Modifier.fillMaxSize(),
+            isEmpty = { it.isEmpty() },
+        ) { words ->
+            WordGrid(
+                words = words,
+                decodedParsings = state.decodedParsings,
+                displayMode = state.displayMode,
+                onWordSelected = onWordSelected,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(Spacing.Space16)
+            )
         }
     }
 }

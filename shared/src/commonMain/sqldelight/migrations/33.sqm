@@ -1,0 +1,29 @@
+-- 33.sqm: Rebuild fts_lexicon with 4 indexed columns (adds original_word, transliteration)
+-- Enables full-text search across word, transliteration, definition, and usage notes.
+
+DROP TRIGGER IF EXISTS fts_lexicon_ai;
+DROP TRIGGER IF EXISTS fts_lexicon_ad;
+DROP TRIGGER IF EXISTS fts_lexicon_au;
+DROP TABLE IF EXISTS fts_lexicon;
+
+CREATE VIRTUAL TABLE fts_lexicon USING fts5(
+    original_word, transliteration, definition, usage_notes,
+    content=lexicon_entries, content_rowid=rowid
+);
+
+CREATE TRIGGER fts_lexicon_ai AFTER INSERT ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(rowid, original_word, transliteration, definition, usage_notes)
+    VALUES (new.rowid, new.original_word, new.transliteration, new.definition, new.usage_notes);
+END;
+
+CREATE TRIGGER fts_lexicon_ad AFTER DELETE ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(fts_lexicon, rowid, original_word, transliteration, definition, usage_notes)
+    VALUES ('delete', old.rowid, old.original_word, old.transliteration, old.definition, old.usage_notes);
+END;
+
+CREATE TRIGGER fts_lexicon_au AFTER UPDATE ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(fts_lexicon, rowid, original_word, transliteration, definition, usage_notes)
+    VALUES ('delete', old.rowid, old.original_word, old.transliteration, old.definition, old.usage_notes);
+    INSERT INTO fts_lexicon(rowid, original_word, transliteration, definition, usage_notes)
+    VALUES (new.rowid, new.original_word, new.transliteration, new.definition, new.usage_notes);
+END;

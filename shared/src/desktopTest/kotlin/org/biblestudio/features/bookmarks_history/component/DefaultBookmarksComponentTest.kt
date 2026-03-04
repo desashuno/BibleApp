@@ -1,7 +1,6 @@
 package org.biblestudio.features.bookmarks_history.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -88,8 +87,7 @@ class DefaultBookmarksComponentTest {
     }
 
     private fun createComponent(verseBus: VerseBus = VerseBus()): DefaultBookmarksComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultBookmarksComponent(
             componentContext = context,
             bookmarkRepository = fakeBookmarkRepo,

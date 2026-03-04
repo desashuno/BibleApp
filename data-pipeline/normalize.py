@@ -18,7 +18,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from normalizers import bible_text, beblia_xml, morphology, lexicon, cross_references, geography, entities, timeline, reading_plans, dictionaries, commentaries
+from normalizers import bible_text, web_usfm, beblia_xml, morphology, lexicon, cross_references, parallels, geography, entities, timeline, reading_plans, dictionaries, commentaries, alignment, worship
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS lexicon_entries (
     original_word   TEXT NOT NULL,
     transliteration TEXT NOT NULL,
     definition      TEXT NOT NULL,
-    usage_notes     TEXT
+    usage_notes     TEXT,
+    gloss_es        TEXT
 );
 
 CREATE TABLE IF NOT EXISTS morphology (
@@ -145,9 +146,20 @@ CREATE TABLE IF NOT EXISTS word_occurrences (
     word_position   INTEGER NOT NULL
 );
 
--- FTS5 for lexicon search
+CREATE TABLE IF NOT EXISTS alignment_words (
+    id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    global_verse_id   INTEGER NOT NULL,
+    english_position  INTEGER NOT NULL,
+    english_token     TEXT    NOT NULL,
+    original_position INTEGER NOT NULL,
+    strongs_number    TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_alignment_verse ON alignment_words(global_verse_id);
+
+-- FTS5 for lexicon search (4 indexed columns + gloss_es for future Spanish data)
 CREATE VIRTUAL TABLE IF NOT EXISTS fts_lexicon USING fts5(
-    definition, usage_notes,
+    original_word, transliteration, definition, usage_notes, gloss_es,
     content=lexicon_entries, content_rowid=rowid
 );
 
@@ -283,12 +295,20 @@ CREATE TABLE IF NOT EXISTS timeline_events (
     year_start      INTEGER NOT NULL,
     year_end        INTEGER,
     era             TEXT    NOT NULL,
-    global_verse_id INTEGER
+    importance      INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS idx_timeline_era   ON timeline_events(era);
-CREATE INDEX IF NOT EXISTS idx_timeline_verse ON timeline_events(global_verse_id);
 CREATE INDEX IF NOT EXISTS idx_timeline_years ON timeline_events(year_start, year_end);
+
+CREATE TABLE IF NOT EXISTS timeline_event_verses (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    event_id        INTEGER NOT NULL REFERENCES timeline_events(id),
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_timeline_ev_event ON timeline_event_verses(event_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_ev_verse ON timeline_event_verses(global_verse_id);
 
 CREATE TABLE IF NOT EXISTS geographic_locations (
     id               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -296,11 +316,23 @@ CREATE TABLE IF NOT EXISTS geographic_locations (
     modern_name      TEXT,
     lat              REAL    NOT NULL,
     lon              REAL    NOT NULL,
+    type             TEXT    NOT NULL DEFAULT '',
     description      TEXT,
+    era              TEXT    NOT NULL DEFAULT 'AllEras',
     verse_references TEXT    NOT NULL DEFAULT '[]'
 );
 
 CREATE INDEX IF NOT EXISTS idx_locations_name ON geographic_locations(name);
+
+CREATE TABLE IF NOT EXISTS atlas_regions (
+    id               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name             TEXT    NOT NULL,
+    description      TEXT,
+    bounds_north     REAL    NOT NULL,
+    bounds_south     REAL    NOT NULL,
+    bounds_east      REAL    NOT NULL,
+    bounds_west      REAL    NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS location_verse_index (
     location_id     INTEGER NOT NULL REFERENCES geographic_locations(id),
@@ -377,6 +409,16 @@ CREATE TABLE IF NOT EXISTS reading_plan_progress (
     completed_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS reading_plan_entries (
+    id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    plan_id         TEXT    NOT NULL,
+    day             INTEGER NOT NULL,
+    start_verse_id  INTEGER NOT NULL,
+    end_verse_id    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_plan_entries_plan_day ON reading_plan_entries(plan_id, day);
+
 -- ===== Dictionaries =====
 
 CREATE TABLE IF NOT EXISTS dictionary_entries (
@@ -421,6 +463,103 @@ CREATE TABLE IF NOT EXISTS modules (
     installed_at TEXT NOT NULL DEFAULT (datetime('now')),
     is_deleted  INTEGER NOT NULL DEFAULT 0
 );
+
+-- ===== Data Modules (centralized management) =====
+
+CREATE TABLE IF NOT EXISTS data_modules (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    module_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL,
+    version TEXT NOT NULL DEFAULT '1.0',
+    language TEXT NOT NULL DEFAULT 'en',
+    source_url TEXT NOT NULL DEFAULT '',
+    size_bytes INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'installed',
+    progress REAL NOT NULL DEFAULT 1.0,
+    installed_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT,
+    checksum TEXT NOT NULL DEFAULT '',
+    metadata TEXT NOT NULL DEFAULT '{}',
+    is_active INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_data_modules_type ON data_modules(type);
+CREATE INDEX IF NOT EXISTS idx_data_modules_status ON data_modules(status);
+
+-- ===== Worship Music =====
+
+CREATE TABLE IF NOT EXISTS worship_songs (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    artist TEXT NOT NULL DEFAULT '',
+    album TEXT NOT NULL DEFAULT '',
+    genre TEXT NOT NULL DEFAULT '',
+    language TEXT NOT NULL DEFAULT 'en',
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    file_path TEXT NOT NULL DEFAULT '',
+    cover_art_path TEXT NOT NULL DEFAULT '',
+    track_number INTEGER NOT NULL DEFAULT 0,
+    year INTEGER NOT NULL DEFAULT 0,
+    is_user_import INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS worship_playlists (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS worship_playlist_songs (
+    playlist_id TEXT NOT NULL REFERENCES worship_playlists(id) ON DELETE CASCADE,
+    song_id INTEGER NOT NULL REFERENCES worship_songs(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (playlist_id, song_id)
+);
+
+CREATE TABLE IF NOT EXISTS worship_favorites (
+    song_id INTEGER NOT NULL PRIMARY KEY REFERENCES worship_songs(id) ON DELETE CASCADE,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS worship_play_history (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    song_id INTEGER NOT NULL REFERENCES worship_songs(id) ON DELETE CASCADE,
+    played_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS worship_lyrics (
+    song_id INTEGER NOT NULL PRIMARY KEY REFERENCES worship_songs(id) ON DELETE CASCADE,
+    full_text TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS worship_lyric_lines (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    song_id INTEGER NOT NULL REFERENCES worship_songs(id) ON DELETE CASCADE,
+    line_index INTEGER NOT NULL DEFAULT 0,
+    start_ms INTEGER NOT NULL DEFAULT 0,
+    end_ms INTEGER NOT NULL DEFAULT 0,
+    text TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_lyric_lines_song ON worship_lyric_lines(song_id, line_index);
+
+CREATE TABLE IF NOT EXISTS worship_verse_links (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    song_id INTEGER NOT NULL REFERENCES worship_songs(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_worship_verse_song ON worship_verse_links(song_id);
+CREATE INDEX IF NOT EXISTS idx_worship_verse_id ON worship_verse_links(global_verse_id);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_worship_songs USING fts5(
+    title, artist, album,
+    content=worship_songs, content_rowid=id
+);
 """
 
 
@@ -429,18 +568,164 @@ CREATE TABLE IF NOT EXISTS modules (
 # ---------------------------------------------------------------------------
 
 NORMALIZER_MAP = {
+    "web-usfm": ("Bible Text — WEB USFM (red-letter)", web_usfm),
     "bibles": ("Bible Text", bible_text),
     "beblia-bibles": ("Bible Text — Beblia XML (Spanish)", beblia_xml),
     "morphology": ("Morphology (Hebrew & Greek)", morphology),
     "lexicon": ("Lexicon / Word Study", lexicon),
+    "alignment": ("Word Alignment (unfoldingWord ULT CC BY-SA 4.0)", alignment),
     "cross-references": ("Cross-References", cross_references),
+    "parallels": ("Synoptic Parallels (Gospel Harmony)", parallels),
     "geography": ("Geography (Atlas)", geography),
     "entities": ("Entities (Knowledge Graph)", entities),
     "timeline": ("Timeline Events", timeline),
     "reading-plans": ("Reading Plans", reading_plans),
     "dictionaries": ("Dictionaries (Easton, Smith)", dictionaries),
     "commentaries": ("Commentaries (Matthew Henry, Gill, JFB)", commentaries),
+    "worship": ("Worship Music", worship),
 }
+
+
+# ---------------------------------------------------------------------------
+# Auto-populate data_modules from normalized data
+# ---------------------------------------------------------------------------
+
+# Bibles that should be active by default
+DEFAULT_ACTIVE_BIBLES = {"rvr1960", "rv2020", "kjv", "asv"}
+
+
+def _slugify(text: str) -> str:
+    """Create a URL-safe slug from text."""
+    return text.lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+
+def populate_data_modules(db: sqlite3.Connection) -> None:
+    """Populate data_modules table with entries for all normalized resources."""
+
+    insert_sql = """
+        INSERT OR IGNORE INTO data_modules
+            (module_id, name, description, type, version, language, status, is_active)
+        VALUES (?, ?, ?, ?, '1.0', ?, 'installed', ?)
+    """
+
+    count = 0
+
+    # ── Bibles ──
+    try:
+        bibles = db.execute("SELECT abbreviation, name, language FROM bibles").fetchall()
+        for abbr, name, lang in bibles:
+            module_id = f"bible-{abbr.lower()}"
+            is_active = 1 if abbr.lower() in DEFAULT_ACTIVE_BIBLES else 0
+            db.execute(insert_sql, (module_id, name, f"Bible translation: {abbr}", "bible", lang, is_active))
+            count += 1
+    except Exception as e:
+        print(f"    ⚠ bibles: {e}")
+
+    # ── Morphology ──
+    try:
+        morph_count = db.execute("SELECT COUNT(*) FROM morphology").fetchone()[0]
+        if morph_count > 0:
+            db.execute(insert_sql, (
+                "morphology-hebrew-ot", "Hebrew OT Morphology", "Word-by-word Hebrew morphology (STEPBible TAHOT)",
+                "morphology", "he", 1,
+            ))
+            db.execute(insert_sql, (
+                "morphology-greek-nt", "Greek NT Morphology", "Word-by-word Greek morphology (STEPBible TAGNT)",
+                "morphology", "el", 1,
+            ))
+            count += 2
+    except Exception as e:
+        print(f"    ⚠ morphology: {e}")
+
+    # ── Lexicon ──
+    try:
+        lex_count = db.execute("SELECT COUNT(*) FROM lexicon_entries").fetchone()[0]
+        if lex_count > 0:
+            heb_count = db.execute("SELECT COUNT(*) FROM lexicon_entries WHERE strongs_number LIKE 'H%'").fetchone()[0]
+            grk_count = db.execute("SELECT COUNT(*) FROM lexicon_entries WHERE strongs_number LIKE 'G%'").fetchone()[0]
+            if heb_count > 0:
+                db.execute(insert_sql, (
+                    "lexicon-hebrew", "Hebrew Lexicon", "Hebrew word definitions (STEPBible TBESH)",
+                    "dictionary", "he", 1,
+                ))
+                count += 1
+            if grk_count > 0:
+                db.execute(insert_sql, (
+                    "lexicon-greek", "Greek Lexicon", "Greek word definitions (STEPBible TBESG)",
+                    "dictionary", "el", 1,
+                ))
+                count += 1
+    except Exception as e:
+        print(f"    ⚠ lexicon: {e}")
+
+    # ── Cross-References ──
+    try:
+        xref_count = db.execute("SELECT COUNT(*) FROM cross_references").fetchone()[0]
+        if xref_count > 0:
+            db.execute(insert_sql, (
+                "cross-references", "Cross-References", "Treasury of Scripture Knowledge cross-references",
+                "cross_references", "en", 1,
+            ))
+            count += 1
+    except Exception as e:
+        print(f"    ⚠ cross_references: {e}")
+
+    # ── Geography ──
+    try:
+        geo_count = db.execute("SELECT COUNT(*) FROM geographic_locations").fetchone()[0]
+        if geo_count > 0:
+            db.execute(insert_sql, (
+                "geography", "Bible Geography", "Geographic locations from OpenBible.info",
+                "geography", "en", 1,
+            ))
+            count += 1
+    except Exception as e:
+        print(f"    ⚠ geography: {e}")
+
+    # ── Entities ──
+    try:
+        ent_count = db.execute("SELECT COUNT(*) FROM entities").fetchone()[0]
+        if ent_count > 0:
+            db.execute(insert_sql, (
+                "entities", "Bible Entities", "People, places, and things (STEPBible TIPNR)",
+                "entities", "en", 1,
+            ))
+            count += 1
+    except Exception as e:
+        print(f"    ⚠ entities: {e}")
+
+    # ── Timeline ──
+    try:
+        tl_count = db.execute("SELECT COUNT(*) FROM timeline_events").fetchone()[0]
+        if tl_count > 0:
+            db.execute(insert_sql, (
+                "timeline", "Bible Timeline", "Chronological events of the Bible",
+                "timeline", "en", 1,
+            ))
+            count += 1
+    except Exception as e:
+        print(f"    ⚠ timeline: {e}")
+
+    # ── Commentaries & Dictionaries (from resources table) ──
+    try:
+        resources = db.execute("SELECT uuid, type, title FROM resources").fetchall()
+        for uuid, res_type, title in resources:
+            slug = _slugify(title)
+            if res_type == "commentary":
+                module_id = f"commentary-{slug}"
+                mod_type = "commentary"
+            elif res_type == "dictionary":
+                module_id = f"dictionary-{slug}"
+                mod_type = "dictionary"
+            else:
+                continue
+            db.execute(insert_sql, (module_id, title, f"{res_type.title()}: {title}", mod_type, "en", 1))
+            count += 1
+    except Exception as e:
+        print(f"    ⚠ resources: {e}")
+
+    db.commit()
+    print(f"    ✓ Populated {count} data_modules entries")
 
 
 # ---------------------------------------------------------------------------
@@ -510,6 +795,12 @@ def main() -> None:
             traceback.print_exc()
             continue
 
+    # Populate data_modules from normalized data
+    print(f"\n{'─' * 50}")
+    print("  Populating data_modules")
+    print(f"{'─' * 50}")
+    populate_data_modules(db)
+
     # Rebuild FTS5 indexes from populated tables
     print(f"\n{'─' * 50}")
     print("  Rebuilding FTS5 indexes")
@@ -547,17 +838,22 @@ def main() -> None:
         ("lexicon_entries", "SELECT COUNT(*) FROM lexicon_entries"),
         ("morphology", "SELECT COUNT(*) FROM morphology"),
         ("word_occurrences", "SELECT COUNT(*) FROM word_occurrences"),
+        ("alignment_words", "SELECT COUNT(*) FROM alignment_words"),
         ("cross_references", "SELECT COUNT(*) FROM cross_references"),
         ("parallel_passages", "SELECT COUNT(*) FROM parallel_passages"),
         ("geographic_locations", "SELECT COUNT(*) FROM geographic_locations"),
         ("entities", "SELECT COUNT(*) FROM entities"),
         ("relationships", "SELECT COUNT(*) FROM relationships"),
         ("timeline_events", "SELECT COUNT(*) FROM timeline_events"),
+        ("timeline_event_verses", "SELECT COUNT(*) FROM timeline_event_verses"),
         ("reading_plans", "SELECT COUNT(*) FROM reading_plans"),
+        ("reading_plan_entries", "SELECT COUNT(*) FROM reading_plan_entries"),
+        ("atlas_regions", "SELECT COUNT(*) FROM atlas_regions"),
         ("dictionary_entries", "SELECT COUNT(*) FROM dictionary_entries"),
         ("dictionary_entry_verses", "SELECT COUNT(*) FROM dictionary_entry_verses"),
         ("resources", "SELECT COUNT(*) FROM resources"),
         ("resource_entries", "SELECT COUNT(*) FROM resource_entries"),
+        ("data_modules", "SELECT COUNT(*) FROM data_modules"),
     ]
 
     for table, query in stats_queries:
@@ -589,6 +885,7 @@ MIN_ROW_COUNTS = {
     "lexicon_entries": 10_000,
     "morphology": 100_000,
     "word_occurrences": 200_000,
+    "alignment_words": 0,  # 0 until alignment normalizer runs
     "cross_references": 300_000,
     "geographic_locations": 1_000,
     "entities": 10_000,

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.biblestudio.core.pane_registry.PaneCategory
 import org.biblestudio.core.pane_registry.PaneRegistry
+import org.biblestudio.core.pane_registry.PaneType
 import org.biblestudio.ui.theme.PaneStyling
 import org.biblestudio.ui.theme.Spacing
 
@@ -46,9 +47,9 @@ private data class NavItem(
 )
 
 private val NAV_ITEMS = listOf(
-    NavItem("Bible", Icons.Default.Home, "bible-reader"),
-    NavItem("Search", Icons.Default.Search, "search"),
-    NavItem("Notes", Icons.Default.Edit, "note-editor"),
+    NavItem("Bible", Icons.Default.Home, PaneType.BIBLE_READER),
+    NavItem("Search", Icons.Default.Search, PaneType.SEARCH),
+    NavItem("Notes", Icons.Default.Edit, PaneType.NOTE_EDITOR),
     NavItem("More", Icons.Default.MoreVert, null)
 )
 
@@ -65,11 +66,7 @@ private val NAV_ITEMS = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
-fun BottomNavBar(
-    onPaneSelected: (String) -> Unit,
-    activePaneType: String? = null,
-    modifier: Modifier = Modifier
-) {
+fun BottomNavBar(onPaneSelected: (String) -> Unit, activePaneType: String? = null, modifier: Modifier = Modifier) {
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 

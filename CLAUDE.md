@@ -36,9 +36,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew koverReport
 ```
 
+## Environment Setup
+
+- Requires JDK 21 (project uses IntelliJ JBR 21). JVM target is Java 17 (Desktop + Android)
+- On Windows Git Bash, set JAVA_HOME before running gradlew:
+  ```bash
+  JAVA_HOME="/c/path/to/jbr" PATH="$JAVA_HOME/bin:$PATH" ./gradlew <task>
+  ```
+
 ## Project Structure
 
-Two Gradle modules: `:shared` (KMP library) and `:composeApp` (Compose Multiplatform UI). Desktop JVM target is named `desktop` (defined via `jvm("desktop")`).
+Two Gradle modules: `:shared` (KMP library) and `:composeApp` (Compose Multiplatform UI). Desktop JVM target is named `desktop` (defined via `jvm("desktop")`). Android targets: minSdk 24, targetSdk 34.
+
+Key dependency versions (see `gradle/libs.versions.toml`): Kotlin 2.1.0, Compose Multiplatform 1.7.3, SQLDelight 2.0.2, Decompose 3.2.2, Koin 3.5.6.
 
 ### shared module — business logic
 - `features/` — feature-first organization, each with `domain/`, `data/`, `component/` layers
@@ -80,6 +90,8 @@ Two Gradle modules: `:shared` (KMP library) and `:composeApp` (Compose Multiplat
 - SQLDelight queries use `lowerCamelCase:` named parameters (`:paramName` not `?`)
 - Composables: `UpperCamelCase`, accept `modifier: Modifier = Modifier`, use `collectAsState()` for StateFlow
 - Tests use backtick-quoted names: `` `loadChapter emits loading then loaded`() ``
+- Detekt enforces zero-tolerance (`maxIssues = 0`). Function length max: 60 lines, cyclomatic complexity max: 15
+- `@Composable` functions are exempt from the lowercase naming rule
 
 ## Testing
 

@@ -16,7 +16,10 @@ interface AtlasRepository {
 
     /** Returns locations within a geographic bounding box. */
     suspend fun getLocationsByBounds(
-        north: Double, south: Double, east: Double, west: Double
+        north: Double,
+        south: Double,
+        east: Double,
+        west: Double
     ): Result<List<AtlasLocation>>
 
     /** Returns locations filtered by type. */

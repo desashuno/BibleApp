@@ -1,5 +1,6 @@
 package org.biblestudio.features.search.data.repositories
 
+import org.biblestudio.core.util.searchLexiconWithFallback
 import org.biblestudio.database.BibleStudioDatabase
 import org.biblestudio.features.bible_reader.data.mappers.toVerse
 import org.biblestudio.features.bible_reader.domain.entities.Verse
@@ -10,8 +11,7 @@ import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
 import org.biblestudio.features.search.data.mappers.toSearchHistoryEntry
 import org.biblestudio.features.search.domain.entities.SearchHistoryEntry
 import org.biblestudio.features.search.domain.repositories.SearchRepository
-import org.biblestudio.features.word_study.data.mappers.toLexiconEntry
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 internal class SearchRepositoryImpl(
     private val database: BibleStudioDatabase
@@ -73,10 +73,7 @@ internal class SearchRepositoryImpl(
     }
 
     override suspend fun searchLexicon(query: String, maxResults: Long): Result<List<LexiconEntry>> = runCatching {
-        database.studyQueries
-            .searchLexicon(query, maxResults)
-            .executeAsList()
-            .map { it.toLexiconEntry() }
+        searchLexiconWithFallback(database, query, maxResults)
     }
 
     override suspend fun getRecentSearches(limit: Long): Result<List<SearchHistoryEntry>> = runCatching {
@@ -105,5 +102,6 @@ internal class SearchRepositoryImpl(
 
         /** Last book number in the Old Testament (Malachi = 39). */
         private const val OT_MAX_BOOK = 39
+
     }
 }

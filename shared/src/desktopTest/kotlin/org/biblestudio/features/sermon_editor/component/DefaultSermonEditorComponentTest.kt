@@ -1,7 +1,6 @@
 package org.biblestudio.features.sermon_editor.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -10,8 +9,8 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.biblestudio.features.sermon_editor.domain.entities.Sermon
 import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.features.sermon_editor.domain.entities.Sermon
 import org.biblestudio.features.sermon_editor.domain.entities.SermonSection
 import org.biblestudio.features.sermon_editor.domain.repositories.SermonRepository
 
@@ -62,8 +61,7 @@ class DefaultSermonEditorComponentTest {
     }
 
     private fun createComponent(): DefaultSermonEditorComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultSermonEditorComponent(
             componentContext = context,
             repository = fakeRepo,

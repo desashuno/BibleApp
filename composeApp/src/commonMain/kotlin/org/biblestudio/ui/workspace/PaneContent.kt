@@ -12,7 +12,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MenuOpen
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -35,25 +37,19 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.pane_registry.PaneType
 import org.biblestudio.core.util.VerseRefFormatter
-import org.biblestudio.ui.theme.LocalContinuousScroll
-import org.koin.core.Koin
-import org.koin.core.context.GlobalContext
-import org.koin.core.parameter.ParametersHolder
-import org.koin.core.parameter.parametersOf
-
 import org.biblestudio.features.audio_sync.component.AudioSyncComponent
 import org.biblestudio.features.bible_reader.component.BibleReaderComponent
 import org.biblestudio.features.bible_reader.component.BibleReaderState
-import org.biblestudio.features.bible_reader.component.TextComparisonState
 import org.biblestudio.features.bible_reader.component.TextComparisonComponent
+import org.biblestudio.features.bible_reader.component.TextComparisonState
 import org.biblestudio.features.bookmarks_history.component.BookmarksComponent
 import org.biblestudio.features.cross_references.component.CrossReferenceComponent
 import org.biblestudio.features.dashboard.component.DashboardComponent
 import org.biblestudio.features.exegetical_guide.component.ExegeticalGuideComponent
 import org.biblestudio.features.highlights.component.HighlightComponent
 import org.biblestudio.features.knowledge_graph.component.KnowledgeGraphComponent
-import org.biblestudio.features.module_system.component.ModuleManagerComponent
 import org.biblestudio.features.morphology_interlinear.component.InterlinearComponent
 import org.biblestudio.features.morphology_interlinear.component.ReverseInterlinearComponent
 import org.biblestudio.features.note_editor.component.NoteEditorComponent
@@ -66,7 +62,7 @@ import org.biblestudio.features.settings.component.SettingsComponent
 import org.biblestudio.features.theological_atlas.component.AtlasComponent
 import org.biblestudio.features.timeline.component.TimelineComponent
 import org.biblestudio.features.word_study.component.WordStudyComponent
-
+import org.biblestudio.features.worship.component.WorshipComponent
 import org.biblestudio.ui.panes.AudioSyncPane
 import org.biblestudio.ui.panes.BibleReaderPane
 import org.biblestudio.ui.panes.BookmarksPane
@@ -76,7 +72,6 @@ import org.biblestudio.ui.panes.ExegeticalGuidePane
 import org.biblestudio.ui.panes.HighlightsPane
 import org.biblestudio.ui.panes.InterlinearPane
 import org.biblestudio.ui.panes.KnowledgeGraphPane
-import org.biblestudio.ui.panes.ModuleManagerPane
 import org.biblestudio.ui.panes.NoteEditorPane
 import org.biblestudio.ui.panes.PassageGuidePane
 import org.biblestudio.ui.panes.ReadingPlanPane
@@ -90,6 +85,20 @@ import org.biblestudio.ui.panes.TextComparisonPane
 import org.biblestudio.ui.panes.TheologicalAtlasPane
 import org.biblestudio.ui.panes.TimelinePane
 import org.biblestudio.ui.panes.WordStudyPane
+import org.biblestudio.ui.panes.WorshipPane
+import org.biblestudio.ui.theme.BibleReaderSettings
+import org.biblestudio.ui.theme.IconSize
+import org.biblestudio.ui.theme.LocalAppFontSize
+import org.biblestudio.ui.theme.LocalContinuousScroll
+import org.biblestudio.ui.theme.LocalParagraphMode
+import org.biblestudio.ui.theme.LocalRedLetter
+import org.biblestudio.ui.theme.LocalShowVerseNumbers
+import org.biblestudio.ui.theme.ProvideBibleReaderSettings
+import org.biblestudio.ui.theme.Spacing
+import org.koin.core.Koin
+import org.koin.core.context.GlobalContext
+import org.koin.core.parameter.ParametersHolder
+import org.koin.core.parameter.parametersOf
 
 /**
  * Dispatches a pane type string to its real Composable, creating a Decompose
@@ -99,7 +108,7 @@ import org.biblestudio.ui.panes.WordStudyPane
  * When the composable leaves the composition (or paneType changes), the
  * lifecycle is destroyed and the component's coroutine scope is cancelled.
  */
-@Suppress("ktlint:standard:function-naming", "LongMethod", "CyclomaticComplexMethod")
+@Suppress("ktlint:standard:function-naming", "LongMethod", "CyclomaticComplexMethod", "ReturnCount")
 @Composable
 fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
     val lifecycle = remember(paneType) {
@@ -125,7 +134,7 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
         try {
             GlobalContext.get()
         } catch (
-            @Suppress("TooGenericExceptionCaught")
+            @Suppress("TooGenericExceptionCaught", "SwallowedException")
             e: Exception
         ) {
             null
@@ -144,7 +153,7 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
     }
 
     when (paneType) {
-        "bible-reader" -> {
+        PaneType.BIBLE_READER -> {
             val c = rememberSafeComponent<BibleReaderComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -153,6 +162,7 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
             LaunchedEffect(continuousScroll) {
                 c.setContinuousScroll(continuousScroll)
             }
+            val bibleState by c.state.collectAsState()
             val toolbar: @Composable () -> Unit = {
                 BibleReaderToolbar(
                     stateFlow = c.state,
@@ -160,23 +170,48 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                     onSelectBible = c::selectBible,
                     onPreviousChapter = c::previousChapter,
                     onNextChapter = c::nextChapter,
+                    onPreviousVerse = c::previousVerse,
+                    onNextVerse = c::nextVerse,
+                    onToggleReaderToolbar = c::toggleReaderToolbar
                 )
             }
             CompositionLocalProvider(LocalPaneToolbar provides toolbar) {
-                BibleReaderPane(
-                    stateFlow = c.state,
-                    onVerseTapped = c::onVerseTapped,
-                    onVerseLongPressed = c::onVerseLongPressed,
-                    onBookChapterSelected = c::goToChapter,
-                    onToggleBookPicker = c::toggleBookPicker,
-                    onCopySelection = c::getSelectedVerseText,
-                    onClearSelection = c::clearSelection,
-                    modifier = modifier,
-                )
+                ProvideBibleReaderSettings(
+                    BibleReaderSettings(
+                        fontSize = bibleState.fontSize ?: LocalAppFontSize.current,
+                        showVerseNumbers = bibleState.showVerseNumbers ?: LocalShowVerseNumbers.current,
+                        redLetter = bibleState.redLetter ?: LocalRedLetter.current,
+                        paragraphMode = bibleState.paragraphMode ?: LocalParagraphMode.current,
+                        continuousScroll = LocalContinuousScroll.current,
+                    )
+                ) {
+                    BibleReaderPane(
+                        stateFlow = c.state,
+                        onVerseTapped = c::onVerseTapped,
+                        onVerseLongPressed = c::onVerseLongPressed,
+                        onBookChapterSelected = c::goToChapter,
+                        onToggleBookPicker = c::toggleBookPicker,
+                        onCopySelection = c::getSelectedVerseText,
+                        onClearSelection = c::clearSelection,
+                        onHighlightSelection = c::highlightSelection,
+                        onBookmarkVerse = c::bookmarkVerse,
+                        onWordTapped = c::onWordTapped,
+                        onSearchWord = c::searchWord,
+                        onStudyWord = c::studyWord,
+                        onDismissWordPopup = c::dismissWordPopup,
+                        onToggleShowVerseNumbers = c::toggleShowVerseNumbers,
+                        onToggleRedLetter = c::toggleRedLetter,
+                        onToggleParagraphMode = c::toggleParagraphMode,
+                        onToggleContinuousScroll = { c.setContinuousScroll(!bibleState.continuousScroll) },
+                        onAdjustFontSize = c::adjustFontSize,
+                        onCrossReferenceTapped = c::onCrossReferenceTapped,
+                        modifier = modifier
+                    )
+                }
             }
         }
 
-        "text-comparison" -> {
+        PaneType.TEXT_COMPARISON -> {
             val c = rememberSafeComponent<TextComparisonComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -185,6 +220,7 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                     stateFlow = c.state,
                     onPreviousVerse = c::previousVerse,
                     onNextVerse = c::nextVerse,
+                    onCopy = c::copyComparisonText
                 )
             }
             CompositionLocalProvider(LocalPaneToolbar provides toolbar) {
@@ -192,12 +228,12 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                     stateFlow = c.state,
                     onViewModeChanged = c::setViewMode,
                     onSelectedVersionsChanged = c::setSelectedVersions,
-                    modifier = modifier,
+                    modifier = modifier
                 )
             }
         }
 
-        "search" -> {
+        PaneType.SEARCH -> {
             val c = rememberSafeComponent<SearchComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -208,11 +244,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onScopeChanged = c::setScope,
                 onResultTapped = c::onResultTapped,
                 onClearHistory = c::clearHistory,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "syntax-search" -> {
+        PaneType.SYNTAX_SEARCH -> {
             val c = rememberSafeComponent<SearchComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -221,11 +257,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onQueryChanged = c::onQueryChanged,
                 onSearch = c::search,
                 onResultTapped = c::onResultTapped,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "cross-references" -> {
+        PaneType.CROSS_REFERENCES -> {
             val c = rememberSafeComponent<CrossReferenceComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -233,22 +269,22 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 stateFlow = c.state,
                 onReferenceTapped = c::onReferenceTapped,
                 onToggleExpansion = c::toggleExpansion,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "word-study" -> {
+        PaneType.WORD_STUDY -> {
             val c = rememberSafeComponent<WordStudyComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
             WordStudyPane(
                 stateFlow = c.state,
                 onOccurrenceSelected = c::onOccurrenceSelected,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "morphology" -> {
+        PaneType.MORPHOLOGY -> {
             val c = rememberSafeComponent<InterlinearComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -256,23 +292,25 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 stateFlow = c.state,
                 onWordSelected = c::onWordSelected,
                 onDisplayModeChanged = c::onDisplayModeChanged,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "interlinear" -> {
-            val c = rememberSafeComponent<ReverseInterlinearComponent>(paneType, koin, { parametersOf(componentContext) }) {
+        PaneType.INTERLINEAR -> {
+            val c = rememberSafeComponent<ReverseInterlinearComponent>(
+                paneType, koin, { parametersOf(componentContext) }
+            ) {
                 initError = it
             } ?: return
             ReverseInterlinearPane(
                 stateFlow = c.state,
                 onTokenSelected = c::onTokenSelected,
                 onClearSelection = c::clearSelection,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "passage-guide" -> {
+        PaneType.PASSAGE_GUIDE -> {
             val c = rememberSafeComponent<PassageGuideComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -281,11 +319,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onRefSelected = c::onRefSelected,
                 onWordSelected = c::onWordSelected,
                 onSectionToggle = c::onSectionToggle,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "knowledge-graph" -> {
+        PaneType.KNOWLEDGE_GRAPH -> {
             val c = rememberSafeComponent<KnowledgeGraphComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -295,11 +333,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onDepthChanged = c::onDepthChanged,
                 onSearch = c::onSearch,
                 onClearSelection = c::onClearSelection,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "timeline" -> {
+        PaneType.TIMELINE -> {
             val c = rememberSafeComponent<TimelineComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -310,11 +348,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onScrollToYear = c::onScrollToYear,
                 onCategoryFilter = c::onCategoryFilter,
                 onClearSelection = c::onClearSelection,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "theological-atlas" -> {
+        PaneType.THEOLOGICAL_ATLAS -> {
             val c = rememberSafeComponent<AtlasComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -325,11 +363,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onSearch = c::onSearch,
                 onRegionSelected = c::onRegionSelected,
                 onClearSelection = c::onClearSelection,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "audio-sync" -> {
+        PaneType.AUDIO_SYNC -> {
             val c = rememberSafeComponent<AudioSyncComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -340,11 +378,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onStop = c::onStop,
                 onSeek = c::onSeek,
                 onJumpToVerse = c::onJumpToVerse,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "note-editor" -> {
+        PaneType.NOTE_EDITOR -> {
             val c = rememberSafeComponent<NoteEditorComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -356,11 +394,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onNewNote = c::onNewNote,
                 onDeleteNote = c::onDeleteNote,
                 onSearchQueryChanged = c::onSearchQueryChanged,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "highlights" -> {
+        PaneType.HIGHLIGHTS -> {
             val c = rememberSafeComponent<HighlightComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -368,11 +406,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 stateFlow = c.state,
                 onColorSelected = c::onColorSelected,
                 onDeleteHighlight = c::onDeleteHighlight,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "bookmarks" -> {
+        PaneType.BOOKMARKS -> {
             val c = rememberSafeComponent<BookmarksComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -386,11 +424,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onHistoryTapped = c::onHistoryTapped,
                 onViewModeChanged = c::onViewModeChanged,
                 onClearHistory = c::onClearHistory,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "sermon-editor" -> {
+        PaneType.SERMON_EDITOR -> {
             val c = rememberSafeComponent<SermonEditorComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -407,11 +445,11 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onMoveSectionUp = c::onMoveSectionUp,
                 onMoveSectionDown = c::onMoveSectionDown,
                 onSearchQueryChanged = c::onSearchQueryChanged,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "reading-plans" -> {
+        PaneType.READING_PLANS -> {
             val c = rememberSafeComponent<ReadingPlanComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -420,59 +458,72 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onPlanSelected = c::onPlanSelected,
                 onMarkDayCompleted = c::onMarkDayCompleted,
                 onDeletePlan = c::onDeletePlan,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "resource-library" -> {
-            val c = rememberSafeComponent<ResourceLibraryComponent>(paneType, koin, { parametersOf(componentContext) }) {
+        PaneType.RESOURCE_LIBRARY, PaneType.MODULE_MANAGER -> {
+            val c = rememberSafeComponent<ResourceLibraryComponent>(
+                paneType, koin, { parametersOf(componentContext) }
+            ) {
                 initError = it
             } ?: return
             ResourceLibraryPane(
                 stateFlow = c.state,
-                onResourceSelected = c::onResourceSelected,
+                onModuleSelected = c::onModuleSelected,
+                onInstallModule = c::onInstallModule,
+                onRemoveModule = c::onRemoveModule,
+                onCancelDownload = c::onCancelDownload,
+                onFilterTypeChanged = c::onFilterTypeChanged,
                 onSearchQueryChanged = c::onSearchQueryChanged,
-                onEntryVerseSelected = c::onEntryVerseSelected,
-                modifier = modifier,
+                onToggleModuleActive = c::onToggleModuleActive,
+                modifier = modifier
             )
         }
 
-        "module-manager" -> {
-            val c = rememberSafeComponent<ModuleManagerComponent>(paneType, koin, { parametersOf(componentContext) }) {
-                initError = it
-            } ?: return
-            ModuleManagerPane(
-                stateFlow = c.state,
-                onModuleSelected = c::selectModule,
-                onRemoveModule = c::removeModule,
-                onImportModule = c::requestImport,
-                modifier = modifier,
-            )
-        }
-
-        "dashboard" -> {
+        PaneType.DASHBOARD -> {
             val c = rememberSafeComponent<DashboardComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
             DashboardPane(
                 stateFlow = c.state,
                 onContinueReading = c::onContinueReading,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "exegetical-guide" -> {
-            val c = rememberSafeComponent<ExegeticalGuideComponent>(paneType, koin, { parametersOf(componentContext) }) {
+        PaneType.EXEGETICAL_GUIDE -> {
+            val c = rememberSafeComponent<ExegeticalGuideComponent>(
+                paneType, koin, { parametersOf(componentContext) }
+            ) {
                 initError = it
             } ?: return
             ExegeticalGuidePane(
                 stateFlow = c.state,
                 onToggleSection = c::onToggleSection,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
-        "settings" -> {
+        PaneType.WORSHIP -> {
+            val c = rememberSafeComponent<WorshipComponent>(paneType, koin, { parametersOf(componentContext) }) {
+                initError = it
+            } ?: return
+            WorshipPane(
+                stateFlow = c.state,
+                onTabSelected = c::onTabSelected,
+                onSearchQueryChanged = c::onSearchQueryChanged,
+                onSongSelected = c::onSongSelected,
+                onPlayAll = c::onPlayAll,
+                onToggleFavorite = c::onToggleFavorite,
+                onCreatePlaylist = c::onCreatePlaylist,
+                onDeletePlaylist = c::onDeletePlaylist,
+                onClearHistory = c::onClearHistory,
+                modifier = modifier
+            )
+        }
+
+        PaneType.SETTINGS -> {
             val c = rememberSafeComponent<SettingsComponent>(paneType, koin, { parametersOf(componentContext) }) {
                 initError = it
             } ?: return
@@ -486,20 +537,22 @@ fun PaneContent(paneType: String, modifier: Modifier = Modifier) {
                 onActivateLayout = c::activateLayout,
                 onShowVerseNumbersChanged = c::setShowVerseNumbers,
                 onRedLetterChanged = c::setRedLetter,
+                onParagraphModeChanged = c::setParagraphMode,
+                onContinuousScrollChanged = c::setContinuousScroll,
                 onSidebarCollapsedChanged = c::setSidebarCollapsed,
-                modifier = modifier,
+                modifier = modifier
             )
         }
 
         else -> {
             Box(
                 modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Unknown pane: $paneType",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -531,8 +584,8 @@ private inline fun <reified T : Any> rememberSafeComponent(
     }
 }
 
-private val TOOLBAR_ICON_SIZE = 18.dp
-private val TOOLBAR_BUTTON_SIZE = 24.dp
+private val TOOLBAR_ICON_SIZE = IconSize.Medium
+private val TOOLBAR_BUTTON_SIZE = IconSize.Large
 
 /**
  * Toolbar for the Bible Reader pane header.
@@ -546,6 +599,9 @@ private fun BibleReaderToolbar(
     onSelectBible: (Long) -> Unit,
     onPreviousChapter: () -> Unit,
     onNextChapter: () -> Unit,
+    onPreviousVerse: () -> Unit,
+    onNextVerse: () -> Unit,
+    onToggleReaderToolbar: (() -> Unit)? = null,
 ) {
     val state by stateFlow.collectAsState()
     var bibleDropdownExpanded by remember { mutableStateOf(false) }
@@ -567,16 +623,16 @@ private fun BibleReaderToolbar(
         // Breadcrumb: "Book Chapter"
         val book = state.currentBook
         if (book != null) {
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(Spacing.Space4))
             Text(
                 text = "${book.name} ${state.currentChapter}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
+                maxLines = 1
             )
         }
 
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(Spacing.Space4))
 
         // Previous chapter
         IconButton(
@@ -604,7 +660,34 @@ private fun BibleReaderToolbar(
             )
         }
 
-        Spacer(Modifier.width(4.dp))
+        // Verse navigation chip
+        if (state.verses.isNotEmpty()) {
+            Spacer(Modifier.width(Spacing.Space4))
+            IconButton(
+                onClick = onPreviousVerse,
+                enabled = state.currentVerseIndex > 0,
+                modifier = Modifier.size(TOOLBAR_BUTTON_SIZE)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Previous verse",
+                    modifier = Modifier.size(TOOLBAR_ICON_SIZE)
+                )
+            }
+            IconButton(
+                onClick = onNextVerse,
+                enabled = state.currentVerseIndex < state.verses.size - 1,
+                modifier = Modifier.size(TOOLBAR_BUTTON_SIZE)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Next verse",
+                    modifier = Modifier.size(TOOLBAR_ICON_SIZE)
+                )
+            }
+        }
+
+        Spacer(Modifier.width(Spacing.Space4))
 
         // Bible version dropdown
         if (state.bibles.isNotEmpty()) {
@@ -618,12 +701,12 @@ private fun BibleReaderToolbar(
                             text = state.currentBible?.abbreviation ?: "",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
+                            maxLines = 1
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
                             contentDescription = "Select Bible version",
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(IconSize.ExtraSmall)
                         )
                     }
                 }
@@ -631,21 +714,56 @@ private fun BibleReaderToolbar(
                     expanded = bibleDropdownExpanded,
                     onDismissRequest = { bibleDropdownExpanded = false }
                 ) {
-                    state.bibles.forEach { bible ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = "${bible.abbreviation} — ${bible.name}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            },
-                            onClick = {
-                                onSelectBible(bible.id)
-                                bibleDropdownExpanded = false
-                            }
-                        )
+                    val byLanguage = state.bibles.groupBy { it.language }
+                    byLanguage.forEach { (lang, biblesForLang) ->
+                        if (byLanguage.size > 1) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = lang.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                },
+                                onClick = {},
+                                enabled = false
+                            )
+                        }
+                        biblesForLang.forEach { bible ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "${bible.abbreviation} — ${bible.name}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                onClick = {
+                                    onSelectBible(bible.id)
+                                    bibleDropdownExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
+            }
+        }
+
+        // Reader toolbar toggle button
+        if (onToggleReaderToolbar != null) {
+            Spacer(Modifier.width(Spacing.Space4))
+            IconButton(
+                onClick = onToggleReaderToolbar,
+                modifier = Modifier.size(TOOLBAR_BUTTON_SIZE)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Toggle reader toolbar",
+                    tint = if (state.showReaderToolbar) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    modifier = Modifier.size(TOOLBAR_ICON_SIZE)
+                )
             }
         }
     }
@@ -653,16 +771,18 @@ private fun BibleReaderToolbar(
 
 /**
  * Compact toolbar for the Text Comparison pane header.
- * Shows verse reference, prev/next verse arrows, and version count.
+ * Shows verse reference, prev/next verse arrows, version count, and copy button.
  */
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
 private fun TextComparisonToolbar(
     stateFlow: StateFlow<TextComparisonState>,
     onPreviousVerse: () -> Unit,
     onNextVerse: () -> Unit,
+    onCopy: (() -> String)? = null
 ) {
     val state by stateFlow.collectAsState()
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         // Verse reference
@@ -671,11 +791,11 @@ private fun TextComparisonToolbar(
                 text = VerseRefFormatter.format(cmp.globalVerseId),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
+                maxLines = 1
             )
         }
 
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(Spacing.Space4))
 
         // Previous verse
         IconButton(
@@ -705,12 +825,30 @@ private fun TextComparisonToolbar(
 
         // Version count badge
         if (state.selectedVersions.isNotEmpty()) {
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(Spacing.Space4))
             Text(
                 text = "${state.selectedVersions.size}v",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primary
             )
+        }
+
+        // Copy button
+        if (onCopy != null && state.comparison != null) {
+            Spacer(Modifier.width(Spacing.Space4))
+            IconButton(
+                onClick = {
+                    val text = onCopy()
+                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(text))
+                },
+                modifier = Modifier.size(TOOLBAR_BUTTON_SIZE)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy comparison",
+                    modifier = Modifier.size(TOOLBAR_ICON_SIZE)
+                )
+            }
         }
     }
 }
@@ -720,19 +858,19 @@ private fun TextComparisonToolbar(
 private fun PaneErrorFallback(paneType: String, errorMessage: String, modifier: Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Failed to load: $paneType",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.error
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.Space8))
             Text(
                 text = errorMessage,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

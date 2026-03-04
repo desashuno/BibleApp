@@ -1,10 +1,8 @@
 package org.biblestudio.features.knowledge_graph.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,13 +18,13 @@ import org.biblestudio.features.knowledge_graph.domain.repositories.KnowledgeGra
 /**
  * Default [KnowledgeGraphComponent] managing graph exploration and entity selection.
  */
-class DefaultKnowledgeGraphComponent(
+internal class DefaultKnowledgeGraphComponent(
     componentContext: ComponentContext,
     private val repository: KnowledgeGraphRepository,
     private val verseBus: VerseBus
 ) : KnowledgeGraphComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(KnowledgeGraphState())
     override val state: StateFlow<KnowledgeGraphState> = _state.asStateFlow()

@@ -2,7 +2,7 @@ package org.biblestudio.features.cross_references.data.mappers
 
 import migrations.Cross_references
 import migrations.Parallel_passages
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.cross_references.domain.entities.ParallelPassage
 
 // ── CrossReference ──────────────────────────────────────────────────

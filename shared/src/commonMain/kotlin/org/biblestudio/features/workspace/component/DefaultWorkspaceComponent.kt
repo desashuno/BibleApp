@@ -1,21 +1,22 @@
 package org.biblestudio.features.workspace.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.biblestudio.core.AppConstants
 import org.biblestudio.core.error.AppError
+import org.biblestudio.core.pane_registry.PaneType
+import org.biblestudio.core.util.generateUuid
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.workspace.domain.entities.WorkspaceLayout
@@ -26,7 +27,6 @@ import org.biblestudio.features.workspace.domain.model.WorkspacePreset
 import org.biblestudio.features.workspace.domain.model.WorkspaceState
 import org.biblestudio.features.workspace.domain.repositories.WorkspaceRepository
 
-private const val AUTO_SAVE_DEBOUNCE_MS = 2_000L
 
 /**
  * Default implementation of [WorkspaceComponent] backed by Decompose lifecycle
@@ -36,14 +36,14 @@ private const val AUTO_SAVE_DEBOUNCE_MS = 2_000L
  * flushes the save immediately.
  */
 @Suppress("TooManyFunctions")
-class DefaultWorkspaceComponent(
+internal class DefaultWorkspaceComponent(
     componentContext: ComponentContext,
     private val repository: WorkspaceRepository,
     private val verseBus: VerseBus
 ) : WorkspaceComponent, ComponentContext by componentContext {
 
     private val json = Json { prettyPrint = false }
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(WorkspaceState())
     override val state: StateFlow<WorkspaceState> = _state.asStateFlow()
@@ -58,7 +58,7 @@ class DefaultWorkspaceComponent(
                 when (event) {
                     is LinkEvent.VerseSelected,
                     is LinkEvent.PassageSelected,
-                    is LinkEvent.SearchResult -> focusPaneByType("bible-reader")
+                    is LinkEvent.SearchResult -> focusPaneByType(PaneType.BIBLE_READER)
                     else -> { /* No tab focus needed for Strongs/Resource events */ }
                 }
             }
@@ -225,7 +225,7 @@ class DefaultWorkspaceComponent(
         scheduleSave()
     }
 
-    @Suppress("MagicNumber")
+    @Suppress("MagicNumber", "ReturnCount")
     override fun rearrangePane(fromPath: List<Int>, targetPath: List<Int>, placement: PanePlacement) {
         if (fromPath == targetPath) return
 
@@ -294,17 +294,17 @@ class DefaultWorkspaceComponent(
                     } else {
                         // No active workspace — create a default one
                         val uuid = generateUuid()
-                        val now = Clock.System.now().toString()
+                        val now = nowIso()
                         val workspace = org.biblestudio.features.workspace.domain.entities.Workspace(
                             uuid = uuid,
                             name = "Default",
                             isActive = true,
                             createdAt = now,
                             updatedAt = now,
-                            deviceId = "local"
+                            deviceId = AppConstants.DEVICE_ID_LOCAL
                         )
                         repository.create(workspace)
-                        repository.setActive(uuid, now, "local")
+                        repository.setActive(uuid, now, AppConstants.DEVICE_ID_LOCAL)
                         loadWorkspace(uuid)
                     }
                     onComplete?.invoke()
@@ -330,18 +330,18 @@ class DefaultWorkspaceComponent(
             persistNow()
 
             val uuid = generateUuid()
-            val now = Clock.System.now().toString()
+            val now = nowIso()
             val workspace = org.biblestudio.features.workspace.domain.entities.Workspace(
                 uuid = uuid,
                 name = name,
                 isActive = false,
                 createdAt = now,
                 updatedAt = now,
-                deviceId = "local"
+                deviceId = AppConstants.DEVICE_ID_LOCAL
             )
             repository.create(workspace)
                 .onSuccess {
-                    repository.setActive(uuid, now, "local")
+                    repository.setActive(uuid, now, AppConstants.DEVICE_ID_LOCAL)
                     loadWorkspace(uuid)
                 }
                 .onFailure { e ->
@@ -353,7 +353,7 @@ class DefaultWorkspaceComponent(
 
     override fun deleteWorkspace(id: String, onComplete: (() -> Unit)?) {
         scope.launch {
-            val now = Clock.System.now().toString()
+            val now = nowIso()
             repository.delete(id, now)
                 .onSuccess {
                     if (currentWorkspaceId == id) {
@@ -428,6 +428,7 @@ class DefaultWorkspaceComponent(
      * Removes the node at [path], collapsing parent splits/tabs as needed.
      * Returns `null` if the entire tree collapses.
      */
+    @Suppress("CyclomaticComplexMethod")
     private fun removeNodeAtPath(root: LayoutNode, path: List<Int>): LayoutNode? {
         if (path.isEmpty()) return null // Remove this node
         return when (root) {
@@ -564,24 +565,21 @@ class DefaultWorkspaceComponent(
     // ── Drag-Drop Helpers ────────────────────────────────────
 
     @Suppress("MagicNumber")
-    private fun wrapWithPlacement(
-        target: LayoutNode,
-        source: LayoutNode.Leaf,
-        placement: PanePlacement
-    ): LayoutNode = when (placement) {
-        PanePlacement.LEFT -> LayoutNode.Split(SplitAxis.Horizontal, 0.5f, source, target)
-        PanePlacement.RIGHT -> LayoutNode.Split(SplitAxis.Horizontal, 0.5f, target, source)
-        PanePlacement.ABOVE -> LayoutNode.Split(SplitAxis.Vertical, 0.5f, source, target)
-        PanePlacement.BELOW -> LayoutNode.Split(SplitAxis.Vertical, 0.5f, target, source)
-        PanePlacement.TAB -> when (target) {
-            is LayoutNode.Leaf -> LayoutNode.Tabs(listOf(target, source), activeIndex = 1)
-            is LayoutNode.Tabs -> target.copy(
-                children = target.children + source,
-                activeIndex = target.children.size
-            )
-            else -> LayoutNode.Split(SplitAxis.Horizontal, 0.5f, target, source)
+    private fun wrapWithPlacement(target: LayoutNode, source: LayoutNode.Leaf, placement: PanePlacement): LayoutNode =
+        when (placement) {
+            PanePlacement.LEFT -> LayoutNode.Split(SplitAxis.Horizontal, 0.5f, source, target)
+            PanePlacement.RIGHT -> LayoutNode.Split(SplitAxis.Horizontal, 0.5f, target, source)
+            PanePlacement.ABOVE -> LayoutNode.Split(SplitAxis.Vertical, 0.5f, source, target)
+            PanePlacement.BELOW -> LayoutNode.Split(SplitAxis.Vertical, 0.5f, target, source)
+            PanePlacement.TAB -> when (target) {
+                is LayoutNode.Leaf -> LayoutNode.Tabs(listOf(target, source), activeIndex = 1)
+                is LayoutNode.Tabs -> target.copy(
+                    children = target.children + source,
+                    activeIndex = target.children.size
+                )
+                else -> LayoutNode.Split(SplitAxis.Horizontal, 0.5f, target, source)
+            }
         }
-    }
 
     private fun adjustSourcePathAfterWrap(
         fromPath: List<Int>,
@@ -634,7 +632,7 @@ class DefaultWorkspaceComponent(
      * Activates all tabs along the path to a leaf with the given [paneType].
      * Does nothing if no such leaf exists in the current layout.
      */
-    private fun focusPaneByType(paneType: String) {
+    override fun focusPaneByType(paneType: String) {
         _state.update { current ->
             val layout = current.layout ?: return@update current
             val focused = activateLeafInTree(layout, paneType)
@@ -647,6 +645,7 @@ class DefaultWorkspaceComponent(
      * any [Tabs] node along the path. Returns the updated subtree, or `null`
      * if no matching leaf was found.
      */
+    @Suppress("ReturnCount")
     private fun activateLeafInTree(node: LayoutNode, paneType: String): LayoutNode? {
         return when (node) {
             is LayoutNode.Leaf -> if (node.paneType == paneType) node else null
@@ -668,12 +667,23 @@ class DefaultWorkspaceComponent(
         }
     }
 
+    override fun containsPaneType(paneType: String): Boolean {
+        val layout = _state.value.layout ?: return false
+        return hasLeafOfType(layout, paneType)
+    }
+
+    private fun hasLeafOfType(node: LayoutNode, paneType: String): Boolean = when (node) {
+        is LayoutNode.Leaf -> node.paneType == paneType
+        is LayoutNode.Split -> hasLeafOfType(node.first, paneType) || hasLeafOfType(node.second, paneType)
+        is LayoutNode.Tabs -> node.children.any { it.paneType == paneType }
+    }
+
     // ── Persistence ─────────────────────────────────────────
 
     private fun scheduleSave() {
         saveJob?.cancel()
         saveJob = scope.launch {
-            delay(AUTO_SAVE_DEBOUNCE_MS)
+            delay(AppConstants.AUTO_SAVE_DEBOUNCE_MS)
             persistNow()
         }
     }
@@ -688,7 +698,7 @@ class DefaultWorkspaceComponent(
                     id = 0,
                     workspaceId = wsId,
                     layoutJson = layoutJson,
-                    updatedAt = Clock.System.now().toString()
+                    updatedAt = nowIso()
                 )
             ).onFailure { e ->
                 Napier.e("Auto-save failed for workspace '$wsId'", e)
@@ -696,13 +706,6 @@ class DefaultWorkspaceComponent(
         }
     }
 
-    private fun generateUuid(): String {
-        val chars = "abcdef0123456789"
-        val segments = listOf(UUID_SEGMENT_8, UUID_SEGMENT_4, UUID_SEGMENT_4, UUID_SEGMENT_4, UUID_SEGMENT_12)
-        return segments.joinToString("-") { len ->
-            (1..len).map { chars.random() }.joinToString("")
-        }
-    }
 
     private fun deserializeLayout(jsonStr: String): LayoutNode {
         return try {
@@ -716,9 +719,4 @@ class DefaultWorkspaceComponent(
         }
     }
 
-    companion object {
-        private const val UUID_SEGMENT_8 = 8
-        private const val UUID_SEGMENT_4 = 4
-        private const val UUID_SEGMENT_12 = 12
-    }
 }

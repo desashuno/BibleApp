@@ -5,8 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +37,8 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.settings.component.SavedLayout
@@ -55,7 +57,7 @@ private val STATUS_BAR_HEIGHT = 24.dp
  * Includes a status bar (desktop), keyboard shortcuts, and command palette.
  * Shows a [WelcomeScreen] when no panes are open.
  */
-@Suppress("ktlint:standard:function-naming", "LongMethod")
+@Suppress("ktlint:standard:function-naming", "LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun WorkspaceShell(
     stateFlow: StateFlow<WorkspaceState>,
@@ -97,6 +99,9 @@ fun WorkspaceShell(
     // Workspace switcher state
     var showWorkspaceSwitcher by remember { mutableStateOf(false) }
 
+    // Capture worship player for keyboard shortcuts
+    val worshipPlayer = LocalWorshipPlayer.current
+
     // Keyboard shortcut handler
     val keyboardModifier = Modifier.onPreviewKeyEvent { event ->
         if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -119,6 +124,20 @@ fun WorkspaceShell(
             // Ctrl+B → Toggle sidebar
             event.isCtrlPressed && !event.isShiftPressed && event.key == Key.B -> {
                 sidebarCollapsed = !sidebarCollapsed
+                true
+            }
+            // Ctrl+M → Toggle worship play/pause
+            event.isCtrlPressed && !event.isShiftPressed && event.key == Key.M -> {
+                val wp = worshipPlayer
+                if (wp != null) {
+                    val ps = wp.state.value
+                    if (ps.currentSong != null) {
+                        when (ps.playbackState) {
+                            org.biblestudio.features.worship.PlaybackStatus.Playing -> wp.pause()
+                            else -> wp.resume()
+                        }
+                    }
+                }
                 true
             }
             else -> false
@@ -157,102 +176,115 @@ fun WorkspaceShell(
     }
 
     Surface(modifier = modifier.fillMaxSize().then(keyboardModifier)) {
-        when (sizeClass) {
-            WindowSizeClass.Compact,
-            WindowSizeClass.Medium
-            -> {
-                // Mobile / tablet — layout + bottom navigation
-                Column(modifier = Modifier.fillMaxSize()) {
-                    val layout = state.layout
-                    if (layout != null) {
-                        LayoutNodeRenderer(
-                            node = layout,
-                            modifier = Modifier.weight(1f),
-                            callbacks = paneCallbacks,
-                            dragState = dragState
-                        )
-                    } else {
-                        WelcomeScreen(
-                            onPaneSelected = callbacks.onPaneSelected,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    BottomNavBar(
-                        onPaneSelected = callbacks.onPaneSelected,
-                        activePaneType = activePaneType
-                    )
-                }
-            }
-
-            WindowSizeClass.Expanded,
-            WindowSizeClass.Large
-            -> {
-                // Desktop — activity bar + content + status bar
-                Row(modifier = Modifier.fillMaxSize()) {
-                    ActivityBar(
-                        onPaneSelected = callbacks.onPaneSelected,
-                        onSettingsClick = callbacks.onSettingsClick,
-                        onShowModulePicker = { showModulePicker = true },
-                        onToggleWorkspaceSwitcher = { showWorkspaceSwitcher = !showWorkspaceSwitcher },
-                        activePaneType = activePaneType,
-                        pinnedPanes = pinnedPanes,
-                        isCollapsed = sidebarCollapsed,
-                        onToggleCollapse = { sidebarCollapsed = !sidebarCollapsed }
-                    )
-                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        // Wrap layout area in a Box for the drag preview overlay
-                        var layoutAreaOffset by remember { mutableStateOf(Offset.Zero) }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .onGloballyPositioned { coords ->
-                                    layoutAreaOffset = coords.positionInWindow()
-                                }
+        CompositionLocalProvider(
+            LocalNavigateToPane provides callbacks.onNavigateToPane
+        ) {
+            when (sizeClass) {
+                WindowSizeClass.Compact,
+                WindowSizeClass.Medium
+                -> {
+                    // Mobile / tablet — layout + bottom navigation
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        val layout = state.layout
+                        if (layout != null) {
+                            LayoutNodeRenderer(
+                                node = layout,
+                                modifier = Modifier.weight(1f),
+                                callbacks = paneCallbacks,
+                                dragState = dragState
+                            )
+                        } else {
+                            WelcomeScreen(
+                                onPaneSelected = callbacks.onPaneSelected,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        val mobilePlayer = LocalWorshipPlayer.current
+                        val mobileState = mobilePlayer?.state?.collectAsState()
+                        AnimatedVisibility(
+                            visible = mobilePlayer != null && mobileState?.value?.currentSong != null
                         ) {
-                            if (showWorkspaceSwitcher) {
-                                // Android-style desktop overview
-                                DesktopOverview(
-                                    savedLayouts = savedLayouts,
-                                    activeLayout = state.layout,
-                                    onLoadWorkspace = { id ->
-                                        callbacks.onLoadWorkspace(id)
-                                        showWorkspaceSwitcher = false
-                                    },
-                                    onCreateWorkspace = { name ->
-                                        callbacks.onCreateWorkspace(name)
-                                        showWorkspaceSwitcher = false
-                                    },
-                                    onDeleteWorkspace = callbacks.onDeleteWorkspace,
-                                    onDismiss = { showWorkspaceSwitcher = false }
-                                )
-                            } else {
-                                val layout = state.layout
-                                if (layout != null) {
-                                    LayoutNodeRenderer(
-                                        node = layout,
-                                        modifier = Modifier.fillMaxSize(),
-                                        callbacks = paneCallbacks,
-                                        dragState = dragState
-                                    )
-                                } else {
-                                    WelcomeScreen(
-                                        onPaneSelected = callbacks.onPaneSelected,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
-                                // Floating drag preview
-                                DragPreviewOverlay(
-                                    dragState = dragState,
-                                    layoutAreaOffset = layoutAreaOffset
-                                )
+                            if (mobilePlayer != null) {
+                                WorshipMobileMiniPlayer(player = mobilePlayer)
                             }
                         }
-                        // Status bar
-                        StatusBar(
-                            activePaneType = activePaneType,
-                            paneCount = paneCount,
-                            workspaceName = state.workspaceName
+                        BottomNavBar(
+                            onPaneSelected = callbacks.onPaneSelected,
+                            activePaneType = activePaneType
                         )
+                    }
+                }
+
+                WindowSizeClass.Expanded,
+                WindowSizeClass.Large
+                -> {
+                    // Desktop — activity bar + content + status bar
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        ActivityBar(
+                            onPaneSelected = callbacks.onPaneSelected,
+                            onSettingsClick = callbacks.onSettingsClick,
+                            onShowModulePicker = { showModulePicker = true },
+                            onToggleWorkspaceSwitcher = { showWorkspaceSwitcher = !showWorkspaceSwitcher },
+                            activePaneType = activePaneType,
+                            pinnedPanes = pinnedPanes,
+                            isCollapsed = sidebarCollapsed,
+                            onToggleCollapse = { sidebarCollapsed = !sidebarCollapsed }
+                        )
+                        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            // Wrap layout area in a Box for the drag preview overlay
+                            var layoutAreaOffset by remember { mutableStateOf(Offset.Zero) }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .onGloballyPositioned { coords ->
+                                        layoutAreaOffset = coords.positionInWindow()
+                                    }
+                            ) {
+                                if (showWorkspaceSwitcher) {
+                                    // Android-style desktop overview
+                                    DesktopOverview(
+                                        savedLayouts = savedLayouts,
+                                        activeLayout = state.layout,
+                                        onLoadWorkspace = { id ->
+                                            callbacks.onLoadWorkspace(id)
+                                            showWorkspaceSwitcher = false
+                                        },
+                                        onCreateWorkspace = { name ->
+                                            callbacks.onCreateWorkspace(name)
+                                            showWorkspaceSwitcher = false
+                                        },
+                                        onDeleteWorkspace = callbacks.onDeleteWorkspace,
+                                        onDismiss = { showWorkspaceSwitcher = false }
+                                    )
+                                } else {
+                                    val layout = state.layout
+                                    if (layout != null) {
+                                        LayoutNodeRenderer(
+                                            node = layout,
+                                            modifier = Modifier.fillMaxSize(),
+                                            callbacks = paneCallbacks,
+                                            dragState = dragState
+                                        )
+                                    } else {
+                                        WelcomeScreen(
+                                            onPaneSelected = callbacks.onPaneSelected,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    // Floating drag preview
+                                    DragPreviewOverlay(
+                                        dragState = dragState,
+                                        layoutAreaOffset = layoutAreaOffset
+                                    )
+                                }
+                            }
+                            // Status bar
+                            StatusBar(
+                                activePaneType = activePaneType,
+                                paneCount = paneCount,
+                                workspaceName = state.workspaceName
+                            )
+                        }
                     }
                 }
             }
@@ -270,10 +302,7 @@ private val DRAG_PREVIEW_OFFSET_Y = -20f
  */
 @Suppress("ktlint:standard:function-naming", "MagicNumber")
 @Composable
-private fun DragPreviewOverlay(
-    dragState: WorkspaceDragState,
-    layoutAreaOffset: Offset
-) {
+private fun DragPreviewOverlay(dragState: WorkspaceDragState, layoutAreaOffset: Offset) {
     val info = dragState.dragInfo ?: return
     val pos = dragState.pointerPosition
     if (pos == Offset.Unspecified) return
@@ -318,11 +347,10 @@ private fun DragPreviewOverlay(
  */
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun StatusBar(
-    activePaneType: String?,
-    paneCount: Int,
-    workspaceName: String
-) {
+private fun StatusBar(activePaneType: String?, paneCount: Int, workspaceName: String) {
+    val worshipPlayer = LocalWorshipPlayer.current
+    val worshipState = worshipPlayer?.state?.collectAsState()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -337,7 +365,13 @@ private fun StatusBar(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onPrimary
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Space16)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Space16),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (worshipPlayer != null && worshipState?.value?.currentSong != null) {
+                WorshipMiniPlayer(player = worshipPlayer)
+            }
             Text(
                 text = workspaceName,
                 style = MaterialTheme.typography.labelSmall,

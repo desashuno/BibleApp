@@ -5,9 +5,9 @@ import migrations.Word_occurrences
 import org.biblestudio.database.MorphologyByStrongs
 import org.biblestudio.database.MorphologyForVerse
 import org.biblestudio.features.morphology_interlinear.domain.entities.AlignmentEntry
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 import org.biblestudio.features.morphology_interlinear.domain.entities.MorphologyData
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 
 internal fun MorphologyForVerse.toMorphologyData(): MorphologyData = MorphologyData(
     id = id,

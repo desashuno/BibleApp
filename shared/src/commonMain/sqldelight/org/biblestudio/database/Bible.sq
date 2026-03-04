@@ -78,7 +78,7 @@ VALUES (:chapterId, :globalVerseId, :verseNumber, :text, :htmlText);
 -- Text Comparison: single query across all bibles for a given verse
 
 versesForComparisonByGlobalId:
-SELECT b.abbreviation, v.text
+SELECT b.abbreviation, v.text, v.html_text
 FROM verses v
 INNER JOIN chapters c ON v.chapter_id = c.id
 INNER JOIN books bk ON c.book_id = bk.id
@@ -121,6 +121,30 @@ FROM verses v
 INNER JOIN chapters c ON v.chapter_id = c.id
 INNER JOIN books b ON c.book_id = b.id
 WHERE b.bible_id = :bibleId;
+
+-- Bibles by language
+
+biblesByLanguage:
+SELECT *
+FROM bibles
+WHERE language = :languageCode
+ORDER BY name ASC;
+
+activeBiblesByLanguage:
+SELECT b.*
+FROM bibles b
+INNER JOIN data_modules dm ON dm.module_id = 'bible-' || LOWER(b.abbreviation)
+WHERE dm.is_active = 1 AND b.language = :languageCode
+ORDER BY b.name ASC;
+
+-- Active Bibles: only those with an active data_modules entry
+
+activeBibles:
+SELECT b.*
+FROM bibles b
+INNER JOIN data_modules dm ON dm.module_id = 'bible-' || LOWER(b.abbreviation)
+WHERE dm.is_active = 1
+ORDER BY b.name ASC;
 
 -- FTS Search
 

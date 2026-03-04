@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.biblestudio.features.bible_reader.component.ComparisonViewMode
 import org.biblestudio.features.bible_reader.component.TextComparisonState
 import org.biblestudio.features.bible_reader.domain.entities.VersionComparison
+import org.biblestudio.features.bible_reader.domain.entities.VersionVerse
 
 @OptIn(ExperimentalTestApi::class)
 class TextComparisonPaneTest {
@@ -21,8 +22,8 @@ class TextComparisonPaneTest {
                 comparison = VersionComparison(
                     globalVerseId = 1_001_001,
                     versions = mapOf(
-                        "KJV" to "In the beginning God created the heaven and the earth.",
-                        "ASV" to "In the beginning God created the heavens and the earth."
+                        "KJV" to VersionVerse("In the beginning God created the heaven and the earth."),
+                        "ASV" to VersionVerse("In the beginning God created the heavens and the earth.")
                     )
                 ),
                 viewMode = ComparisonViewMode.PARALLEL,
@@ -40,9 +41,11 @@ class TextComparisonPaneTest {
 
         onNodeWithText("KJV").assertIsDisplayed()
         onNodeWithText("ASV").assertIsDisplayed()
+        // First column (KJV) renders plain text
         onNodeWithText("In the beginning God created the heaven and the earth.")
             .assertIsDisplayed()
-        onNodeWithText("In the beginning God created the heavens and the earth.")
+        // Second column (ASV) renders as word diff vs baseline, including both removed and added words
+        onNodeWithText("In the beginning God created the heaven heavens and the earth.")
             .assertIsDisplayed()
     }
 }

@@ -1,18 +1,21 @@
 package org.biblestudio.features.resource_library.component
 
 import kotlinx.coroutines.flow.StateFlow
-import org.biblestudio.features.resource_library.domain.entities.Resource
-import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
+import org.biblestudio.core.data_manager.model.DataModuleDescriptor
+import org.biblestudio.core.data_manager.model.DataModuleType
 
 /**
  * Observable state for the Resource Library pane.
+ *
+ * Now backed by the centralized DataManager instead of the old ResourceRepository.
  */
 data class ResourceLibraryState(
-    val resources: List<Resource> = emptyList(),
-    val activeResource: Resource? = null,
-    val entry: ResourceEntry? = null,
+    val modules: List<DataModuleDescriptor> = emptyList(),
+    val filteredModules: List<DataModuleDescriptor> = emptyList(),
+    val selectedModule: DataModuleDescriptor? = null,
+    val filterType: DataModuleType? = null,
     val searchQuery: String = "",
-    val searchResults: List<ResourceEntry> = emptyList(),
+    val activeDownloads: Map<String, Float> = emptyMap(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -20,20 +23,32 @@ data class ResourceLibraryState(
 /**
  * Business-logic boundary for the Resource Library pane.
  *
- * Subscribes to [LinkEvent.VerseSelected] and [LinkEvent.ResourceSelected]
- * from the VerseBus and loads resource entries.
+ * Manages data module browsing, installation, and removal
+ * through the centralized [DataManager].
  */
 interface ResourceLibraryComponent {
 
     /** The current resource library state observable. */
     val state: StateFlow<ResourceLibraryState>
 
-    /** Selects a resource to view its entries. */
-    fun onResourceSelected(uuid: String)
+    /** Selects a module for detail view. */
+    fun onModuleSelected(moduleId: String)
 
-    /** Updates the search query and triggers search. */
+    /** Installs a module by ID. */
+    fun onInstallModule(moduleId: String)
+
+    /** Removes a module by ID. */
+    fun onRemoveModule(moduleId: String)
+
+    /** Cancels an active download. */
+    fun onCancelDownload(moduleId: String)
+
+    /** Filters modules by type (null = show all). */
+    fun onFilterTypeChanged(type: DataModuleType?)
+
+    /** Updates the search query for filtering. */
     fun onSearchQueryChanged(query: String)
 
-    /** Navigates to a verse referenced in an entry. */
-    fun onEntryVerseSelected(globalVerseId: Int)
+    /** Toggles a module's active/inactive state. */
+    fun onToggleModuleActive(moduleId: String)
 }

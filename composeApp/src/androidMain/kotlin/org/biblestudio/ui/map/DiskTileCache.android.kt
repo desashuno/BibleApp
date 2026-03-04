@@ -1,6 +1,7 @@
+@file:Suppress("MatchingDeclarationName")
+
 package org.biblestudio.ui.map
 
-import android.os.Environment
 import java.io.File
 
 actual object DiskTileCache {

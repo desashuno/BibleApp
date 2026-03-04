@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.core.util.VerseRefFormatter
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 import org.biblestudio.features.word_study.component.WordStudyState
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
+import org.biblestudio.ui.components.LoadingErrorContent
+import org.biblestudio.ui.components.PaneHeader
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -46,37 +47,22 @@ fun WordStudyPane(
     val state by stateFlow.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Header
-        Text(
-            text = state.entry?.let { "${it.strongsNumber} — ${it.originalWord}" } ?: "Word Study",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(Spacing.Space16)
+        PaneHeader(
+            title = state.entry?.let { "${it.strongsNumber} — ${it.originalWord}" } ?: "Word Study"
         )
-        HorizontalDivider()
 
-        if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
-        } else if (state.error != null) {
-            Text(
-                text = state.error ?: "Error",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
-        } else if (state.entry == null) {
-            Text(
-                text = "Select a word to study",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
-        } else {
+        LoadingErrorContent(
+            isLoading = state.isLoading,
+            error = state.error,
+            data = state.entry,
+            emptyMessage = "Select a word to study",
+            modifier = Modifier.fillMaxSize(),
+        ) { entry ->
             LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.Space16)) {
                 // Definition card
                 item {
                     LexiconCard(
-                        entry = state.entry!!,
+                        entry = entry,
                         occurrenceCount = state.occurrenceCount
                     )
                     Spacer(modifier = Modifier.height(Spacing.Space16))

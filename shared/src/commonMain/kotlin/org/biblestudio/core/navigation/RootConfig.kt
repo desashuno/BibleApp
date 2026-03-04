@@ -30,5 +30,5 @@ sealed class RootConfig {
      * @param globalVerseId The BBCCCVVV-encoded verse identifier.
      */
     @Serializable
-    data class DeepLink(val globalVerseId: Long) : RootConfig()
+    data class DeepLink(val globalVerseId: Int) : RootConfig()
 }

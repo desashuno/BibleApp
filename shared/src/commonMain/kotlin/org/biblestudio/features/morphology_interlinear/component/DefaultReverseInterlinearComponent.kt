@@ -1,10 +1,8 @@
 package org.biblestudio.features.morphology_interlinear.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,14 +20,14 @@ import org.biblestudio.features.morphology_interlinear.domain.repositories.Morph
  * Default [ReverseInterlinearComponent] that maps English translation tokens
  * back to original-language morphology using pre-computed alignment data.
  */
-class DefaultReverseInterlinearComponent(
+internal class DefaultReverseInterlinearComponent(
     componentContext: ComponentContext,
     private val repository: MorphologyRepository,
     private val parsingDecoder: ParsingDecoder,
     private val verseBus: VerseBus
 ) : ReverseInterlinearComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(ReverseInterlinearState())
     override val state: StateFlow<ReverseInterlinearState> = _state.asStateFlow()

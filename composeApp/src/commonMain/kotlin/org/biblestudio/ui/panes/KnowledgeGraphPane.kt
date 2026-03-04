@@ -25,20 +25,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.knowledge_graph.component.GraphEdgeUi
 import org.biblestudio.features.knowledge_graph.component.KnowledgeGraphState
@@ -46,6 +44,10 @@ import org.biblestudio.features.knowledge_graph.domain.entities.EntityType
 import org.biblestudio.features.knowledge_graph.domain.entities.GraphEntity
 import org.biblestudio.features.knowledge_graph.domain.layout.ForceDirectedLayout
 import org.biblestudio.features.knowledge_graph.domain.layout.NodePosition
+import org.biblestudio.ui.components.DismissableDetailCard
+import org.biblestudio.ui.components.EmptyStateMessage
+import org.biblestudio.ui.components.ErrorMessage
+import org.biblestudio.ui.components.LoadingIndicator
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -97,18 +99,11 @@ fun KnowledgeGraphPane(
         }
 
         if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
+            LoadingIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         state.error?.let { err ->
-            Text(
-                text = err,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
+            ErrorMessage(message = err)
         }
 
         // Graph canvas or search results
@@ -127,16 +122,11 @@ fun KnowledgeGraphPane(
                 }
             }
         } else if (!state.isLoading) {
-            Box(
+            EmptyStateMessage(
+                message = "Select a verse or search for entities",
+                centered = true,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Select a verse or search for entities",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            )
         }
 
         // Entity detail card
@@ -147,7 +137,7 @@ fun KnowledgeGraphPane(
     }
 }
 
-@Suppress("ktlint:standard:function-naming", "MagicNumber")
+@Suppress("ktlint:standard:function-naming", "MagicNumber", "LongMethod", "LoopWithTooManyJumpStatements")
 @Composable
 private fun GraphCanvas(
     nodes: List<GraphEntity>,
@@ -233,46 +223,27 @@ private fun GraphCanvas(
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun EntityDetailCard(entity: GraphEntity, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Spacing.Space8)
+    DismissableDetailCard(
+        title = "${entityTypeIcon(entity.type)} ${entity.name}",
+        onDismiss = onDismiss,
     ) {
-        Column(modifier = Modifier.padding(Spacing.Space16)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "${entityTypeIcon(entity.type)} ${entity.name}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "✕",
-                    modifier = Modifier.clickable(onClick = onDismiss).padding(Spacing.Space4),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            Spacer(modifier = Modifier.height(Spacing.Space4))
+        Spacer(modifier = Modifier.height(Spacing.Space4))
+        Text(
+            text = entity.type.displayName,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        if (entity.description.isNotBlank()) {
+            Spacer(modifier = Modifier.height(Spacing.Space8))
+            Text(text = entity.description, style = MaterialTheme.typography.bodyMedium)
+        }
+        if (entity.verseIds.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(Spacing.Space8))
             Text(
-                text = entity.type.displayName,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                text = "Verses: ${entity.verseIds.joinToString(", ")}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (entity.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(Spacing.Space8))
-                Text(
-                    text = entity.description,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            if (entity.verseIds.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(Spacing.Space8))
-                Text(
-                    text = "Verses: ${entity.verseIds.joinToString(", ")}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }
@@ -336,9 +307,9 @@ private const val HIT_PADDING = 8f
  * Returns a Unicode icon for the given entity type.
  */
 private fun entityTypeIcon(type: EntityType): String = when (type) {
-    EntityType.Person -> "\uD83D\uDC64"   // 👤
-    EntityType.Place -> "\uD83D\uDCCD"    // 📍
-    EntityType.Event -> "\uD83D\uDCC5"    // 📅
-    EntityType.Concept -> "\uD83D\uDCA1"  // 💡
-    EntityType.Book -> "\uD83D\uDCD6"     // 📖
+    EntityType.Person -> "\uD83D\uDC64" // 👤
+    EntityType.Place -> "\uD83D\uDCCD" // 📍
+    EntityType.Event -> "\uD83D\uDCC5" // 📅
+    EntityType.Concept -> "\uD83D\uDCA1" // 💡
+    EntityType.Book -> "\uD83D\uDCD6" // 📖
 }

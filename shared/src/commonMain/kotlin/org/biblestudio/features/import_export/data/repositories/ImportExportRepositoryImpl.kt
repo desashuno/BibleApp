@@ -8,6 +8,8 @@ import org.biblestudio.database.BibleStudioDatabase
 import org.biblestudio.features.import_export.domain.entities.BackupInfo
 import org.biblestudio.features.import_export.domain.entities.DataType
 import org.biblestudio.features.import_export.domain.entities.ExportFormat
+import org.biblestudio.core.util.nowIso
+import org.biblestudio.core.AppConstants
 import org.biblestudio.features.import_export.domain.repositories.ImportExportRepository
 
 private const val MAX_EXPORT_ITEMS = 10_000L
@@ -59,11 +61,11 @@ internal class ImportExportRepositoryImpl(
         val serialized = json.encodeToString(backup)
         val totalItems = backup.notes.size + backup.highlights.size + backup.bookmarks.size
 
-        database.moduleQueries.insertBackup(
+        database.dataModuleQueries.insertBackup(
             filename = "backup.json",
-            backup_type = "full",
-            size_bytes = serialized.length.toLong(),
-            item_count = totalItems.toLong()
+            backupType = "full",
+            sizeBytes = serialized.length.toLong(),
+            itemCount = totalItems.toLong()
         )
 
         Napier.i("Backup created: $totalItems items")
@@ -73,7 +75,7 @@ internal class ImportExportRepositoryImpl(
     override suspend fun restoreBackup(backupContent: String): Result<Int> = runCatching {
         val backup = json.decodeFromString<BackupBundle>(backupContent)
         var count = 0
-        val now = "2024-01-01T00:00:00Z"
+        val now = nowIso()
 
         database.transaction {
             backup.notes.forEach { note ->
@@ -85,7 +87,7 @@ internal class ImportExportRepositoryImpl(
                     format = "markdown",
                     createdAt = now,
                     updatedAt = now,
-                    deviceId = "import"
+                    deviceId = AppConstants.DEVICE_ID_IMPORT
                 )
                 count++
             }
@@ -100,7 +102,7 @@ internal class ImportExportRepositoryImpl(
                     endOffset = -1,
                     createdAt = now,
                     updatedAt = now,
-                    deviceId = "import"
+                    deviceId = AppConstants.DEVICE_ID_IMPORT
                 )
                 count++
             }
@@ -114,7 +116,7 @@ internal class ImportExportRepositoryImpl(
                     sortOrder = 0,
                     createdAt = now,
                     updatedAt = now,
-                    deviceId = "import"
+                    deviceId = AppConstants.DEVICE_ID_IMPORT
                 )
                 count++
             }
@@ -125,7 +127,7 @@ internal class ImportExportRepositoryImpl(
     }
 
     override suspend fun getBackupHistory(): Result<List<BackupInfo>> = runCatching {
-        database.moduleQueries
+        database.dataModuleQueries
             .allBackups()
             .executeAsList()
             .map { row ->
@@ -201,7 +203,7 @@ internal class ImportExportRepositoryImpl(
     private suspend fun importJson(content: String, dataType: DataType): Int = when (dataType) {
         DataType.NOTES -> {
             val notes = json.decodeFromString<List<ExportNote>>(content)
-            val now = "2024-01-01T00:00:00Z"
+            val now = nowIso()
             notes.forEach { note ->
                 database.annotationQueries.insertNote(
                     uuid = note.uuid,
@@ -211,7 +213,7 @@ internal class ImportExportRepositoryImpl(
                     format = "markdown",
                     createdAt = now,
                     updatedAt = now,
-                    deviceId = "import"
+                    deviceId = AppConstants.DEVICE_ID_IMPORT
                 )
             }
             notes.size

@@ -40,6 +40,7 @@ SUBDIRS = [
     "bibles",
     "morphology",
     "lexicon",
+    "alignment",
     "cross-references",
     "geography",
     "entities",
@@ -48,6 +49,7 @@ SUBDIRS = [
     "reading-plans",
     "dictionaries",
     "commentaries",
+    "theographic",
 ]
 
 # ---------------------------------------------------------------------------
@@ -237,6 +239,60 @@ def download_lexicon() -> None:
     )
 
 
+def download_alignment() -> None:
+    """
+    Download unfoldingWord Aligned Literal Text (ULT) USFM files.
+
+    License: CC BY-SA 4.0 — attribution required to unfoldingWord.org.
+    Contains manually verified Hebrew/Greek ↔ English word alignment data.
+    Attribution: unfoldingWord® Literal Text (ULT), © unfoldingWord,
+    licensed under CC BY-SA 4.0. https://unfoldingword.org/ult
+    """
+    print("\n🔗 Word Alignment — unfoldingWord ULT (CC BY-SA 4.0)")
+
+    dest_dir = RAW_DIR / "alignment"
+    marker = dest_dir / ".downloaded"
+
+    if marker.exists():
+        print(f"  ✓ Already downloaded: unfoldingWord ULT")
+        return
+
+    print("  ↓ Downloading unfoldingWord ULT archive from door43.org...")
+
+    # Download the full ULT repo as a ZIP archive from DCS (Door43 Content Service)
+    url = "https://git.door43.org/unfoldingWord/en_ult/archive/master.zip"
+    try:
+        resp = requests.get(url, stream=True, timeout=300)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        print(f"  ⚠ Failed to download ULT: {e}")
+        print("    Alignment data will be skipped. Re-run with: python download.py --only alignment")
+        return
+
+    total = int(resp.headers.get("content-length", 0))
+    buf = io.BytesIO()
+    with tqdm(total=total, unit="B", unit_scale=True, desc="    en_ult", leave=False) as bar:
+        for chunk in resp.iter_content(chunk_size=8192):
+            buf.write(chunk)
+            bar.update(len(chunk))
+
+    print("    Extracting USFM files...")
+    buf.seek(0)
+    extracted = 0
+    with zipfile.ZipFile(buf) as zf:
+        for name in zf.namelist():
+            if name.endswith(".usfm"):
+                # Flatten into alignment/ directory
+                filename = Path(name).name
+                dest_file = dest_dir / filename
+                with zf.open(name) as src, open(dest_file, "wb") as dst:
+                    dst.write(src.read())
+                extracted += 1
+
+    marker.touch()
+    print(f"    ✓ Extracted {extracted} USFM files → raw/alignment/")
+
+
 def download_cross_references() -> None:
     """Download cross-reference data from OpenBible.info (zip archive)."""
     print("\n🔗 Cross-References")
@@ -318,29 +374,70 @@ def download_versification() -> None:
 # ---------------------------------------------------------------------------
 
 # Only download translations with Public Domain or free license (CC BY-SA, etc.)
-# Each entry: (filename_in_repo, local_filename, description)
+# Each entry: (filename_in_repo, local_filename, abbreviation, display_name, language, direction)
 BEBLIA_FREE_BIBLES = [
-    ("Spanish1569Bible.xml", "beblia-Spanish1569.xml", "Sagradas Escrituras 1569 (Public Domain)"),
-    ("SpanishBible.xml", "beblia-SpanishRV1909.xml", "Reina-Valera 1909 (Dominio Publico)"),
-    ("SpanishRVESBible.xml", "beblia-SpanishRVES.xml", "Reina-Valera Espanola (Public Domain)"),
-    ("SpanishVBL2022Bible.xml", "beblia-SpanishVBL2022.xml", "Version Biblia Libre 2022 (CC BY-SA 4.0)"),
+    # ── Spanish (priority) ──
+    ("SpanishRVR1960Bible.xml", "beblia-SpanishRVR1960.xml", "RVR1960", "Reina-Valera 1960", "es", "ltr"),
+    ("SpanishRV2020Bible.xml", "beblia-SpanishRV2020.xml", "RV2020", "Reina-Valera 2020", "es", "ltr"),
+    ("SpanishRVESBible.xml", "beblia-SpanishRVES.xml", "RVES", "Reina-Valera Española", "es", "ltr"),
+    ("SpanishVBL2022Bible.xml", "beblia-SpanishVBL2022.xml", "VBL", "Versión Biblia Libre 2022", "es", "ltr"),
+    ("SpanishBible.xml", "beblia-SpanishRV1909.xml", "RV1909", "Reina-Valera 1909", "es", "ltr"),
+    ("Spanish1569Bible.xml", "beblia-Spanish1569.xml", "SE1569", "Sagradas Escrituras 1569", "es", "ltr"),
+    # ── English ──
+    ("EnglishKJBible.xml", "beblia-EnglishKJ.xml", "KJB", "King James Bible (Beblia)", "en", "ltr"),
+    # ── Classical ──
+    ("LatinBible.xml", "beblia-Latin.xml", "VULG", "Biblia Sacra Vulgata", "la", "ltr"),
+    ("GreekBible.xml", "beblia-Greek.xml", "GRK", "Greek New Testament", "el", "ltr"),
+    ("HebrewBible.xml", "beblia-Hebrew.xml", "HEB", "Hebrew Old Testament", "he", "rtl"),
+    # ── Major European ──
+    ("FrenchBible.xml", "beblia-French.xml", "LSG", "Louis Segond 1910", "fr", "ltr"),
+    ("GermanBible.xml", "beblia-German.xml", "DELUT", "Luther Bibel", "de", "ltr"),
+    ("German1545Bible.xml", "beblia-German1545.xml", "LUT1545", "Luther 1545", "de", "ltr"),
+    ("PortugueseBible.xml", "beblia-Portuguese.xml", "ARC", "Almeida Revista e Corrigida", "pt", "ltr"),
+    ("ItalianBible.xml", "beblia-Italian.xml", "ITAL", "Diodati / Riveduta", "it", "ltr"),
+    ("DutchBible.xml", "beblia-Dutch.xml", "SVV", "Statenvertaling", "nl", "ltr"),
+    ("RussianBible.xml", "beblia-Russian.xml", "RUSV", "Синодальный перевод", "ru", "ltr"),
+    ("UkrainianBible.xml", "beblia-Ukrainian.xml", "UKRV", "Українська Біблія", "uk", "ltr"),
+    ("SwedishBible.xml", "beblia-Swedish.xml", "SV1917", "Svenska 1917", "sv", "ltr"),
+    ("Danish1819Bible.xml", "beblia-Danish1819.xml", "DA1819", "Dansk 1819", "da", "ltr"),
+    ("FinnishBible.xml", "beblia-Finnish.xml", "FI1938", "Raamattu 1938", "fi", "ltr"),
+    ("CzechBible.xml", "beblia-Czech.xml", "CZBKR", "Bible Kralická", "cs", "ltr"),
+    ("HungarianBible.xml", "beblia-Hungarian.xml", "HUNK", "Károli Gáspár", "hu", "ltr"),
+    ("BosnianBible.xml", "beblia-Bosnian.xml", "BOSN", "Bosanska Biblija", "bs", "ltr"),
+    ("Bulgarian2015Bible.xml", "beblia-Bulgarian2015.xml", "BG2015", "Библия 2015", "bg", "ltr"),
+    ("Albanian1872Bible.xml", "beblia-Albanian1872.xml", "ALB", "Bibla Shqip 1872", "sq", "ltr"),
+    # ── Asian ──
+    ("ChineseSimplifiedBible.xml", "beblia-ChineseSimplified.xml", "CNVS", "中文圣经 (简体)", "zh-Hans", "ltr"),
+    ("ChineseTraditionalBible.xml", "beblia-ChineseTraditional.xml", "CNVT", "中文聖經 (繁體)", "zh-Hant", "ltr"),
+    ("JapaneseBible.xml", "beblia-Japanese.xml", "JA", "口語訳聖書", "ja", "ltr"),
+    ("KoreanBible.xml", "beblia-Korean.xml", "KO", "개역한글", "ko", "ltr"),
+    ("HindiBible.xml", "beblia-Hindi.xml", "HINDI", "हिन्दी बाइबिल", "hi", "ltr"),
+    ("IndonesianBible.xml", "beblia-Indonesian.xml", "TB", "Terjemahan Baru", "id", "ltr"),
+    ("ThaiSimplifiedBible.xml", "beblia-ThaiSimplified.xml", "THAI", "พระคัมภีร์ไทย", "th", "ltr"),
+    ("BurmeseBible.xml", "beblia-Burmese.xml", "MYAN", "မြန်မာဘာသာ", "my", "ltr"),
+    ("TagalogBible.xml", "beblia-Tagalog.xml", "TAG", "Ang Biblia", "tl", "ltr"),
+    # ── Middle East / Africa ──
+    ("Arabic1978Bible.xml", "beblia-Arabic1978.xml", "AR1978", "الكتاب المقدس", "ar", "rtl"),
+    ("Amharic2000Bible.xml", "beblia-Amharic2000.xml", "AMH", "መጽሐፍ ቅዱስ", "am", "ltr"),
+    ("SwahiliBible.xml", "beblia-Swahili.xml", "SWA", "Biblia Takatifu", "sw", "ltr"),
+    ("Armenian1853Bible.xml", "beblia-Armenian1853.xml", "ARM", "Աստdelays 1853", "hy", "ltr"),
 ]
 
 
 def download_beblia_bibles() -> None:
     """Download public-domain Bible XML files from Beblia/Holy-Bible-XML-Format."""
-    print("\n📖 Beblia Bible XML (Spanish — Public Domain)")
+    print("\n📖 Beblia Bible XML (Multi-language — Public Domain)")
 
     dest_dir = RAW_DIR / "bibles"
     repo = "Beblia/Holy-Bible-XML-Format"
     branch = "master"
 
-    for repo_filename, local_filename, description in BEBLIA_FREE_BIBLES:
+    for repo_filename, local_filename, abbr, name, lang, direction in BEBLIA_FREE_BIBLES:
         download_github_raw(
             repo, branch,
             repo_filename,
             dest_dir / local_filename,
-            description,
+            f"{name} ({abbr})",
         )
 
 
@@ -501,16 +598,105 @@ def download_commentaries() -> None:
 
 
 # ---------------------------------------------------------------------------
+# World English Bible — USFM with red-letter markup (public domain)
+# ---------------------------------------------------------------------------
+
+def download_web_usfm() -> None:
+    """
+    Download World English Bible USFM files from eBible.org.
+
+    Source: https://ebible.org/Scriptures/eng-web_usfm.zip
+    License: Public Domain
+    Contains \\wj markers for words of Jesus (red-letter).
+    """
+    print("\n📖 World English Bible — USFM (Public Domain, red-letter)")
+
+    dest_dir = RAW_DIR / "bibles" / "web-usfm"
+    marker = dest_dir / ".downloaded"
+
+    if marker.exists():
+        print("  ✓ Already downloaded: WEB USFM")
+        return
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    url = "https://ebible.org/Scriptures/eng-web_usfm.zip"
+    print(f"  ↓ Downloading WEB USFM from eBible.org...")
+
+    try:
+        resp = requests.get(url, stream=True, timeout=300)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        print(f"  ⚠ Failed to download WEB USFM: {e}")
+        return
+
+    total = int(resp.headers.get("content-length", 0))
+    buf = io.BytesIO()
+    with tqdm(total=total, unit="B", unit_scale=True, desc="    eng-web", leave=False) as bar:
+        for chunk in resp.iter_content(chunk_size=8192):
+            buf.write(chunk)
+            bar.update(len(chunk))
+
+    print("    Extracting USFM files...")
+    buf.seek(0)
+    extracted = 0
+    with zipfile.ZipFile(buf) as zf:
+        for name in zf.namelist():
+            if name.endswith(".usfm"):
+                filename = Path(name).name
+                dest_file = dest_dir / filename
+                with zf.open(name) as src, open(dest_file, "wb") as dst:
+                    dst.write(src.read())
+                extracted += 1
+
+    marker.touch()
+    print(f"    ✓ Extracted {extracted} USFM files → raw/bibles/web-usfm/")
+
+
+# ---------------------------------------------------------------------------
+# Theographic Bible Metadata — Places & Events (CC BY-SA 4.0)
+# ---------------------------------------------------------------------------
+
+def download_theographic() -> None:
+    """
+    Download Theographic Bible metadata CSVs (Places, Events).
+
+    Source: https://github.com/robertrouse/theographic-bible-metadata
+    License: CC BY-SA 4.0
+    Attribution: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0
+    """
+    print("\n📊 Theographic Bible Metadata (CC BY-SA 4.0)")
+
+    dest_dir = RAW_DIR / "theographic"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    base_url = "https://raw.githubusercontent.com/robertrouse/theographic-bible-metadata/master/CSV"
+
+    for filename, desc in [
+        ("Places.csv", "Theographic Places (400+ locations with types)"),
+        ("Events.csv", "Theographic Events (217+ dated events)"),
+    ]:
+        download_file(
+            f"{base_url}/{filename}",
+            dest_dir / filename,
+            desc,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
 DOWNLOAD_MAP = {
     "bibles": download_bibles,
+    "web-usfm": download_web_usfm,
     "beblia-bibles": download_beblia_bibles,
     "morphology": download_morphology,
     "lexicon": download_lexicon,
+    "alignment": download_alignment,
     "cross-references": download_cross_references,
     "geography": download_geography,
+    "theographic": download_theographic,
     "entities": download_entities,
     "versification": download_versification,
     "dictionaries": download_dictionaries,

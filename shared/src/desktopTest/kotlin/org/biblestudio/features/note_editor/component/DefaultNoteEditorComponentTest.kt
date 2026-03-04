@@ -1,7 +1,6 @@
 package org.biblestudio.features.note_editor.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -52,8 +51,7 @@ class DefaultNoteEditorComponentTest {
     }
 
     private fun createComponent(verseBus: VerseBus = VerseBus()): DefaultNoteEditorComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultNoteEditorComponent(
             componentContext = context,
             repository = fakeRepo,

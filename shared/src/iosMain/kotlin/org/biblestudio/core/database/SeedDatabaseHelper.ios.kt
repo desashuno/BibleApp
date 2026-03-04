@@ -2,9 +2,9 @@ package org.biblestudio.core.database
 
 import io.github.aakira.napier.Napier
 import platform.Foundation.NSBundle
-import platform.Foundation.NSData
 import platform.Foundation.NSFileManager
-import platform.Foundation.dataWithContentsOfFile
+
+actual fun extractSeedToTempFile(): String? = null // ATTACH-based import is desktop-only
 
 actual fun copySeedDatabaseIfNeeded(targetPath: String): Boolean {
     val fileManager = NSFileManager.defaultManager

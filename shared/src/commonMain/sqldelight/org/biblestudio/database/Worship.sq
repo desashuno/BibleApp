@@ -1,0 +1,183 @@
+-- Worship.sq
+-- Query group: Worship music — songs, playlists, favorites, history, lyrics, verse links
+-- Generated class: WorshipQueries
+
+-- ═══════════════════════════ Songs ═══════════════════════════
+
+allSongs:
+SELECT *
+FROM worship_songs
+ORDER BY artist, album, track_number;
+
+songById:
+SELECT *
+FROM worship_songs
+WHERE id = :songId;
+
+songsByGenre:
+SELECT *
+FROM worship_songs
+WHERE genre = :genre
+ORDER BY artist, title;
+
+songsByLanguage:
+SELECT *
+FROM worship_songs
+WHERE language = :language
+ORDER BY artist, title;
+
+searchSongsFts:
+SELECT s.*
+FROM worship_songs s
+INNER JOIN fts_worship_songs fts ON fts.rowid = s.id
+WHERE fts_worship_songs MATCH :query
+ORDER BY bm25(fts_worship_songs)
+LIMIT :maxResults;
+
+searchSongsFallback:
+SELECT *
+FROM worship_songs
+WHERE title LIKE '%' || :query || '%'
+   OR artist LIKE '%' || :query || '%'
+   OR album LIKE '%' || :query || '%'
+LIMIT :maxResults;
+
+insertSong:
+INSERT INTO worship_songs(title, artist, album, genre, language, duration_ms, file_path, cover_art_path, track_number, year, is_user_import)
+VALUES (:title, :artist, :album, :genre, :language, :durationMs, :filePath, :coverArtPath, :trackNumber, :year, :isUserImport);
+
+lastInsertSongId:
+SELECT last_insert_rowid();
+
+deleteSong:
+DELETE FROM worship_songs
+WHERE id = :songId;
+
+-- ═══════════════════════════ Playlists ═══════════════════════════
+
+allPlaylists:
+SELECT *
+FROM worship_playlists
+ORDER BY updated_at DESC;
+
+playlistById:
+SELECT *
+FROM worship_playlists
+WHERE id = :playlistId;
+
+songsForPlaylist:
+SELECT s.*
+FROM worship_songs s
+INNER JOIN worship_playlist_songs ps ON ps.song_id = s.id
+WHERE ps.playlist_id = :playlistId
+ORDER BY ps.position;
+
+insertPlaylist:
+INSERT INTO worship_playlists(id, name)
+VALUES (:id, :name);
+
+updatePlaylistName:
+UPDATE worship_playlists
+SET name = :name, updated_at = datetime('now')
+WHERE id = :id;
+
+deletePlaylist:
+DELETE FROM worship_playlists
+WHERE id = :id;
+
+addSongToPlaylist:
+INSERT OR IGNORE INTO worship_playlist_songs(playlist_id, song_id, position)
+VALUES (:playlistId, :songId, :position);
+
+removeSongFromPlaylist:
+DELETE FROM worship_playlist_songs
+WHERE playlist_id = :playlistId AND song_id = :songId;
+
+-- ═══════════════════════════ Favorites ═══════════════════════════
+
+allFavorites:
+SELECT s.*
+FROM worship_songs s
+INNER JOIN worship_favorites f ON f.song_id = s.id
+ORDER BY f.added_at DESC;
+
+isFavorite:
+SELECT COUNT(*) > 0
+FROM worship_favorites
+WHERE song_id = :songId;
+
+addFavorite:
+INSERT OR IGNORE INTO worship_favorites(song_id)
+VALUES (:songId);
+
+removeFavorite:
+DELETE FROM worship_favorites
+WHERE song_id = :songId;
+
+-- ═══════════════════════════ History ═══════════════════════════
+
+recentHistory:
+SELECT s.*, h.played_at
+FROM worship_songs s
+INNER JOIN worship_play_history h ON h.song_id = s.id
+ORDER BY h.played_at DESC
+LIMIT :maxResults;
+
+insertPlayHistory:
+INSERT INTO worship_play_history(song_id)
+VALUES (:songId);
+
+clearPlayHistory:
+DELETE FROM worship_play_history;
+
+-- ═══════════════════════════ Lyrics ═══════════════════════════
+
+lyricsForSong:
+SELECT *
+FROM worship_lyrics
+WHERE song_id = :songId;
+
+lyricLinesForSong:
+SELECT *
+FROM worship_lyric_lines
+WHERE song_id = :songId
+ORDER BY line_index;
+
+lyricLineAtTime:
+SELECT *
+FROM worship_lyric_lines
+WHERE song_id = :songId
+  AND start_ms <= :positionMs
+  AND end_ms > :positionMs
+ORDER BY line_index
+LIMIT 1;
+
+insertLyrics:
+INSERT OR REPLACE INTO worship_lyrics(song_id, full_text)
+VALUES (:songId, :fullText);
+
+insertLyricLine:
+INSERT INTO worship_lyric_lines(song_id, line_index, start_ms, end_ms, text)
+VALUES (:songId, :lineIndex, :startMs, :endMs, :text);
+
+-- ═══════════════════════════ Verse Links ═══════════════════════════
+
+verseLinksForSong:
+SELECT *
+FROM worship_verse_links
+WHERE song_id = :songId;
+
+songsForVerse:
+SELECT s.*
+FROM worship_songs s
+INNER JOIN worship_verse_links vl ON vl.song_id = s.id
+WHERE vl.global_verse_id = :globalVerseId
+ORDER BY s.title;
+
+insertVerseLink:
+INSERT INTO worship_verse_links(song_id, global_verse_id)
+VALUES (:songId, :globalVerseId);
+
+deleteVerseLinksForSong:
+DELETE FROM worship_verse_links
+WHERE song_id = :songId;

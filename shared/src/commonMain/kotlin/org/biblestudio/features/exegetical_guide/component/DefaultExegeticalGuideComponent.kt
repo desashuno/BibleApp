@@ -1,10 +1,8 @@
 package org.biblestudio.features.exegetical_guide.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +19,7 @@ import org.biblestudio.features.word_study.domain.repositories.WordStudyReposito
  * Default [ExegeticalGuideComponent] aggregating commentaries, cross-references,
  * and key words for the currently selected verse.
  */
-class DefaultExegeticalGuideComponent(
+internal class DefaultExegeticalGuideComponent(
     componentContext: ComponentContext,
     private val commentaryRepository: CommentaryRepository,
     private val crossRefRepository: CrossRefRepository,
@@ -29,7 +27,7 @@ class DefaultExegeticalGuideComponent(
     private val verseBus: VerseBus
 ) : ExegeticalGuideComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
     private val _state = MutableStateFlow(ExegeticalGuideState())
     override val state: StateFlow<ExegeticalGuideState> = _state.asStateFlow()
 

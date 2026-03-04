@@ -1,7 +1,5 @@
 package org.biblestudio.features.dashboard.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -9,6 +7,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.bible_reader.domain.entities.Bible
 import org.biblestudio.features.bible_reader.domain.entities.Book
@@ -30,6 +29,7 @@ import org.biblestudio.features.reading_plans.domain.entities.ReadingPlan
 import org.biblestudio.features.reading_plans.domain.repositories.ReadingPlanRepository
 import org.biblestudio.features.sermon_editor.domain.entities.Sermon
 import org.biblestudio.features.sermon_editor.domain.entities.SermonSection
+import org.biblestudio.test.testComponentContext
 import org.biblestudio.features.sermon_editor.domain.repositories.SermonRepository
 
 @Suppress("TooManyFunctions")
@@ -134,6 +134,7 @@ class DefaultDashboardComponentTest {
         override suspend fun getBooks(bibleId: Long) = Result.success(emptyList<Book>())
         override suspend fun getChapters(bookId: Long) = Result.success(emptyList<Chapter>())
         override suspend fun getVerses(bookId: Long, chapter: Long) = Result.success(emptyList<Verse>())
+        override suspend fun getVersesForBook(bookId: Long) = Result.success(emptyList<Verse>())
         override suspend fun getVerseByGlobalId(globalVerseId: Long) = Result.success(
             Verse(
                 id = 1,
@@ -145,12 +146,16 @@ class DefaultDashboardComponentTest {
         )
         override suspend fun getVersesInRange(startId: Long, endId: Long) = Result.success(emptyList<Verse>())
         override suspend fun searchVerses(query: String, maxResults: Long) = Result.success(emptyList<Verse>())
+        override suspend fun getActiveBibles() = Result.success(emptyList<Bible>())
+        override suspend fun getAvailableBiblesByLanguage(languageCode: String) = Result.success(emptyList<Bible>())
+        override suspend fun getActiveBiblesByLanguage(languageCode: String) = Result.success(emptyList<Bible>())
+        override suspend fun getNextVerseId(currentId: Long): Result<Long?> = Result.success(null)
+        override suspend fun getPreviousVerseId(currentId: Long): Result<Long?> = Result.success(null)
         override fun watchBibles(): Flow<List<Bible>> = flowOf(emptyList())
     }
 
     private fun createComponent(): DefaultDashboardComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultDashboardComponent(
             componentContext = context,
             noteRepository = fakeNoteRepo,
@@ -205,9 +210,9 @@ class DefaultDashboardComponentTest {
 
     @Test
     fun decodeReferenceFormatsCorrectly() {
-        assertEquals("John 3:16", DefaultDashboardComponent.decodeReference(43003016L))
-        assertEquals("Psalms 23:1", DefaultDashboardComponent.decodeReference(19023001L))
-        assertEquals("Proverbs 3:5", DefaultDashboardComponent.decodeReference(20003005L))
-        assertEquals("Romans 8:28", DefaultDashboardComponent.decodeReference(45008028L))
+        assertEquals("John 3:16", VerseRefFormatter.format(43003016L))
+        assertEquals("Psalms 23:1", VerseRefFormatter.format(19023001L))
+        assertEquals("Proverbs 3:5", VerseRefFormatter.format(20003005L))
+        assertEquals("Romans 8:28", VerseRefFormatter.format(45008028L))
     }
 }

@@ -1,11 +1,9 @@
 package org.biblestudio.features.note_editor.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
+import org.biblestudio.core.AppConstants
+import org.biblestudio.core.util.generateUuid
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.note_editor.domain.entities.Note
@@ -24,13 +24,13 @@ import org.biblestudio.features.note_editor.domain.repositories.NoteRepository
  * Default [NoteEditorComponent] with auto-save debounce and FTS search.
  */
 @Suppress("TooManyFunctions")
-class DefaultNoteEditorComponent(
+internal class DefaultNoteEditorComponent(
     componentContext: ComponentContext,
     private val repository: NoteRepository,
     private val verseBus: VerseBus
 ) : NoteEditorComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(NoteEditorState())
     override val state: StateFlow<NoteEditorState> = _state.asStateFlow()
@@ -78,7 +78,7 @@ class DefaultNoteEditorComponent(
 
     override fun onNewNote() {
         val verseId = currentVerseId ?: return
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val uuid = generateUuid()
         val note = Note(
             uuid = uuid,
@@ -108,7 +108,7 @@ class DefaultNoteEditorComponent(
     }
 
     override fun onDeleteNote(uuid: String) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         scope.launch {
             repository.delete(uuid, now)
                 .onSuccess {
@@ -137,7 +137,7 @@ class DefaultNoteEditorComponent(
     private fun scheduleAutoSave() {
         saveJob?.cancel()
         saveJob = scope.launch {
-            delay(AUTO_SAVE_DELAY_MS)
+            delay(AppConstants.AUTO_SAVE_DEBOUNCE_MS)
             performSave()
         }
     }
@@ -148,7 +148,7 @@ class DefaultNoteEditorComponent(
         if (!s.isDirty) return
 
         _state.update { it.copy(isSaving = true) }
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val updated = note.copy(
             title = s.editTitle,
             content = s.editContent,
@@ -191,20 +191,8 @@ class DefaultNoteEditorComponent(
         }
     }
 
-    private fun generateUuid(): String {
-        // Simple UUID v4 generation using random bytes
-        val chars = "0123456789abcdef"
-        val template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-        return template.map { c ->
-            when (c) {
-                'x' -> chars.random()
-                'y' -> chars["89ab".random().digitToInt(16)]
-                else -> c
-            }
-        }.joinToString("")
-    }
 
     companion object {
-        internal const val AUTO_SAVE_DELAY_MS = 2000L
+        internal const val AUTO_SAVE_DELAY_MS = AppConstants.AUTO_SAVE_DEBOUNCE_MS
     }
 }

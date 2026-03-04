@@ -1,10 +1,8 @@
 package org.biblestudio.features.theological_atlas.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,13 +15,13 @@ import org.biblestudio.features.theological_atlas.domain.entities.AtlasLocation
 import org.biblestudio.features.theological_atlas.domain.entities.AtlasRegion
 import org.biblestudio.features.theological_atlas.domain.repositories.AtlasRepository
 
-class DefaultAtlasComponent(
+internal class DefaultAtlasComponent(
     componentContext: ComponentContext,
     private val repository: AtlasRepository,
     private val verseBus: VerseBus
 ) : AtlasComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(AtlasState())
     override val state: StateFlow<AtlasState> = _state.asStateFlow()
@@ -35,7 +33,13 @@ class DefaultAtlasComponent(
     }
 
     override fun onLocationSelected(location: AtlasLocation) {
-        _state.update { it.copy(selectedLocation = location, centerLat = location.latitude, centerLng = location.longitude) }
+        _state.update {
+            it.copy(
+                selectedLocation = location,
+                centerLat = location.latitude,
+                centerLng = location.longitude
+            )
+        }
         location.verseIds.firstOrNull()?.let { verseId ->
             verseBus.publish(LinkEvent.VerseSelected(verseId.toInt()))
         }

@@ -77,6 +77,35 @@ internal class BibleRepositoryImpl(
             .map { it.toVerse() }
     }
 
+    override suspend fun getActiveBibles(): Result<List<Bible>> = runCatching {
+        database.bibleQueries
+            .activeBibles()
+            .executeAsList()
+            .map { it.toBible() }
+    }
+
+    override suspend fun getAvailableBiblesByLanguage(languageCode: String): Result<List<Bible>> = runCatching {
+        database.bibleQueries
+            .biblesByLanguage(languageCode)
+            .executeAsList()
+            .map { it.toBible() }
+    }
+
+    override suspend fun getActiveBiblesByLanguage(languageCode: String): Result<List<Bible>> = runCatching {
+        database.bibleQueries
+            .activeBiblesByLanguage(languageCode)
+            .executeAsList()
+            .map { it.toBible() }
+    }
+
+    override suspend fun getNextVerseId(currentId: Long): Result<Long?> = runCatching {
+        database.bibleQueries.nextGlobalVerseId(currentId).executeAsOneOrNull()?.next_id
+    }
+
+    override suspend fun getPreviousVerseId(currentId: Long): Result<Long?> = runCatching {
+        database.bibleQueries.previousGlobalVerseId(currentId).executeAsOneOrNull()?.prev_id
+    }
+
     override fun watchBibles(): Flow<List<Bible>> = database.bibleQueries
         .allBibles()
         .asFlow()

@@ -1,22 +1,40 @@
 package org.biblestudio.features.settings.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import org.biblestudio.features.settings.data.repositories.SettingsRepositoryImpl
+import org.biblestudio.features.workspace.domain.entities.Workspace
+import org.biblestudio.features.workspace.domain.entities.WorkspaceLayout
+import org.biblestudio.features.workspace.domain.repositories.WorkspaceRepository
 import org.biblestudio.test.TestDatabase
 
 class DefaultSettingsComponentTest {
 
+    private val fakeWorkspaceRepo = object : WorkspaceRepository {
+        override suspend fun getAll(): Result<List<Workspace>> = Result.success(emptyList())
+        override suspend fun getActive(): Result<Workspace?> = Result.success(null)
+        override suspend fun getByUuid(uuid: String): Result<Workspace?> = Result.success(null)
+        override suspend fun create(workspace: Workspace): Result<Unit> = Result.success(Unit)
+        override suspend fun update(workspace: Workspace): Result<Unit> = Result.success(Unit)
+        override suspend fun setActive(uuid: String, updatedAt: String, deviceId: String): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun delete(uuid: String, deletedAt: String): Result<Unit> = Result.success(Unit)
+        override suspend fun getLayout(workspaceId: String): Result<WorkspaceLayout?> = Result.success(null)
+        override suspend fun saveLayout(layout: WorkspaceLayout): Result<Unit> = Result.success(Unit)
+        override fun watchAll(): Flow<List<Workspace>> = emptyFlow()
+    }
+
     private fun createComponent(): Pair<TestDatabase, DefaultSettingsComponent> {
         val testDb = TestDatabase()
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         val repo = SettingsRepositoryImpl(testDb.database)
         val component = DefaultSettingsComponent(
             componentContext = context,
-            repository = repo
+            repository = repo,
+            workspaceRepository = fakeWorkspaceRepo
         )
         return testDb to component
     }

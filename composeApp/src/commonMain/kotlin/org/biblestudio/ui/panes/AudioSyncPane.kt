@@ -14,9 +14,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Slider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.audio_sync.component.AudioPlayerState
 import org.biblestudio.features.audio_sync.component.PlaybackState
 import org.biblestudio.features.audio_sync.domain.entities.AudioSyncPoint
+import org.biblestudio.ui.components.ErrorMessage
+import org.biblestudio.ui.components.LoadingIndicator
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -65,18 +67,11 @@ fun AudioSyncPane(
         }
 
         if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
+            LoadingIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         state.error?.let { err ->
-            Text(
-                text = err,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = Spacing.Space8)
-            )
+            ErrorMessage(message = err)
         }
 
         // Playback controls
@@ -149,7 +144,6 @@ fun AudioSyncPane(
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun SyncPointRow(syncPoint: AudioSyncPoint, isActive: Boolean, onClick: () -> Unit) {
-    val bg = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
     Card(
         modifier = Modifier
             .fillMaxWidth()

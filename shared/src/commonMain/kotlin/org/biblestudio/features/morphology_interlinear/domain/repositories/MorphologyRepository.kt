@@ -1,9 +1,9 @@
 package org.biblestudio.features.morphology_interlinear.domain.repositories
 
 import org.biblestudio.features.morphology_interlinear.domain.entities.AlignmentEntry
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 import org.biblestudio.features.morphology_interlinear.domain.entities.MorphologyData
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 
 /**
  * Provides morphological analysis and word occurrence data for verses.
@@ -19,8 +19,12 @@ interface MorphologyRepository {
     /** Returns all morph-word entries for a given Strong's number across all verses. */
     suspend fun getWordsByStrongs(strongsNumber: String): Result<List<MorphWord>>
 
-    /** Returns all occurrences of a word identified by its Strong's number. */
-    suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>>
+    /** Returns a paginated list of occurrences for a word identified by its Strong's number. */
+    suspend fun getOccurrences(
+        strongsNumber: String,
+        limit: Long = 100,
+        offset: Long = 0,
+    ): Result<List<WordOccurrence>>
 
     /** Returns the total occurrence count for a Strong's number. */
     suspend fun getOccurrenceCount(strongsNumber: String): Result<Long>

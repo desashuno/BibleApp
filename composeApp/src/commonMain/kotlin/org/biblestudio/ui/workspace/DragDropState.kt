@@ -10,7 +10,11 @@ import org.biblestudio.features.workspace.domain.model.PanePlacement
 
 /** Drop zone within a pane (edges create splits, center creates tabs). */
 enum class DropZone {
-    LEFT, RIGHT, TOP, BOTTOM, CENTER;
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM,
+    CENTER;
 
     fun toPanePlacement(): PanePlacement = when (this) {
         LEFT -> PanePlacement.LEFT
@@ -116,7 +120,9 @@ class WorkspaceDragState {
 
     private fun pathKey(path: List<Int>): String = path.joinToString(",")
 
-    private fun keyToPath(key: String): List<Int> =
-        if (key.isEmpty()) emptyList()
-        else key.split(",").map { it.toInt() }
+    private fun keyToPath(key: String): List<Int> = if (key.isEmpty()) {
+        emptyList()
+    } else {
+        key.split(",").map { it.toInt() }
+    }
 }

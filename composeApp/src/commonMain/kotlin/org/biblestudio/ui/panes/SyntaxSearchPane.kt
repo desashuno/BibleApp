@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.input.ImeAction
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.bible_reader.domain.entities.Verse
 import org.biblestudio.features.search.component.SearchState
+import org.biblestudio.ui.components.LoadingErrorContent
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -109,26 +109,14 @@ fun SyntaxSearchPane(
         HorizontalDivider()
 
         // Results
-        if (state.isSearching) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(Spacing.Space24)
-            )
-        } else if (state.error != null) {
-            Text(
-                text = state.error ?: "Error",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
-        } else if (state.results.isEmpty() && state.query.isNotBlank()) {
-            Text(
-                text = "No results found.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
-        } else {
+        LoadingErrorContent(
+            isLoading = state.isSearching,
+            error = state.error,
+            data = state.results,
+            emptyMessage = if (state.query.isNotBlank()) "No results found." else "",
+            modifier = Modifier.fillMaxSize(),
+            isEmpty = { it.isEmpty() && state.query.isNotBlank() },
+        ) { _ ->
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (state.results.isNotEmpty()) {
                     item {

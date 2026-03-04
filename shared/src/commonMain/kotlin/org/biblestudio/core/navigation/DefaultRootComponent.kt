@@ -20,7 +20,7 @@ import org.biblestudio.core.verse_bus.VerseBus
  * @param verseBus The shared event bus for deep link resolution.
  * @param initialConfig The initial screen to show (defaults to [RootConfig.Workspace]).
  */
-class DefaultRootComponent(
+internal class DefaultRootComponent(
     componentContext: ComponentContext,
     private val verseBus: VerseBus,
     initialConfig: RootConfig = RootConfig.Workspace
@@ -87,6 +87,6 @@ class DefaultRootComponent(
      */
     private fun resolveDeepLink(deepLink: RootConfig.DeepLink) {
         Napier.i("Resolving deep link to verse ${deepLink.globalVerseId}")
-        verseBus.publish(LinkEvent.VerseSelected(deepLink.globalVerseId.toInt()))
+        verseBus.publish(LinkEvent.VerseSelected(deepLink.globalVerseId))
     }
 }

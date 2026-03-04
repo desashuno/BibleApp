@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
@@ -43,11 +44,17 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.bible_reader.component.ComparisonViewMode
-import org.biblestudio.features.bible_reader.component.DefaultTextComparisonComponent
 import org.biblestudio.features.bible_reader.component.DiffSegment
+import org.biblestudio.features.bible_reader.component.wordDiff
 import org.biblestudio.features.bible_reader.component.DiffType
 import org.biblestudio.features.bible_reader.component.TextComparisonState
+import org.biblestudio.features.bible_reader.domain.entities.VersionVerse
+import org.biblestudio.ui.theme.LocalRedLetter
+import org.biblestudio.ui.components.EmptyStateMessage
+import org.biblestudio.ui.components.ErrorMessage
+import org.biblestudio.ui.components.LoadingIndicator
 import org.biblestudio.ui.theme.Spacing
+import org.biblestudio.ui.util.extractRedLetterRanges
 
 /**
  * Text Comparison pane: side-by-side or interleaved diff view of multiple translations.
@@ -118,22 +125,11 @@ fun TextComparisonPane(
         HorizontalDivider()
 
         if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
+            LoadingIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else if (state.error != null) {
-            Text(
-                text = state.error ?: "Error",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
+            ErrorMessage(message = state.error ?: "Error")
         } else if (state.comparison == null) {
-            Text(
-                text = "Select a verse to compare translations.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
+            EmptyStateMessage(message = "Select a verse to compare translations.")
         } else {
             // Filter versions by selection
             val allVersions = state.comparison!!.versions
@@ -199,8 +195,8 @@ private fun VersionSelectorDialog(
 
 @Suppress("ktlint:standard:function-naming", "MagicNumber")
 @Composable
-private fun ParallelView(versions: Map<String, String>) {
-    val baseline = versions.values.firstOrNull()
+private fun ParallelView(versions: Map<String, VersionVerse>) {
+    val baseline = versions.values.firstOrNull()?.text
     val baselineWords = baseline?.split(" ").orEmpty()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -212,7 +208,7 @@ private fun ParallelView(versions: Map<String, String>) {
                 .fillMaxSize()
                 .horizontalScroll(rememberScrollState())
         ) {
-            versions.entries.forEachIndexed { index, (abbreviation, text) ->
+            versions.entries.forEachIndexed { index, (abbreviation, payload) ->
                 if (index > 0) {
                     VerticalDivider(modifier = Modifier.fillMaxHeight())
                 }
@@ -232,16 +228,13 @@ private fun ParallelView(versions: Map<String, String>) {
 
                     // Diff vs baseline (first version)
                     if (index > 0 && baseline != null) {
-                        val diff = DefaultTextComparisonComponent.wordDiff(
+                        val diff = wordDiff(
                             baselineWords,
-                            text.split(" ")
+                            payload.text.split(" ")
                         )
                         DiffHighlightRow(segments = diff)
                     } else {
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        RedLetterText(payload = payload, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
@@ -251,11 +244,11 @@ private fun ParallelView(versions: Map<String, String>) {
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun InterleavedView(versions: Map<String, String>, diffHighlights: List<DiffSegment>) {
+private fun InterleavedView(versions: Map<String, VersionVerse>, diffHighlights: List<DiffSegment>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.Space16)
     ) {
-        items(versions.entries.toList()) { (abbreviation, text) ->
+        items(versions.entries.toList()) { (abbreviation, payload) ->
             Spacer(modifier = Modifier.height(Spacing.Space8))
             Text(
                 text = abbreviation,
@@ -264,10 +257,7 @@ private fun InterleavedView(versions: Map<String, String>, diffHighlights: List<
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(Spacing.Space4))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            RedLetterText(payload = payload, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(Spacing.Space8))
             HorizontalDivider()
         }
@@ -291,7 +281,8 @@ private fun InterleavedView(versions: Map<String, String>, diffHighlights: List<
 @Composable
 private fun DiffHighlightRow(segments: List<DiffSegment>) {
     val annotatedText = buildAnnotatedString {
-        segments.forEach { segment ->
+        segments.forEachIndexed { index, segment ->
+            if (index > 0) append(" ")
             val style = when (segment.type) {
                 DiffType.EQUAL -> SpanStyle()
                 DiffType.ADDED -> SpanStyle(
@@ -309,5 +300,47 @@ private fun DiffHighlightRow(segments: List<DiffSegment>) {
     Text(
         text = annotatedText,
         style = MaterialTheme.typography.bodyMedium
+    )
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+private fun RedLetterText(payload: VersionVerse, style: TextStyle) {
+    val redLetter = LocalRedLetter.current
+    val redColor = MaterialTheme.colorScheme.error
+    val redRanges = if (redLetter) {
+        extractRedLetterRanges(payload.htmlText, payload.text)
+    } else {
+        emptyList()
+    }
+
+    val annotated = buildAnnotatedString {
+        if (redRanges.isEmpty()) {
+            append(payload.text)
+            return@buildAnnotatedString
+        }
+
+        var index = 0
+        while (index < payload.text.length) {
+            val inRed = redRanges.any { index in it }
+            var end = index + 1
+            while (end < payload.text.length && redRanges.any { end in it } == inRed) {
+                end++
+            }
+
+            val chunk = payload.text.substring(index, end)
+            if (inRed) {
+                withStyle(SpanStyle(color = redColor)) { append(chunk) }
+            } else {
+                append(chunk)
+            }
+
+            index = end
+        }
+    }
+
+    Text(
+        text = annotated,
+        style = style
     )
 }

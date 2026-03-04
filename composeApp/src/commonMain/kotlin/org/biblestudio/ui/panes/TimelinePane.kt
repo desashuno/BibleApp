@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,18 +27,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.timeline.component.TimelineState
 import org.biblestudio.features.timeline.component.TimelineZoom
 import org.biblestudio.features.timeline.domain.entities.TimelineCategory
 import org.biblestudio.features.timeline.domain.entities.TimelineEvent
+import org.biblestudio.ui.components.DismissableDetailCard
+import org.biblestudio.ui.components.ErrorMessage
+import org.biblestudio.ui.components.LoadingIndicator
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -100,18 +100,11 @@ fun TimelinePane(
         }
 
         if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
+            LoadingIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         state.error?.let { err ->
-            Text(
-                text = err,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
+            ErrorMessage(message = err)
         }
 
         // Timeline canvas
@@ -135,7 +128,13 @@ fun TimelinePane(
     }
 }
 
-@Suppress("ktlint:standard:function-naming", "MagicNumber", "LongMethod")
+@Suppress(
+    "ktlint:standard:function-naming",
+    "MagicNumber",
+    "LongMethod",
+    "LongParameterList",
+    "CyclomaticComplexMethod"
+)
 @Composable
 private fun TimelineCanvas(
     events: List<TimelineEvent>,
@@ -226,45 +225,23 @@ private const val TAP_RADIUS = 20f
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun TimelineEventCard(event: TimelineEvent, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Spacing.Space8)
-    ) {
-        Column(modifier = Modifier.padding(Spacing.Space16)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "✕",
-                    modifier = Modifier.clickable(onClick = onDismiss).padding(Spacing.Space4),
-                    style = MaterialTheme.typography.titleMedium
-                )
+    DismissableDetailCard(title = event.title, onDismiss = onDismiss) {
+        Spacer(modifier = Modifier.height(Spacing.Space4))
+        val yearLabel = buildString {
+            if (event.startYear < 0) append("${-event.startYear} BC") else append("${event.startYear} AD")
+            event.endYear?.let { ey ->
+                append(" – ")
+                if (ey < 0) append("${-ey} BC") else append("$ey AD")
             }
-            Spacer(modifier = Modifier.height(Spacing.Space4))
-            val yearLabel = buildString {
-                if (event.startYear < 0) append("${-event.startYear} BC") else append("${event.startYear} AD")
-                event.endYear?.let { ey ->
-                    append(" – ")
-                    if (ey < 0) append("${-ey} BC") else append("$ey AD")
-                }
-            }
-            Text(
-                text = "$yearLabel  •  ${event.category.displayName}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            if (event.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(Spacing.Space8))
-                Text(
-                    text = event.description,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+        }
+        Text(
+            text = "$yearLabel  •  ${event.category.displayName}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        if (event.description.isNotBlank()) {
+            Spacer(modifier = Modifier.height(Spacing.Space8))
+            Text(text = event.description, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

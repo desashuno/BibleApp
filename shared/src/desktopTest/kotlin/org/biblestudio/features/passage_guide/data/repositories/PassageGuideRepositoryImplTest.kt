@@ -12,19 +12,19 @@ import org.biblestudio.features.bible_reader.domain.entities.Book
 import org.biblestudio.features.bible_reader.domain.entities.Chapter
 import org.biblestudio.features.bible_reader.domain.entities.Verse
 import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.cross_references.domain.repositories.CrossRefRepository
 import org.biblestudio.features.morphology_interlinear.domain.entities.AlignmentEntry
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 import org.biblestudio.features.morphology_interlinear.domain.entities.MorphologyData
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 import org.biblestudio.features.morphology_interlinear.domain.repositories.MorphologyRepository
 import org.biblestudio.features.note_editor.domain.entities.Note
 import org.biblestudio.features.note_editor.domain.repositories.NoteRepository
 import org.biblestudio.features.resource_library.domain.entities.Resource
 import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
 import org.biblestudio.features.resource_library.domain.repositories.ResourceRepository
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 import org.biblestudio.features.word_study.domain.repositories.WordStudyRepository
 import org.biblestudio.test.TestDatabase
 
@@ -59,6 +59,7 @@ class PassageGuideRepositoryImplTest {
         override suspend fun getBooks(bibleId: Long): Result<List<Book>> = Result.success(emptyList())
         override suspend fun getChapters(bookId: Long): Result<List<Chapter>> = Result.success(emptyList())
         override suspend fun getVerses(bookId: Long, chapter: Long): Result<List<Verse>> = Result.success(emptyList())
+        override suspend fun getVersesForBook(bookId: Long): Result<List<Verse>> = Result.success(emptyList())
 
         override suspend fun getVerseByGlobalId(globalVerseId: Long): Result<Verse?> =
             if (globalVerseId == 1_001_001L) Result.success(testVerse) else Result.success(null)
@@ -68,6 +69,12 @@ class PassageGuideRepositoryImplTest {
 
         override suspend fun searchVerses(query: String, maxResults: Long): Result<List<Verse>> =
             Result.success(emptyList())
+
+        override suspend fun getActiveBibles(): Result<List<Bible>> = Result.success(emptyList())
+        override suspend fun getAvailableBiblesByLanguage(languageCode: String): Result<List<Bible>> = Result.success(emptyList())
+        override suspend fun getActiveBiblesByLanguage(languageCode: String): Result<List<Bible>> = Result.success(emptyList())
+        override suspend fun getNextVerseId(currentId: Long): Result<Long?> = Result.success(null)
+        override suspend fun getPreviousVerseId(currentId: Long): Result<Long?> = Result.success(null)
 
         override fun watchBibles(): Flow<List<Bible>> = emptyFlow()
     }
@@ -95,8 +102,11 @@ class PassageGuideRepositoryImplTest {
         override suspend fun getWordsByStrongs(strongsNumber: String): Result<List<MorphWord>> =
             Result.success(emptyList())
 
-        override suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>> =
-            Result.success(emptyList())
+        override suspend fun getOccurrences(
+            strongsNumber: String,
+            limit: Long,
+            offset: Long,
+        ): Result<List<WordOccurrence>> = Result.success(emptyList())
 
         override suspend fun getOccurrenceCount(strongsNumber: String): Result<Long> = Result.success(0L)
 
@@ -108,8 +118,11 @@ class PassageGuideRepositoryImplTest {
         override suspend fun lookupByStrongs(strongsNumber: String): Result<LexiconEntry?> =
             if (strongsNumber == "H1254") Result.success(testLexicon) else Result.success(null)
 
-        override suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>> =
-            Result.success(emptyList())
+        override suspend fun getOccurrences(
+            strongsNumber: String,
+            limit: Long,
+            offset: Long,
+        ): Result<List<WordOccurrence>> = Result.success(emptyList())
 
         override suspend fun getOccurrenceCount(strongsNumber: String): Result<Long> = Result.success(0L)
 

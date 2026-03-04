@@ -1,7 +1,7 @@
 package org.biblestudio.features.morphology_interlinear.component
 
 import kotlinx.coroutines.flow.StateFlow
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 
 /**
  * A single English token aligned to its original-language morphology.

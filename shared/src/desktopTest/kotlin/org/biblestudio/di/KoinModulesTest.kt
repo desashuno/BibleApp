@@ -2,8 +2,6 @@ package org.biblestudio.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import org.biblestudio.core.navigation.RootComponent
@@ -15,6 +13,7 @@ import org.koin.core.context.stopKoin
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 import org.koin.test.KoinTest
+import org.biblestudio.test.testComponentContext
 import org.koin.test.get
 
 /**
@@ -50,8 +49,7 @@ class KoinModulesTest : KoinTest {
         get<org.biblestudio.features.bible_reader.domain.repositories.BibleRepository>()
 
         // Verify RootComponent factory resolves with explicit parameters
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         get<RootComponent> { parametersOf(context, RootConfig.Workspace) }
     }
 }

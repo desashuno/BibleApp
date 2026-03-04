@@ -1,5 +1,9 @@
 package org.biblestudio.di
 
+import org.biblestudio.features.audio_sync.data.repositories.AudioSyncRepositoryImpl
+import org.biblestudio.features.audio_sync.domain.repositories.AudioSyncRepository
+import org.biblestudio.features.worship.data.repositories.WorshipRepositoryImpl
+import org.biblestudio.features.worship.domain.repositories.WorshipRepository
 import org.biblestudio.features.bible_reader.data.repositories.BibleRepositoryImpl
 import org.biblestudio.features.bible_reader.data.repositories.TextComparisonRepositoryImpl
 import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
@@ -18,8 +22,8 @@ import org.biblestudio.features.highlights.data.repositories.HighlightRepository
 import org.biblestudio.features.highlights.domain.repositories.HighlightRepository
 import org.biblestudio.features.import_export.data.repositories.ImportExportRepositoryImpl
 import org.biblestudio.features.import_export.domain.repositories.ImportExportRepository
-import org.biblestudio.features.module_system.data.repositories.ModuleRepositoryImpl
-import org.biblestudio.features.module_system.domain.repositories.ModuleRepository
+import org.biblestudio.features.knowledge_graph.data.repositories.KnowledgeGraphRepositoryImpl
+import org.biblestudio.features.knowledge_graph.domain.repositories.KnowledgeGraphRepository
 import org.biblestudio.features.morphology_interlinear.data.repositories.MorphologyRepositoryImpl
 import org.biblestudio.features.morphology_interlinear.domain.repositories.MorphologyRepository
 import org.biblestudio.features.note_editor.data.repositories.NoteRepositoryImpl
@@ -36,18 +40,14 @@ import org.biblestudio.features.sermon_editor.data.repositories.SermonRepository
 import org.biblestudio.features.sermon_editor.domain.repositories.SermonRepository
 import org.biblestudio.features.settings.data.repositories.SettingsRepositoryImpl
 import org.biblestudio.features.settings.domain.repositories.SettingsRepository
-import org.biblestudio.features.word_study.data.repositories.DictionaryRepositoryImpl
-import org.biblestudio.features.word_study.data.repositories.WordStudyRepositoryImpl
-import org.biblestudio.features.word_study.domain.repositories.DictionaryRepository
-import org.biblestudio.features.word_study.domain.repositories.WordStudyRepository
-import org.biblestudio.features.knowledge_graph.data.repositories.KnowledgeGraphRepositoryImpl
-import org.biblestudio.features.knowledge_graph.domain.repositories.KnowledgeGraphRepository
-import org.biblestudio.features.audio_sync.data.repositories.AudioSyncRepositoryImpl
-import org.biblestudio.features.audio_sync.domain.repositories.AudioSyncRepository
 import org.biblestudio.features.theological_atlas.data.repositories.AtlasRepositoryImpl
 import org.biblestudio.features.theological_atlas.domain.repositories.AtlasRepository
 import org.biblestudio.features.timeline.data.repositories.TimelineRepositoryImpl
 import org.biblestudio.features.timeline.domain.repositories.TimelineRepository
+import org.biblestudio.features.word_study.data.repositories.DictionaryRepositoryImpl
+import org.biblestudio.features.word_study.data.repositories.WordStudyRepositoryImpl
+import org.biblestudio.features.word_study.domain.repositories.DictionaryRepository
+import org.biblestudio.features.word_study.domain.repositories.WordStudyRepository
 import org.biblestudio.features.workspace.data.repositories.WorkspaceRepositoryImpl
 import org.biblestudio.features.workspace.domain.repositories.WorkspaceRepository
 import org.koin.dsl.module
@@ -75,12 +75,12 @@ val repositoryModule = module {
     single<WorkspaceRepository> { WorkspaceRepositoryImpl(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get()) }
     single<ReadingPlanRepository> { ReadingPlanRepositoryImpl(get()) }
-    single<ModuleRepository> { ModuleRepositoryImpl(get()) }
     single<ImportExportRepository> { ImportExportRepositoryImpl(get()) }
     single<KnowledgeGraphRepository> { KnowledgeGraphRepositoryImpl(get()) }
     single<TimelineRepository> { TimelineRepositoryImpl(get()) }
     single<AtlasRepository> { AtlasRepositoryImpl(get()) }
     single<AudioSyncRepository> { AudioSyncRepositoryImpl(get()) }
+    single<WorshipRepository> { WorshipRepositoryImpl(get()) }
     single<PassageGuideRepository> {
         PassageGuideRepositoryImpl(
             database = get(),

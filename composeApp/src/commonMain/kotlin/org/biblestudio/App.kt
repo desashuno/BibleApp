@@ -23,15 +23,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import kotlinx.coroutines.delay
+import org.biblestudio.core.navigation.OpenMode
 import org.biblestudio.core.navigation.RootChild
 import org.biblestudio.core.navigation.RootComponent
 import org.biblestudio.core.navigation.RootConfig
+import org.biblestudio.core.pane_registry.PaneType
+import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.import_export.component.ImportExportComponent
-import org.biblestudio.features.settings.component.SavedLayout
 import org.biblestudio.features.settings.component.SettingsComponent
 import org.biblestudio.features.settings.component.ThemeMode
 import org.biblestudio.features.workspace.component.WorkspaceComponent
@@ -41,11 +43,11 @@ import org.biblestudio.ui.layout.WindowSizeClass
 import org.biblestudio.ui.panes.ImportExportScreen
 import org.biblestudio.ui.panes.SettingsScreen
 import org.biblestudio.ui.theme.AppTheme
-import org.biblestudio.ui.theme.LocalAppFontSize
-import org.biblestudio.ui.theme.LocalContinuousScroll
-import org.biblestudio.ui.theme.LocalParagraphMode
-import org.biblestudio.ui.theme.LocalRedLetter
-import org.biblestudio.ui.theme.LocalShowVerseNumbers
+import org.biblestudio.ui.theme.Spacing
+import org.biblestudio.ui.theme.BibleReaderSettings
+import org.biblestudio.ui.theme.ProvideBibleReaderSettings
+import org.biblestudio.features.worship.WorshipPlayer
+import org.biblestudio.ui.workspace.LocalWorshipPlayer
 import org.biblestudio.ui.workspace.WorkspaceCallbacks
 import org.biblestudio.ui.workspace.WorkspaceShell
 import org.koin.core.context.GlobalContext
@@ -97,33 +99,48 @@ fun App() {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
-    AppTheme(darkTheme = darkTheme) {
-        CompositionLocalProvider(
-            LocalAppFontSize provides settings.fontSize,
-            LocalShowVerseNumbers provides settings.showVerseNumbers,
-            LocalRedLetter provides settings.redLetter,
-            LocalParagraphMode provides settings.paragraphMode,
-            LocalContinuousScroll provides settings.continuousScroll,
+    val worshipPlayer = remember {
+        try {
+            koin.get<WorshipPlayer>()
+        } catch (
+            @Suppress("TooGenericExceptionCaught", "SwallowedException")
+            e: Exception
         ) {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                AdaptiveShell { sizeClass ->
-                    when (childStack.active.instance) {
-                        is RootChild.Workspace -> WorkspaceNavScreen(
-                            rootComponent = rootComponent,
-                            settingsComponent = settingsComponent,
-                            sizeClass = sizeClass,
-                            lifecycle = lifecycle
-                        )
+            null
+        }
+    }
 
-                        is RootChild.Settings -> SettingsNavScreen(
-                            rootComponent = rootComponent,
-                            settingsComponent = settingsComponent
-                        )
+    AppTheme(darkTheme = darkTheme) {
+        ProvideBibleReaderSettings(
+            BibleReaderSettings(
+                fontSize = settings.fontSize,
+                showVerseNumbers = settings.showVerseNumbers,
+                redLetter = settings.redLetter,
+                paragraphMode = settings.paragraphMode,
+                continuousScroll = settings.continuousScroll,
+            )
+        ) {
+            CompositionLocalProvider(LocalWorshipPlayer provides worshipPlayer) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    AdaptiveShell { sizeClass ->
+                        when (childStack.active.instance) {
+                            is RootChild.Workspace -> WorkspaceNavScreen(
+                                rootComponent = rootComponent,
+                                settingsComponent = settingsComponent,
+                                sizeClass = sizeClass,
+                                lifecycle = lifecycle
+                            )
 
-                        is RootChild.Import -> ImportNavScreen(
-                            rootComponent = rootComponent,
-                            lifecycle = lifecycle
-                        )
+                            is RootChild.Settings -> SettingsNavScreen(
+                                rootComponent = rootComponent,
+                                settingsComponent = settingsComponent
+                            )
+
+                            is RootChild.Import -> ImportNavScreen(
+                                rootComponent = rootComponent,
+                                lifecycle = lifecycle
+                            )
+                        }
                     }
                 }
             }
@@ -139,7 +156,7 @@ fun App() {
  * Workspace screen: creates a [WorkspaceComponent], wires [WorkspaceCallbacks],
  * and renders [WorkspaceShell] with the responsive [sizeClass].
  */
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
 private fun WorkspaceNavScreen(
     rootComponent: RootComponent,
@@ -153,6 +170,7 @@ private fun WorkspaceNavScreen(
             parametersOf(DefaultComponentContext(lifecycle = lifecycle))
         }
     }
+    val verseBus = remember { koin.get<VerseBus>() }
     val settings by settingsComponent.state.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -197,6 +215,28 @@ private fun WorkspaceNavScreen(
                 wsComponent.deleteWorkspace(id) {
                     settingsComponent.loadLayouts()
                 }
+            },
+            onNavigateToPane = { targetType, mode, event ->
+                when (mode) {
+                    OpenMode.SMART -> {
+                        if (wsComponent.containsPaneType(targetType)) {
+                            wsComponent.focusPaneByType(targetType)
+                        } else {
+                            wsComponent.splitPane(PaneType.BIBLE_READER, targetType, SplitAxis.Horizontal)
+                        }
+                        verseBus.publish(event)
+                    }
+                    OpenMode.NEW_PANEL -> {
+                        wsComponent.addPane(targetType)
+                        verseBus.publish(event)
+                    }
+                    OpenMode.NEW_WORKSPACE -> {
+                        wsComponent.createWorkspace("Study") {
+                            wsComponent.addPane(targetType)
+                            verseBus.publish(event)
+                        }
+                    }
+                }
             }
         )
     }
@@ -217,10 +257,7 @@ private fun WorkspaceNavScreen(
  */
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun SettingsNavScreen(
-    rootComponent: RootComponent,
-    settingsComponent: SettingsComponent
-) {
+private fun SettingsNavScreen(rootComponent: RootComponent, settingsComponent: SettingsComponent) {
     Column(modifier = Modifier.fillMaxSize()) {
         BackToolbar(onBack = rootComponent::onBack)
         SettingsScreen(
@@ -247,10 +284,7 @@ private fun SettingsNavScreen(
  */
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun ImportNavScreen(
-    rootComponent: RootComponent,
-    lifecycle: LifecycleRegistry
-) {
+private fun ImportNavScreen(rootComponent: RootComponent, lifecycle: LifecycleRegistry) {
     val koin = remember { GlobalContext.get() }
     val component = remember {
         koin.get<ImportExportComponent> {
@@ -283,7 +317,7 @@ private fun BackToolbar(onBack: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 4.dp)
+            .padding(horizontal = Spacing.Space4)
     ) {
         IconButton(onClick = onBack) {
             Icon(

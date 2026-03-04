@@ -1,6 +1,6 @@
 package org.biblestudio.features.bookmarks_history.data.repositories
 
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
 import org.biblestudio.database.BibleStudioDatabase
 import org.biblestudio.features.bookmarks_history.data.mappers.toHistoryEntry
 import org.biblestudio.features.bookmarks_history.domain.entities.HistoryEntry
@@ -18,7 +18,7 @@ internal class HistoryRepositoryImpl(
     }
 
     override suspend fun addEntry(globalVerseId: Long): Result<Unit> = runCatching {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         database.annotationQueries.insertHistoryEntry(
             globalVerseId = globalVerseId,
             visitedAt = now

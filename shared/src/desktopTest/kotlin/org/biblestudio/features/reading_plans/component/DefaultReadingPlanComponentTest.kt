@@ -1,14 +1,14 @@
 package org.biblestudio.features.reading_plans.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.coroutines.test.runTest
-import org.biblestudio.features.reading_plans.domain.entities.PlanProgress
+import org.biblestudio.core.util.calculateStreak
 import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.features.reading_plans.domain.entities.PlanProgress
 import org.biblestudio.features.reading_plans.domain.entities.ReadingPlan
 import org.biblestudio.features.reading_plans.domain.repositories.ReadingPlanRepository
 
@@ -47,8 +47,7 @@ class DefaultReadingPlanComponentTest {
     }
 
     private fun createComponent(): DefaultReadingPlanComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultReadingPlanComponent(
             componentContext = context,
             repository = fakeRepo,
@@ -98,10 +97,10 @@ class DefaultReadingPlanComponentTest {
 
     @Test
     fun streakCalculation() {
-        assertEquals(0, DefaultReadingPlanComponent.computeStreak(emptyList()))
-        assertEquals(1, DefaultReadingPlanComponent.computeStreak(listOf(1)))
-        assertEquals(3, DefaultReadingPlanComponent.computeStreak(listOf(1, 2, 3)))
-        assertEquals(2, DefaultReadingPlanComponent.computeStreak(listOf(1, 3, 4)))
-        assertEquals(1, DefaultReadingPlanComponent.computeStreak(listOf(1, 3, 5)))
+        assertEquals(0, calculateStreak(emptyList()))
+        assertEquals(1, calculateStreak(listOf(1)))
+        assertEquals(3, calculateStreak(listOf(1, 2, 3)))
+        assertEquals(2, calculateStreak(listOf(1, 3, 4)))
+        assertEquals(1, calculateStreak(listOf(1, 3, 5)))
     }
 }

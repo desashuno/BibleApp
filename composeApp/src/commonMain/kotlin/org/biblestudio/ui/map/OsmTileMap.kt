@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,18 +25,16 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.tan
+import kotlinx.coroutines.launch
 
 /**
  * Data class representing a geographic point to display on the map.
@@ -55,9 +52,9 @@ data class MapPin(
  * State holder for the OSM tile map.
  */
 class OsmMapState(
-    initialCenterLat: Double = 31.7683,
-    initialCenterLng: Double = 35.2137,
-    initialZoom: Int = 7
+    initialCenterLat: Double = MapConstants.DEFAULT_LAT,
+    initialCenterLng: Double = MapConstants.DEFAULT_LNG,
+    initialZoom: Int = MapConstants.DEFAULT_ZOOM
 ) {
     var centerLat by mutableStateOf(initialCenterLat)
     var centerLng by mutableStateOf(initialCenterLng)
@@ -81,8 +78,12 @@ class OsmMapState(
         centerLat = centerLat.coerceIn(-85.0, 85.0)
     }
 
-    fun zoomIn() { zoom = min(zoom + 1, MAX_ZOOM) }
-    fun zoomOut() { zoom = max(zoom - 1, MIN_ZOOM) }
+    fun zoomIn() {
+        zoom = min(zoom + 1, MAX_ZOOM)
+    }
+    fun zoomOut() {
+        zoom = max(zoom - 1, MIN_ZOOM)
+    }
 
     companion object {
         const val MIN_ZOOM = 2
@@ -136,7 +137,9 @@ internal object TileCache {
     fun get(key: String): ImageBitmap? = cache[key]
     fun contains(key: String): Boolean = key in cache
     fun isLoading(key: String): Boolean = key in loading
-    fun markLoading(key: String) { loading.add(key) }
+    fun markLoading(key: String) {
+        loading.add(key)
+    }
 
     fun put(key: String, bitmap: ImageBitmap?) {
         loading.remove(key)
@@ -163,7 +166,7 @@ internal object TileCache {
  * @param onZoomChanged Called when zoom changes (for external sync).
  * @param modifier Standard Compose modifier.
  */
-@Suppress("ktlint:standard:function-naming", "LongMethod", "MagicNumber")
+@Suppress("ktlint:standard:function-naming", "LongMethod", "MagicNumber", "CyclomaticComplexMethod", "ComplexCondition")
 @Composable
 fun OsmTileMap(
     mapState: OsmMapState,
@@ -206,10 +209,13 @@ fun OsmTileMap(
                         val hitRadius = 24f
                         for (pin in pins) {
                             val pinPos = latLngToPixel(
-                                pin.latitude, pin.longitude,
-                                mapState.centerLat, mapState.centerLng,
+                                pin.latitude,
+                                pin.longitude,
+                                mapState.centerLat,
+                                mapState.centerLng,
                                 mapState.zoom,
-                                canvasSize.width, canvasSize.height
+                                canvasSize.width,
+                                canvasSize.height
                             )
                             val dist = (offset - pinPos).getDistance()
                             if (dist <= hitRadius) {
@@ -281,14 +287,21 @@ fun OsmTileMap(
         // Draw pins
         for (pin in pins) {
             val pinPos = latLngToPixel(
-                pin.latitude, pin.longitude,
-                mapState.centerLat, mapState.centerLng,
-                zoom, size.width, size.height
+                pin.latitude,
+                pin.longitude,
+                mapState.centerLat,
+                mapState.centerLng,
+                zoom,
+                size.width,
+                size.height
             )
 
             // Skip off-screen pins
             if (pinPos.x < -30f || pinPos.x > size.width + 30f ||
-                pinPos.y < -30f || pinPos.y > size.height + 30f) continue
+                pinPos.y < -30f || pinPos.y > size.height + 30f
+            ) {
+                continue
+            }
 
             val radius = if (pin.isSelected) 12f else 8f
 

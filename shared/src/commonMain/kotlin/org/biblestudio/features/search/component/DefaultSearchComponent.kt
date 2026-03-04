@@ -1,11 +1,9 @@
 package org.biblestudio.features.search.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,13 +22,13 @@ private const val MAX_RESULTS = 100L
 /**
  * Default [SearchComponent] with debounced FTS5 search and VerseBus integration.
  */
-class DefaultSearchComponent(
+internal class DefaultSearchComponent(
     componentContext: ComponentContext,
     private val repository: SearchRepository,
     private val verseBus: VerseBus
 ) : SearchComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(SearchState())
     override val state: StateFlow<SearchState> = _state.asStateFlow()

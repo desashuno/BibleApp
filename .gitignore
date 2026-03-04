@@ -38,6 +38,13 @@ data-pipeline/raw/*
 data-pipeline/output/*
 !data-pipeline/output/.gitkeep
 
+# Bundled seed database (copied by Gradle task)
+shared/src/desktopMain/resources/biblestudio-seed.db
+
+# Documentation site
+site/
+doc/api/
+
 # Misc
 *.log
 *.tmp

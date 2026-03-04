@@ -1,7 +1,6 @@
 package org.biblestudio.features.word_study.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import org.biblestudio.test.testComponentContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -10,8 +9,8 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.WordOccurrence
+import org.biblestudio.core.study.LexiconEntry
 import org.biblestudio.features.word_study.domain.repositories.WordStudyRepository
 
 class DefaultWordStudyComponentTest {
@@ -34,7 +33,11 @@ class DefaultWordStudyComponentTest {
         override suspend fun lookupByStrongs(strongsNumber: String): Result<LexiconEntry?> =
             if (strongsNumber == "H1254") Result.success(testEntry) else Result.success(null)
 
-        override suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>> =
+        override suspend fun getOccurrences(
+            strongsNumber: String,
+            limit: Long,
+            offset: Long,
+        ): Result<List<WordOccurrence>> =
             if (strongsNumber == "H1254") Result.success(testOccurrences) else Result.success(emptyList())
 
         override suspend fun getOccurrenceCount(strongsNumber: String): Result<Long> =
@@ -48,8 +51,7 @@ class DefaultWordStudyComponentTest {
     }
 
     private fun createComponent(verseBus: VerseBus = VerseBus()): DefaultWordStudyComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultWordStudyComponent(
             componentContext = context,
             repository = fakeRepo,

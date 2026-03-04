@@ -14,6 +14,7 @@ import org.biblestudio.features.workspace.domain.model.WorkspaceState
  * auto-save), and preset application while exposing immutable [WorkspaceState]
  * to the UI layer.
  */
+@Suppress("TooManyFunctions")
 interface WorkspaceComponent {
 
     /** The current workspace state observable. */
@@ -69,4 +70,13 @@ interface WorkspaceComponent {
 
     /** Soft-deletes a workspace by [id]; switches away if it was the current one. */
     fun deleteWorkspace(id: String, onComplete: (() -> Unit)? = null)
+
+    /**
+     * Activates all tabs along the path to a leaf with the given [paneType],
+     * effectively focusing that pane. Does nothing if no such leaf exists.
+     */
+    fun focusPaneByType(paneType: String)
+
+    /** Returns `true` if the current layout tree contains a leaf with [paneType]. */
+    fun containsPaneType(paneType: String): Boolean
 }

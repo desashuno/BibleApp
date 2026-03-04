@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kover)
+    alias(libs.plugins.dokka)
 }
 
 detekt {
@@ -137,6 +138,36 @@ sqldelight {
             srcDirs("src/commonMain/sqldelight")
             deriveSchemaFromMigrations.set(true)
             verifyMigrations.set(true)
+        }
+    }
+}
+
+tasks.register("copySeedDatabase") {
+    val seedFile = rootProject.layout.projectDirectory.file("data-pipeline/output/biblestudio-seed.db")
+    val targetDir = layout.projectDirectory.dir("src/desktopMain/resources")
+    inputs.files(seedFile).optional()
+    outputs.dir(targetDir)
+    doLast {
+        val src = seedFile.asFile
+        if (src.exists()) {
+            val dst = targetDir.asFile
+            dst.mkdirs()
+            src.copyTo(dst.resolve("biblestudio-seed.db"), overwrite = true)
+        }
+    }
+}
+tasks.named("desktopProcessResources") { dependsOn("copySeedDatabase") }
+
+dokka {
+    dokkaSourceSets {
+        named("commonMain") {
+            displayName.set("shared")
+            documentedVisibilities.set(
+                setOf(
+                    org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier.Public,
+                    org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier.Protected,
+                )
+            )
         }
     }
 }

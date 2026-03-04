@@ -9,6 +9,7 @@ Output tables: bibles, books, chapters, verses
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from pathlib import Path
 
@@ -53,6 +54,25 @@ def compute_global_verse_id(book_number: int, chapter: int, verse: int) -> int:
     return book_number * 1_000_000 + chapter * 1_000 + verse
 
 
+USFM_WJ_RE = re.compile(r"\\\\wj\s+(.*?)\\\\wj\*", re.IGNORECASE | re.DOTALL)
+OSIS_JESUS_Q_RE = re.compile(r"<q\b[^>]*who\s*=\s*['\"]Jesus['\"][^>]*>(.*?)</q>", re.IGNORECASE | re.DOTALL)
+GENERIC_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def normalize_red_letter_text(raw_text: str) -> tuple[str, str | None]:
+    """Return (plain_text, html_text) with canonical `<wj>...</wj>` when source markup exists."""
+    html_text = raw_text
+    html_text = OSIS_JESUS_Q_RE.sub(r"<wj>\1</wj>", html_text)
+    html_text = USFM_WJ_RE.sub(lambda m: f"<wj>{m.group(1).strip()}</wj>", html_text)
+
+    has_wj = "<wj" in html_text.lower()
+    plain_text = GENERIC_TAG_RE.sub("", html_text).strip()
+    if not plain_text:
+        plain_text = raw_text.strip()
+
+    return plain_text, html_text if has_wj else None
+
+
 def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
     """Read scrollmapper SQLite and write normalized Bible text."""
     source_db_path = raw_dir / "bibles" / "scrollmapper-bible.db"
@@ -60,6 +80,12 @@ def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
     if not source_db_path.exists():
         print("    ⚠ scrollmapper-bible.db not found, skipping Bible text")
         return
+
+    # Check if WEB USFM is available (preferred source with red-letter)
+    web_usfm_dir = raw_dir / "bibles" / "web-usfm"
+    skip_web = web_usfm_dir.exists() and any(web_usfm_dir.glob("*.usfm"))
+    if skip_web:
+        print("    ℹ Skipping scrollmapper WEB (t_web) — using USFM source with red-letter instead")
 
     source = sqlite3.connect(str(source_db_path))
     source.row_factory = sqlite3.Row
@@ -94,6 +120,12 @@ def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
     for table_name, (abbr, name, lang, direction) in version_meta.items():
         if table_name not in tables:
             continue
+
+        # Skip WEB from scrollmapper if USFM source is available
+        if skip_web and table_name == "t_web":
+            continue
+
+        red_letter_found = False
 
         # Verify the table has the expected columns (b, c, v, t)
         try:
@@ -158,7 +190,10 @@ def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
             book_num = int(row[0])
             chapter_num = int(row[1])
             verse_num = int(row[2])
-            text = str(row[3])
+            raw_text = str(row[3])
+            text, html_text = normalize_red_letter_text(raw_text)
+            if html_text is not None:
+                red_letter_found = True
 
             key = (book_num, chapter_num)
             if key not in chapter_id_map:
@@ -167,11 +202,14 @@ def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
             global_id = compute_global_verse_id(book_num, chapter_num, verse_num)
 
             db.execute(
-                "INSERT INTO verses (chapter_id, global_verse_id, verse_number, text, html_text) VALUES (?, ?, ?, ?, NULL)",
-                (chapter_id_map[key], global_id, verse_num, text),
+                "INSERT INTO verses (chapter_id, global_verse_id, verse_number, text, html_text) VALUES (?, ?, ?, ?, ?)",
+                (chapter_id_map[key], global_id, verse_num, text, html_text),
             )
 
         db.commit()
         print(f"      ✓ {abbr}: {len(rows):,} verses imported")
+        if not red_letter_found:
+            # TODO(red-letter): scrollmapper sources generally do not ship words-of-Jesus metadata.
+            print(f"      ⚠ {abbr}: no red-letter markup found in source; html_text left NULL")
 
     source.close()

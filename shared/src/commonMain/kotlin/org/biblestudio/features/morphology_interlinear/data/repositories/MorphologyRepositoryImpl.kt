@@ -6,9 +6,9 @@ import org.biblestudio.features.morphology_interlinear.data.mappers.toMorphWord
 import org.biblestudio.features.morphology_interlinear.data.mappers.toMorphologyData
 import org.biblestudio.features.morphology_interlinear.data.mappers.toWordOccurrence
 import org.biblestudio.features.morphology_interlinear.domain.entities.AlignmentEntry
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 import org.biblestudio.features.morphology_interlinear.domain.entities.MorphologyData
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 import org.biblestudio.features.morphology_interlinear.domain.repositories.MorphologyRepository
 
 internal class MorphologyRepositoryImpl(
@@ -38,9 +38,13 @@ internal class MorphologyRepositoryImpl(
             .map { it.toMorphWord() }
     }
 
-    override suspend fun getOccurrences(strongsNumber: String): Result<List<WordOccurrence>> = runCatching {
+    override suspend fun getOccurrences(
+        strongsNumber: String,
+        limit: Long,
+        offset: Long,
+    ): Result<List<WordOccurrence>> = runCatching {
         studyQueries
-            .occurrencesForWord(strongsNumber)
+            .occurrencesForWordPaged(strongsNumber, limit, offset)
             .executeAsList()
             .map { it.toWordOccurrence() }
     }

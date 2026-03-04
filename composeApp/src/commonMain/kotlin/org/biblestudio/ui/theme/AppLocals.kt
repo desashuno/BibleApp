@@ -39,3 +39,28 @@ fun scaledBodyStyle(): TextStyle {
     val fontSize = LocalAppFontSize.current
     return MaterialTheme.typography.bodyLarge.copy(fontSize = fontSize.sp)
 }
+
+private const val DEFAULT_FONT_SIZE = 16
+
+/**
+ * Scales any [base] style proportionally to the user's preferred font size.
+ * The scaling ratio is `userFontSize / defaultFontSize`, so all text styles
+ * grow/shrink together with the Settings slider.
+ */
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun scaledStyle(base: TextStyle): TextStyle {
+    val userSize = LocalAppFontSize.current
+    val ratio = userSize.toFloat() / DEFAULT_FONT_SIZE
+    return base.copy(fontSize = base.fontSize * ratio)
+}
+
+/** Title style scaled to the user's font size preference. */
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun scaledTitleStyle(): TextStyle = scaledStyle(MaterialTheme.typography.titleMedium)
+
+/** Label style scaled to the user's font size preference. */
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun scaledLabelStyle(): TextStyle = scaledStyle(MaterialTheme.typography.labelLarge)

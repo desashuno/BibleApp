@@ -35,6 +35,21 @@ interface BibleRepository {
     /** Full-text search across verse text. */
     suspend fun searchVerses(query: String, maxResults: Long = 100): Result<List<Verse>>
 
+    /** Returns only active (user-enabled) Bible versions. */
+    suspend fun getActiveBibles(): Result<List<Bible>>
+
+    /** Returns all available Bible versions for the given ISO 639-1 language code. */
+    suspend fun getAvailableBiblesByLanguage(languageCode: String): Result<List<Bible>>
+
+    /** Returns only active Bible versions for the given ISO 639-1 language code. */
+    suspend fun getActiveBiblesByLanguage(languageCode: String): Result<List<Bible>>
+
+    /** Returns the global verse ID immediately after [currentId], or null if none. */
+    suspend fun getNextVerseId(currentId: Long): Result<Long?>
+
+    /** Returns the global verse ID immediately before [currentId], or null if none. */
+    suspend fun getPreviousVerseId(currentId: Long): Result<Long?>
+
     /** Reactive stream of available Bible versions. */
     fun watchBibles(): Flow<List<Bible>>
 }

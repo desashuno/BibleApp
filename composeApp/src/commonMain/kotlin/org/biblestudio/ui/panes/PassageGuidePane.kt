@@ -2,7 +2,6 @@ package org.biblestudio.ui.panes
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,8 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,8 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.core.util.VerseRefFormatter
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.passage_guide.component.PassageGuideState
+import org.biblestudio.ui.components.LoadingErrorContent
+import org.biblestudio.ui.components.PaneHeader
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -45,43 +44,17 @@ fun PassageGuidePane(
     val state by stateFlow.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = "Passage Guide",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(Spacing.Space16)
-        )
+        PaneHeader(title = "Passage Guide")
 
-        HorizontalDivider()
-
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            state.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = state.error.orEmpty(), color = MaterialTheme.colorScheme.error)
-                }
-            }
-            state.report == null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "Select a verse to see the passage guide")
-                }
-            }
-            else -> {
-                val report = state.report!!
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(Spacing.Space16)
+        LoadingErrorContent(
+            isLoading = state.isLoading,
+            error = state.error,
+            data = state.report,
+            emptyMessage = "Select a verse to see the passage guide",
+            modifier = Modifier.fillMaxSize(),
+        ) { report ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(Spacing.Space16)
                 ) {
                     // Verse text header
                     item {
@@ -214,7 +187,6 @@ fun PassageGuidePane(
                     }
                 }
             }
-        }
     }
 }
 

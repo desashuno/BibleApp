@@ -1,10 +1,10 @@
 package org.biblestudio.features.passage_guide.domain.entities
 
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.CrossReference
+import org.biblestudio.core.study.MorphWord
 import org.biblestudio.features.note_editor.domain.entities.Note
 import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 /**
  * Aggregated study report for a single verse, combining data from

@@ -18,22 +18,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Workspaces
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,13 +44,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.AppInfo
-import androidx.compose.ui.unit.sp
 import org.biblestudio.features.settings.component.SavedLayout
 import org.biblestudio.features.settings.component.SettingsState
 import org.biblestudio.features.settings.component.ThemeMode
+import org.biblestudio.ui.components.SectionHeader
+import org.biblestudio.ui.theme.IconSize
+import org.biblestudio.ui.components.SettingRow
+import org.biblestudio.ui.components.ToggleRow
 import org.biblestudio.ui.theme.Spacing
 
 private const val MIN_FONT_SIZE = 12f
@@ -105,7 +106,7 @@ fun SettingsScreen(
         // Vertical divider
         Box(
             modifier = Modifier
-                .width(1.dp)
+                .width(Spacing.Divider)
                 .fillMaxHeight()
                 .background(MaterialTheme.colorScheme.outlineVariant)
         )
@@ -155,10 +156,7 @@ fun SettingsScreen(
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun SettingsSidebar(
-    selectedCategory: SettingsCategory,
-    onCategorySelected: (SettingsCategory) -> Unit
-) {
+private fun SettingsSidebar(selectedCategory: SettingsCategory, onCategorySelected: (SettingsCategory) -> Unit) {
     Column(
         modifier = Modifier
             .width(SIDEBAR_WIDTH)
@@ -181,26 +179,36 @@ private fun SettingsSidebar(
                     .fillMaxWidth()
                     .clickable { onCategorySelected(category) }
                     .then(
-                        if (isSelected) Modifier.background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                        ) else Modifier
+                        if (isSelected) {
+                            Modifier.background(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            )
+                        } else {
+                            Modifier
+                        }
                     )
                     .padding(horizontal = Spacing.Space16, vertical = Spacing.Space12)
             ) {
                 Icon(
                     imageVector = category.icon,
                     contentDescription = null,
-                    tint = if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp)
+                    tint = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    },
+                    modifier = Modifier.size(IconSize.Default)
                 )
                 Spacer(Modifier.width(Spacing.Space12))
                 Text(
                     text = category.label,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
                 )
             }
         }
@@ -209,7 +217,7 @@ private fun SettingsSidebar(
 
 // ── Appearance Section ──
 
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
 private fun AppearanceSection(
     state: SettingsState,
@@ -237,7 +245,7 @@ private fun AppearanceSection(
                         MaterialTheme.colorScheme.surfaceVariant
                     }
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(Spacing.Space12),
                 modifier = Modifier.clickable { onThemeChanged(mode) }
             ) {
                 Column(
@@ -251,8 +259,11 @@ private fun AppearanceSection(
                         text = label,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
                     )
                 }
             }
@@ -404,71 +415,14 @@ private fun AboutSection() {
 
     SectionHeader("License")
     Text(
-        text = "BibleStudio is free and open-source software. All Bible data sources are public domain or Creative Commons licensed.",
+        text = "BibleStudio is free and open-source software. " +
+            "All Bible data sources are public domain or Creative Commons licensed.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
-// ── Shared components ──
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = Spacing.Space16, bottom = Spacing.Space8)
-    )
-}
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-private fun SettingRow(title: String, subtitle: String, onClick: (() -> Unit)? = null) {
-    val rowModifier = Modifier
-        .fillMaxWidth()
-        .let { mod -> if (onClick != null) mod.clickable(onClick = onClick) else mod }
-        .padding(vertical = Spacing.Space8)
-    Row(
-        modifier = rowModifier,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-private fun ToggleRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Space8),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
+// ── Shared components are imported from org.biblestudio.ui.components ──
 
 @Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable

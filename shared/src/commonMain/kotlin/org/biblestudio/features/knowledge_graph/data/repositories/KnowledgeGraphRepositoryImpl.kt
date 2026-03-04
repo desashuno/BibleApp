@@ -37,6 +37,7 @@ internal class KnowledgeGraphRepositoryImpl(
         val collectedEdges = mutableListOf<GraphEdge>()
         val frontier = mutableListOf(entityId)
 
+        @Suppress("UnusedPrivateProperty")
         for (hop in 0 until depth) {
             val nextFrontier = mutableListOf<Long>()
             for (currentId in frontier) {

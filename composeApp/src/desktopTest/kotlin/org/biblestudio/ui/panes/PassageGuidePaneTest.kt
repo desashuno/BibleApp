@@ -6,13 +6,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.note_editor.domain.entities.Note
 import org.biblestudio.features.passage_guide.component.PassageGuideState
 import org.biblestudio.features.passage_guide.domain.entities.Outline
 import org.biblestudio.features.passage_guide.domain.entities.PassageReport
 import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 @OptIn(ExperimentalTestApi::class)
 class PassageGuidePaneTest {

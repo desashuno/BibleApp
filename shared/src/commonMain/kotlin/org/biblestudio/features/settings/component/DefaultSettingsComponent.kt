@@ -1,16 +1,16 @@
 package org.biblestudio.features.settings.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
+import org.biblestudio.core.AppConstants
+import org.biblestudio.core.util.generateUuid
 import org.biblestudio.features.settings.domain.entities.AppSetting
 import org.biblestudio.features.settings.domain.repositories.SettingsRepository
 import org.biblestudio.features.workspace.domain.repositories.WorkspaceRepository
@@ -25,22 +25,18 @@ private const val KEY_CONTINUOUS_SCROLL = "continuous_scroll"
 private const val KEY_SIDEBAR_COLLAPSED = "sidebar_collapsed"
 private const val KEY_PINNED_PANES = "pinned_panes"
 private const val KEY_FAVORITE_PANES = "favorite_panes"
-private const val CATEGORY_DISPLAY = "display"
-private const val CATEGORY_READING = "reading"
-private const val CATEGORY_WORKSPACE = "workspace"
-private const val MIN_FONT_SIZE = 12
-private const val MAX_FONT_SIZE = 28
 
 /**
  * Default [SettingsComponent] backed by [SettingsRepository].
  */
-class DefaultSettingsComponent(
+@Suppress("TooManyFunctions")
+internal class DefaultSettingsComponent(
     componentContext: ComponentContext,
     private val repository: SettingsRepository,
-    private val workspaceRepository: WorkspaceRepository? = null
+    private val workspaceRepository: WorkspaceRepository
 ) : SettingsComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(SettingsState())
     override val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -62,44 +58,44 @@ class DefaultSettingsComponent(
     }
 
     override fun setFontSize(size: Int) {
-        val clamped = size.coerceIn(MIN_FONT_SIZE, MAX_FONT_SIZE)
+        val clamped = size.coerceIn(AppConstants.FONT_SIZE_MIN, AppConstants.FONT_SIZE_MAX)
         _state.update { it.copy(fontSize = clamped) }
-        updateSetting(KEY_FONT_SIZE, clamped.toString(), "int", CATEGORY_DISPLAY)
+        updateSetting(KEY_FONT_SIZE, clamped.toString(), AppConstants.SettingType.INT, AppConstants.SettingCategory.DISPLAY)
     }
 
     override fun setTheme(mode: ThemeMode) {
         _state.update { it.copy(theme = mode) }
-        updateSetting(KEY_THEME, mode.name.lowercase(), "string", CATEGORY_DISPLAY)
+        updateSetting(KEY_THEME, mode.name.lowercase(), AppConstants.SettingType.STRING, AppConstants.SettingCategory.DISPLAY)
     }
 
     override fun setDefaultBible(abbreviation: String) {
         _state.update { it.copy(defaultBible = abbreviation) }
-        updateSetting(KEY_DEFAULT_BIBLE, abbreviation, "string", CATEGORY_READING)
+        updateSetting(KEY_DEFAULT_BIBLE, abbreviation, AppConstants.SettingType.STRING, AppConstants.SettingCategory.READING)
     }
 
     override fun setShowVerseNumbers(show: Boolean) {
         _state.update { it.copy(showVerseNumbers = show) }
-        updateSetting(KEY_SHOW_VERSE_NUMBERS, show.toString(), "boolean", CATEGORY_READING)
+        updateSetting(KEY_SHOW_VERSE_NUMBERS, show.toString(), AppConstants.SettingType.BOOLEAN, AppConstants.SettingCategory.READING)
     }
 
     override fun setRedLetter(enabled: Boolean) {
         _state.update { it.copy(redLetter = enabled) }
-        updateSetting(KEY_RED_LETTER, enabled.toString(), "boolean", CATEGORY_READING)
+        updateSetting(KEY_RED_LETTER, enabled.toString(), AppConstants.SettingType.BOOLEAN, AppConstants.SettingCategory.READING)
     }
 
     override fun setParagraphMode(enabled: Boolean) {
         _state.update { it.copy(paragraphMode = enabled) }
-        updateSetting(KEY_PARAGRAPH_MODE, enabled.toString(), "boolean", CATEGORY_READING)
+        updateSetting(KEY_PARAGRAPH_MODE, enabled.toString(), AppConstants.SettingType.BOOLEAN, AppConstants.SettingCategory.READING)
     }
 
     override fun setContinuousScroll(enabled: Boolean) {
         _state.update { it.copy(continuousScroll = enabled) }
-        updateSetting(KEY_CONTINUOUS_SCROLL, enabled.toString(), "boolean", CATEGORY_READING)
+        updateSetting(KEY_CONTINUOUS_SCROLL, enabled.toString(), AppConstants.SettingType.BOOLEAN, AppConstants.SettingCategory.READING)
     }
 
     override fun setSidebarCollapsed(collapsed: Boolean) {
         _state.update { it.copy(sidebarCollapsed = collapsed) }
-        updateSetting(KEY_SIDEBAR_COLLAPSED, collapsed.toString(), "boolean", CATEGORY_WORKSPACE)
+        updateSetting(KEY_SIDEBAR_COLLAPSED, collapsed.toString(), AppConstants.SettingType.BOOLEAN, AppConstants.SettingCategory.WORKSPACE)
     }
 
     override fun reload() {
@@ -167,7 +163,7 @@ class DefaultSettingsComponent(
             }
             current.copy(pinnedPanes = newSet)
         }
-        updateSetting(KEY_PINNED_PANES, _state.value.pinnedPanes.joinToString(","), "string", CATEGORY_WORKSPACE)
+        updateSetting(KEY_PINNED_PANES, _state.value.pinnedPanes.joinToString(","), AppConstants.SettingType.STRING, AppConstants.SettingCategory.WORKSPACE)
     }
 
     override fun toggleFavorite(paneType: String) {
@@ -179,13 +175,13 @@ class DefaultSettingsComponent(
             }
             current.copy(favoritePanes = newSet)
         }
-        updateSetting(KEY_FAVORITE_PANES, _state.value.favoritePanes.joinToString(","), "string", CATEGORY_WORKSPACE)
+        updateSetting(KEY_FAVORITE_PANES, _state.value.favoritePanes.joinToString(","), AppConstants.SettingType.STRING, AppConstants.SettingCategory.WORKSPACE)
     }
 
     override fun loadLayouts() {
         scope.launch {
-            workspaceRepository?.getAll()
-                ?.onSuccess { workspaces ->
+            workspaceRepository.getAll()
+                .onSuccess { workspaces ->
                     val layouts = workspaces.map { ws ->
                         SavedLayout(
                             id = ws.uuid,
@@ -196,7 +192,7 @@ class DefaultSettingsComponent(
                     }
                     _state.update { it.copy(savedLayouts = layouts) }
                 }
-                ?.onFailure { e ->
+                .onFailure { e ->
                     Napier.e("Failed to load workspace layouts", e)
                 }
         }
@@ -205,29 +201,29 @@ class DefaultSettingsComponent(
     override fun saveLayout(name: String) {
         scope.launch {
             val uuid = generateUuid()
-            val now = Clock.System.now().toString()
+            val now = nowIso()
             val workspace = org.biblestudio.features.workspace.domain.entities.Workspace(
                 uuid = uuid,
                 name = name,
                 isActive = false,
                 createdAt = now,
                 updatedAt = now,
-                deviceId = "local"
+                deviceId = AppConstants.DEVICE_ID_LOCAL
             )
-            workspaceRepository?.create(workspace)
-                ?.onSuccess { loadLayouts() }
-                ?.onFailure { e -> Napier.e("Failed to save layout", e) }
+            workspaceRepository.create(workspace)
+                .onSuccess { loadLayouts() }
+                .onFailure { e -> Napier.e("Failed to save layout", e) }
         }
     }
 
     override fun renameLayout(layoutId: String, newName: String) {
         scope.launch {
-            workspaceRepository?.getByUuid(layoutId)
-                ?.onSuccess { ws ->
+            workspaceRepository.getByUuid(layoutId)
+                .onSuccess { ws ->
                     if (ws != null) {
-                        val updated = ws.copy(name = newName, updatedAt = Clock.System.now().toString())
-                        workspaceRepository?.update(updated)
-                            ?.onSuccess { loadLayouts() }
+                        val updated = ws.copy(name = newName, updatedAt = nowIso())
+                        workspaceRepository.update(updated)
+                            .onSuccess { loadLayouts() }
                     }
                 }
         }
@@ -235,31 +231,18 @@ class DefaultSettingsComponent(
 
     override fun deleteLayout(layoutId: String) {
         scope.launch {
-            workspaceRepository?.delete(layoutId, Clock.System.now().toString())
-                ?.onSuccess { loadLayouts() }
-                ?.onFailure { e -> Napier.e("Failed to delete layout", e) }
+            workspaceRepository.delete(layoutId, nowIso())
+                .onSuccess { loadLayouts() }
+                .onFailure { e -> Napier.e("Failed to delete layout", e) }
         }
     }
 
     override fun activateLayout(layoutId: String) {
         scope.launch {
-            workspaceRepository?.setActive(layoutId, Clock.System.now().toString(), "local")
-                ?.onSuccess { loadLayouts() }
-                ?.onFailure { e -> Napier.e("Failed to activate layout", e) }
+            workspaceRepository.setActive(layoutId, nowIso(), AppConstants.DEVICE_ID_LOCAL)
+                .onSuccess { loadLayouts() }
+                .onFailure { e -> Napier.e("Failed to activate layout", e) }
         }
     }
 
-    private fun generateUuid(): String {
-        val chars = "abcdef0123456789"
-        val segments = listOf(UUID_SEGMENT_8, UUID_SEGMENT_4, UUID_SEGMENT_4, UUID_SEGMENT_4, UUID_SEGMENT_12)
-        return segments.joinToString("-") { len ->
-            (1..len).map { chars.random() }.joinToString("")
-        }
-    }
-
-    companion object {
-        private const val UUID_SEGMENT_8 = 8
-        private const val UUID_SEGMENT_4 = 4
-        private const val UUID_SEGMENT_12 = 12
-    }
 }

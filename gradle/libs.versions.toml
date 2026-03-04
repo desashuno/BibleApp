@@ -12,6 +12,7 @@ napier = "2.7.1"
 detekt = "1.23.7"
 ktlint = "12.1.2"
 kover = "0.9.0"
+dokka = "2.0.0"
 androidx-activityCompose = "1.9.3"
 
 [libraries]
@@ -62,3 +63,4 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

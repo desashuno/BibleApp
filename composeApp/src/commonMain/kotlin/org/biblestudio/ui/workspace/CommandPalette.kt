@@ -1,6 +1,5 @@
 package org.biblestudio.ui.workspace
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +12,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -28,19 +29,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.biblestudio.core.pane_registry.PaneRegistry
 import org.biblestudio.ui.theme.PaneStyling
+import org.biblestudio.ui.theme.IconSize
 import org.biblestudio.ui.theme.Spacing
 
 private val PALETTE_WIDTH = 480.dp
 private val PALETTE_MAX_HEIGHT = 360.dp
-private val ITEM_ICON_SIZE = 20.dp
+private val ITEM_ICON_SIZE = IconSize.Default
 
 /**
  * VS Code-style command palette overlay.
@@ -60,8 +60,8 @@ fun CommandPalette(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
-            tonalElevation = 8.dp,
+            shape = RoundedCornerShape(Spacing.Space8),
+            tonalElevation = Spacing.Space8,
             modifier = Modifier.width(PALETTE_WIDTH)
         ) {
             Column(modifier = Modifier.padding(Spacing.Space8)) {
@@ -84,10 +84,13 @@ fun CommandPalette(
 
                 val allItems = remember { buildPaletteItems() }
                 val filtered = remember(query) {
-                    if (query.isBlank()) allItems
-                    else allItems.filter {
-                        it.label.contains(query, ignoreCase = true) ||
-                            it.category.contains(query, ignoreCase = true)
+                    if (query.isBlank()) {
+                        allItems
+                    } else {
+                        allItems.filter {
+                            it.label.contains(query, ignoreCase = true) ||
+                                it.category.contains(query, ignoreCase = true)
+                        }
                     }
                 }
 

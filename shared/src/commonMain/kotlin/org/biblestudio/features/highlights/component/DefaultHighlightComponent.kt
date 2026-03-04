@@ -1,17 +1,17 @@
 package org.biblestudio.features.highlights.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
+import org.biblestudio.core.AppConstants
+import org.biblestudio.core.util.generateUuid
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.highlights.domain.entities.Highlight
@@ -21,13 +21,13 @@ import org.biblestudio.features.highlights.domain.repositories.HighlightReposito
 /**
  * Default [HighlightComponent] managing highlight CRUD and colour selection.
  */
-class DefaultHighlightComponent(
+internal class DefaultHighlightComponent(
     componentContext: ComponentContext,
     private val repository: HighlightRepository,
     private val verseBus: VerseBus
 ) : HighlightComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(HighlightState())
     override val state: StateFlow<HighlightState> = _state.asStateFlow()
@@ -43,18 +43,18 @@ class DefaultHighlightComponent(
     }
 
     override fun onHighlightVerse(globalVerseId: Long, startOffset: Long, endOffset: Long) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val uuid = generateUuid()
         val highlight = Highlight(
             uuid = uuid,
             globalVerseId = globalVerseId,
             colorIndex = _state.value.selectedColor.index,
-            style = "background",
+            style = AppConstants.HIGHLIGHT_STYLE_BACKGROUND,
             startOffset = startOffset,
             endOffset = endOffset,
             createdAt = now,
             updatedAt = now,
-            deviceId = ""
+            deviceId = AppConstants.DEVICE_ID_LOCAL
         )
         scope.launch {
             repository.create(highlight)
@@ -64,7 +64,7 @@ class DefaultHighlightComponent(
     }
 
     override fun onDeleteHighlight(uuid: String) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         scope.launch {
             repository.delete(uuid, now)
                 .onSuccess { currentVerseId?.let { loadHighlightsForVerse(it) } }
@@ -74,7 +74,7 @@ class DefaultHighlightComponent(
 
     override fun onChangeColor(uuid: String, color: HighlightColor) {
         val existing = _state.value.highlights.firstOrNull { it.uuid == uuid } ?: return
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val updated = existing.copy(colorIndex = color.index, updatedAt = now)
         scope.launch {
             repository.update(updated)
@@ -108,15 +108,4 @@ class DefaultHighlightComponent(
         }
     }
 
-    private fun generateUuid(): String {
-        val chars = "0123456789abcdef"
-        val template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-        return template.map { c ->
-            when (c) {
-                'x' -> chars.random()
-                'y' -> chars["89ab".random().digitToInt(16)]
-                else -> c
-            }
-        }.joinToString("")
-    }
 }

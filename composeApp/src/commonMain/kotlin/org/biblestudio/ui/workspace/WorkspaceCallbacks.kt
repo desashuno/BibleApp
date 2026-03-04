@@ -1,5 +1,7 @@
 package org.biblestudio.ui.workspace
 
+import org.biblestudio.core.navigation.OpenMode
+import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.features.workspace.domain.model.PanePlacement
 
 /**
@@ -21,5 +23,6 @@ data class WorkspaceCallbacks(
     val onToggleFavorite: (String) -> Unit = {},
     val onLoadWorkspace: (String) -> Unit = {},
     val onCreateWorkspace: (String) -> Unit = {},
-    val onDeleteWorkspace: (String) -> Unit = {}
+    val onDeleteWorkspace: (String) -> Unit = {},
+    val onNavigateToPane: (String, OpenMode, LinkEvent) -> Unit = { _, _, _ -> }
 )

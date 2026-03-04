@@ -8,7 +8,7 @@ import kotlin.test.Test
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.biblestudio.features.morphology_interlinear.component.AlignedToken
 import org.biblestudio.features.morphology_interlinear.component.ReverseInterlinearState
-import org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord
+import org.biblestudio.core.study.MorphWord
 
 @OptIn(ExperimentalTestApi::class)
 class ReverseInterlinearPaneTest {

@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package org.biblestudio.ui.map
 
 import java.io.File

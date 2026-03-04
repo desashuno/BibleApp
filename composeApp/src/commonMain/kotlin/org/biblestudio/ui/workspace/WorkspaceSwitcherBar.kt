@@ -133,7 +133,7 @@ fun DesktopOverview(
 
 // ────────────────────────────────────────────────────────────────────────────
 
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
 private fun DesktopCard(
     name: String,

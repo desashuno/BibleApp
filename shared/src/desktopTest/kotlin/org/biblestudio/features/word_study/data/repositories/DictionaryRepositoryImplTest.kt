@@ -38,7 +38,12 @@ class DictionaryRepositoryImplTest {
         )
     }
 
-    private fun insertEntry(resourceId: String, headword: String, content: String, relatedStrongs: String? = null): Long {
+    private fun insertEntry(
+        resourceId: String,
+        headword: String,
+        content: String,
+        relatedStrongs: String? = null
+    ): Long {
         testDb.database.dictionaryQueries.insertEntry(
             resourceId = resourceId,
             headword = headword,

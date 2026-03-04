@@ -1,17 +1,17 @@
 package org.biblestudio.features.bookmarks_history.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
+import org.biblestudio.core.AppConstants
+import org.biblestudio.core.util.generateUuid
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.bookmarks_history.domain.entities.Bookmark
@@ -24,14 +24,14 @@ import org.biblestudio.features.bookmarks_history.domain.repositories.HistoryRep
  * Default [BookmarksComponent] managing bookmarks, folders, and history.
  */
 @Suppress("TooManyFunctions")
-class DefaultBookmarksComponent(
+internal class DefaultBookmarksComponent(
     componentContext: ComponentContext,
     private val bookmarkRepository: BookmarkRepository,
     private val historyRepository: HistoryRepository,
     private val verseBus: VerseBus
 ) : BookmarksComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(BookmarksState())
     override val state: StateFlow<BookmarksState> = _state.asStateFlow()
@@ -67,7 +67,7 @@ class DefaultBookmarksComponent(
     }
 
     override fun onCreateFolder(name: String, parentId: String?) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val folder = BookmarkFolder(
             uuid = generateUuid(),
             name = name,
@@ -75,7 +75,7 @@ class DefaultBookmarksComponent(
             sortOrder = _state.value.folders.size.toLong(),
             createdAt = now,
             updatedAt = now,
-            deviceId = ""
+            deviceId = AppConstants.DEVICE_ID_LOCAL
         )
         scope.launch {
             bookmarkRepository.createFolder(folder)
@@ -86,7 +86,7 @@ class DefaultBookmarksComponent(
 
     override fun onRenameFolder(uuid: String, newName: String) {
         val existing = _state.value.folders.firstOrNull { it.uuid == uuid } ?: return
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val updated = existing.copy(name = newName, updatedAt = now)
         scope.launch {
             bookmarkRepository.updateFolder(updated)
@@ -95,7 +95,7 @@ class DefaultBookmarksComponent(
     }
 
     override fun onDeleteFolder(uuid: String) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         scope.launch {
             bookmarkRepository.deleteFolder(uuid, now)
                 .onSuccess { loadFolders() }
@@ -103,7 +103,7 @@ class DefaultBookmarksComponent(
     }
 
     override fun onAddBookmark(globalVerseId: Long, label: String) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val bookmark = Bookmark(
             uuid = generateUuid(),
             globalVerseId = globalVerseId,
@@ -112,7 +112,7 @@ class DefaultBookmarksComponent(
             sortOrder = _state.value.bookmarks.size.toLong(),
             createdAt = now,
             updatedAt = now,
-            deviceId = ""
+            deviceId = AppConstants.DEVICE_ID_LOCAL
         )
         scope.launch {
             bookmarkRepository.create(bookmark)
@@ -122,7 +122,7 @@ class DefaultBookmarksComponent(
     }
 
     override fun onDeleteBookmark(uuid: String) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         scope.launch {
             bookmarkRepository.delete(uuid, now)
                 .onSuccess { loadBookmarks() }
@@ -189,15 +189,4 @@ class DefaultBookmarksComponent(
         }
     }
 
-    private fun generateUuid(): String {
-        val chars = "0123456789abcdef"
-        val template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-        return template.map { c ->
-            when (c) {
-                'x' -> chars.random()
-                'y' -> chars["89ab".random().digitToInt(16)]
-                else -> c
-            }
-        }.joinToString("")
-    }
 }

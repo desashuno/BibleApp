@@ -1,10 +1,8 @@
 package org.biblestudio.features.bible_reader.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.features.bible_reader.domain.entities.VersionVerse
 import org.biblestudio.features.bible_reader.domain.repositories.BibleRepository
 import org.biblestudio.features.bible_reader.domain.repositories.TextComparisonRepository
 
@@ -19,14 +18,14 @@ import org.biblestudio.features.bible_reader.domain.repositories.TextComparisonR
  * Default [TextComparisonComponent] that loads parallel verse texts
  * and computes word-level diffs between selected versions.
  */
-class DefaultTextComparisonComponent(
+internal class DefaultTextComparisonComponent(
     componentContext: ComponentContext,
     private val repository: TextComparisonRepository,
     private val bibleRepository: BibleRepository,
     private val verseBus: VerseBus
 ) : TextComparisonComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(TextComparisonState())
     override val state: StateFlow<TextComparisonState> = _state.asStateFlow()
@@ -38,7 +37,8 @@ class DefaultTextComparisonComponent(
 
     private fun loadAvailableBibles() {
         scope.launch {
-            bibleRepository.getAvailableBibles()
+            bibleRepository.getActiveBibles()
+                .recoverCatching { bibleRepository.getAvailableBibles().getOrThrow() }
                 .onSuccess { bibles ->
                     _state.update { it.copy(availableBibles = bibles) }
                 }
@@ -87,17 +87,35 @@ class DefaultTextComparisonComponent(
     override fun nextVerse() {
         val currentId = _state.value.comparison?.globalVerseId ?: return
         scope.launch {
-            // Simple approach: increment global verse ID and try to load
-            loadComparison(currentId + 1)
+            bibleRepository.getNextVerseId(currentId)
+                .onSuccess { nextId -> if (nextId != null) loadComparison(nextId) }
         }
     }
 
     override fun previousVerse() {
         val currentId = _state.value.comparison?.globalVerseId ?: return
-        if (currentId <= 1) return
         scope.launch {
-            loadComparison(currentId - 1)
+            bibleRepository.getPreviousVerseId(currentId)
+                .onSuccess { prevId -> if (prevId != null) loadComparison(prevId) }
         }
+    }
+
+    override fun copyComparisonText(): String {
+        val s = _state.value
+        val comparison = s.comparison ?: return ""
+        val ref = org.biblestudio.core.util.VerseRefFormatter.format(comparison.globalVerseId)
+        return buildString {
+            appendLine(ref)
+            appendLine()
+            val versions = if (s.selectedVersions.isEmpty()) {
+                comparison.versions
+            } else {
+                comparison.versions.filterKeys { it in s.selectedVersions }
+            }
+            for ((abbr, payload) in versions) {
+                appendLine("[$abbr] ${payload.text}")
+            }
+        }.trim()
     }
 
     private fun observeVerseBus() {
@@ -111,69 +129,12 @@ class DefaultTextComparisonComponent(
     }
 
     companion object {
-        /**
-         * Computes word-level diff segments between the first two selected versions.
-         *
-         * Uses a simple longest-common-subsequence approach on words.
-         */
         @Suppress("ReturnCount")
-        internal fun computeDiff(versions: Map<String, String>, selected: List<String>): List<DiffSegment> {
+        internal fun computeDiff(versions: Map<String, VersionVerse>, selected: List<String>): List<DiffSegment> {
             if (selected.size < 2) return emptyList()
-            val textA = versions[selected[0]] ?: return emptyList()
-            val textB = versions[selected[1]] ?: return emptyList()
+            val textA = versions[selected[0]]?.text ?: return emptyList()
+            val textB = versions[selected[1]]?.text ?: return emptyList()
             return wordDiff(textA.split(" "), textB.split(" "))
-        }
-
-        private val PUNCTUATION_REGEX = Regex("[.,;:!?\"'()\\[\\]]")
-
-        /** Strips punctuation for matching but preserves original words in output. */
-        private fun normalize(word: String): String = word.replace(PUNCTUATION_REGEX, "").lowercase()
-
-        /**
-         * Punctuation-aware word-level diff using LCS (Longest Common Subsequence).
-         * Compares normalized forms but outputs original words.
-         */
-        fun wordDiff(wordsA: List<String>, wordsB: List<String>): List<DiffSegment> {
-            val normA = wordsA.map { normalize(it) }
-            val normB = wordsB.map { normalize(it) }
-            val m = wordsA.size
-            val n = wordsB.size
-            // Build LCS table using normalized forms
-            val dp = Array(m + 1) { IntArray(n + 1) }
-            for (i in 1..m) {
-                for (j in 1..n) {
-                    dp[i][j] = if (normA[i - 1] == normB[j - 1]) {
-                        dp[i - 1][j - 1] + 1
-                    } else {
-                        maxOf(dp[i - 1][j], dp[i][j - 1])
-                    }
-                }
-            }
-
-            // Backtrack to produce diff segments (using original words)
-            val segments = mutableListOf<DiffSegment>()
-            var i = m
-            var j = n
-            val stack = mutableListOf<DiffSegment>()
-            while (i > 0 || j > 0) {
-                when {
-                    i > 0 && j > 0 && normA[i - 1] == normB[j - 1] -> {
-                        stack.add(DiffSegment(wordsB[j - 1], DiffType.EQUAL))
-                        i--
-                        j--
-                    }
-                    j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j]) -> {
-                        stack.add(DiffSegment(wordsB[j - 1], DiffType.ADDED))
-                        j--
-                    }
-                    else -> {
-                        stack.add(DiffSegment(wordsA[i - 1], DiffType.REMOVED))
-                        i--
-                    }
-                }
-            }
-            stack.reversed().forEach { segments.add(it) }
-            return segments
         }
     }
 }

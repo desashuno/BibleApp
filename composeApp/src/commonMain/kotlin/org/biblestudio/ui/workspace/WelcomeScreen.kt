@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -17,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -25,13 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.biblestudio.core.pane_registry.PaneType
 import org.biblestudio.ui.theme.PaneStyling
 import org.biblestudio.ui.theme.Spacing
 
 private val CARD_WIDTH = 150.dp
 private val CARD_ICON_SIZE = 28.dp
 
-private val QUICK_PANES = listOf("bible-reader", "dashboard", "search", "note-editor")
+private val QUICK_PANES = listOf(PaneType.BIBLE_READER, PaneType.DASHBOARD, PaneType.SEARCH, PaneType.NOTE_EDITOR)
 
 /**
  * Welcome screen shown when the workspace has no open panes.
@@ -40,12 +39,9 @@ private val QUICK_PANES = listOf("bible-reader", "dashboard", "search", "note-ed
  * panels the user can click to open.
  */
 @OptIn(ExperimentalLayoutApi::class)
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
-fun WelcomeScreen(
-    onPaneSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun WelcomeScreen(onPaneSelected: (String) -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

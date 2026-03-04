@@ -1,0 +1,3 @@
+-- 32.sqm: Add is_active column to data_modules for toggling module visibility
+
+ALTER TABLE data_modules ADD COLUMN is_active INTEGER NOT NULL DEFAULT 0;

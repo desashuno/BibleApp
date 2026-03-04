@@ -1,5 +1,7 @@
 package org.biblestudio.features.workspace.domain.model
 
+import org.biblestudio.core.pane_registry.PaneType
+
 /**
  * Pre-defined pane layouts that the user can apply with a single action.
  *
@@ -25,16 +27,16 @@ enum class WorkspacePreset(val displayName: String) {
     /** Builds the [LayoutNode] tree for this preset. */
     @Suppress("MagicNumber")
     fun toLayout(): LayoutNode = when (this) {
-        Default -> LayoutNode.Leaf(paneType = "dashboard")
+        Default -> LayoutNode.Leaf(paneType = PaneType.DASHBOARD)
 
         Study -> LayoutNode.Split(
             axis = SplitAxis.Horizontal,
             ratio = 0.5f,
-            first = LayoutNode.Leaf(paneType = "bible-reader"),
+            first = LayoutNode.Leaf(paneType = PaneType.BIBLE_READER),
             second = LayoutNode.Tabs(
                 children = listOf(
-                    LayoutNode.Leaf(paneType = "cross-references"),
-                    LayoutNode.Leaf(paneType = "word-study")
+                    LayoutNode.Leaf(paneType = PaneType.CROSS_REFERENCES),
+                    LayoutNode.Leaf(paneType = PaneType.WORD_STUDY)
                 ),
                 activeIndex = 0
             )
@@ -43,11 +45,11 @@ enum class WorkspacePreset(val displayName: String) {
         Exegesis -> LayoutNode.Split(
             axis = SplitAxis.Horizontal,
             ratio = 0.5f,
-            first = LayoutNode.Leaf(paneType = "bible-reader"),
+            first = LayoutNode.Leaf(paneType = PaneType.BIBLE_READER),
             second = LayoutNode.Tabs(
                 children = listOf(
-                    LayoutNode.Leaf(paneType = "morphology"),
-                    LayoutNode.Leaf(paneType = "passage-guide")
+                    LayoutNode.Leaf(paneType = PaneType.MORPHOLOGY),
+                    LayoutNode.Leaf(paneType = PaneType.PASSAGE_GUIDE)
                 ),
                 activeIndex = 0
             )
@@ -56,11 +58,11 @@ enum class WorkspacePreset(val displayName: String) {
         Writing -> LayoutNode.Split(
             axis = SplitAxis.Horizontal,
             ratio = 0.5f,
-            first = LayoutNode.Leaf(paneType = "bible-reader"),
+            first = LayoutNode.Leaf(paneType = PaneType.BIBLE_READER),
             second = LayoutNode.Tabs(
                 children = listOf(
-                    LayoutNode.Leaf(paneType = "note-editor"),
-                    LayoutNode.Leaf(paneType = "sermon-editor")
+                    LayoutNode.Leaf(paneType = PaneType.NOTE_EDITOR),
+                    LayoutNode.Leaf(paneType = PaneType.SERMON_EDITOR)
                 ),
                 activeIndex = 0
             )
@@ -69,19 +71,19 @@ enum class WorkspacePreset(val displayName: String) {
         Research -> LayoutNode.Split(
             axis = SplitAxis.Horizontal,
             ratio = 0.5f,
-            first = LayoutNode.Leaf(paneType = "bible-reader"),
+            first = LayoutNode.Leaf(paneType = PaneType.BIBLE_READER),
             second = LayoutNode.Split(
                 axis = SplitAxis.Vertical,
                 ratio = 0.5f,
                 first = LayoutNode.Tabs(
                     children = listOf(
-                        LayoutNode.Leaf(paneType = "search"),
-                        LayoutNode.Leaf(paneType = "resource-library")
+                        LayoutNode.Leaf(paneType = PaneType.SEARCH),
+                        LayoutNode.Leaf(paneType = PaneType.RESOURCE_LIBRARY)
                     ),
                     activeIndex = 0
                 ),
                 second = LayoutNode.Leaf(
-                    paneType = "knowledge-graph"
+                    paneType = PaneType.KNOWLEDGE_GRAPH
                 )
             )
         )

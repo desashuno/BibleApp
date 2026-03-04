@@ -1,0 +1,10 @@
+-- 37.sqm: Verse links for worship songs.
+
+CREATE TABLE worship_verse_links (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    song_id INTEGER NOT NULL REFERENCES worship_songs(id) ON DELETE CASCADE,
+    global_verse_id INTEGER NOT NULL
+);
+
+CREATE INDEX idx_worship_verse_song ON worship_verse_links(song_id);
+CREATE INDEX idx_worship_verse_id ON worship_verse_links(global_verse_id);

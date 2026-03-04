@@ -14,18 +14,18 @@ class PaneRegistryTest {
     }
 
     @Test
-    fun `all 22 pane types are registered after init`() {
+    fun `all 23 pane types are registered after init`() {
         PaneRegistry.init()
 
-        assertEquals(22, PaneRegistry.availableTypes.size)
+        assertEquals(23, PaneRegistry.availableTypes.size)
 
         // Spot-check a few well-known types
-        assertTrue("bible-reader" in PaneRegistry.availableTypes)
-        assertTrue("word-study" in PaneRegistry.availableTypes)
-        assertTrue("sermon-editor" in PaneRegistry.availableTypes)
-        assertTrue("search" in PaneRegistry.availableTypes)
-        assertTrue("audio-sync" in PaneRegistry.availableTypes)
-        assertTrue("dashboard" in PaneRegistry.availableTypes)
+        assertTrue(PaneType.BIBLE_READER in PaneRegistry.availableTypes)
+        assertTrue(PaneType.WORD_STUDY in PaneRegistry.availableTypes)
+        assertTrue(PaneType.SERMON_EDITOR in PaneRegistry.availableTypes)
+        assertTrue(PaneType.SEARCH in PaneRegistry.availableTypes)
+        assertTrue(PaneType.AUDIO_SYNC in PaneRegistry.availableTypes)
+        assertTrue(PaneType.DASHBOARD in PaneRegistry.availableTypes)
     }
 
     @Test
@@ -41,7 +41,7 @@ class PaneRegistryTest {
     fun `metadata returns correct data for registered type`() {
         PaneRegistry.init()
 
-        val meta = PaneRegistry.metadata("bible-reader")
+        val meta = PaneRegistry.metadata(PaneType.BIBLE_READER)
         assertEquals("Bible Reader", meta.displayName)
         assertEquals(PaneCategory.Text, meta.category)
     }

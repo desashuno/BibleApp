@@ -4,7 +4,7 @@ import org.biblestudio.features.bible_reader.domain.entities.Verse
 import org.biblestudio.features.note_editor.domain.entities.Note
 import org.biblestudio.features.resource_library.domain.entities.ResourceEntry
 import org.biblestudio.features.search.domain.entities.SearchHistoryEntry
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 /**
  * Full-text search across all content types + search history management.

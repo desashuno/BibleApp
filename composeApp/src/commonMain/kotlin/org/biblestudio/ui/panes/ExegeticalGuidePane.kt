@@ -22,13 +22,14 @@ import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.core.util.VerseRefFormatter
 import org.biblestudio.features.exegetical_guide.component.ExegeticalGuideState
 import org.biblestudio.features.exegetical_guide.component.GuideSection
+import org.biblestudio.ui.components.CollapsibleSectionHeader
 import org.biblestudio.ui.theme.Spacing
 
 /**
  * Exegetical Guide pane: 6 collapsible sections — text-critical, grammatical, lexical,
  * structural, commentaries, and cross-references.
  */
-@Suppress("ktlint:standard:function-naming", "LongMethod")
+@Suppress("ktlint:standard:function-naming", "LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun ExegeticalGuidePane(
     stateFlow: StateFlow<ExegeticalGuideState>,
@@ -264,20 +265,7 @@ fun ExegeticalGuidePane(
     }
 }
 
-@Suppress("ktlint:standard:function-naming")
-@Composable
-private fun CollapsibleSectionHeader(title: String, expanded: Boolean, onClick: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Text(
-            text = "${if (expanded) "▼" else "▶"} $title",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = Spacing.Space4)
-        )
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(Spacing.Space8))
-    }
-}
+// CollapsibleSectionHeader is imported from org.biblestudio.ui.components
 
 @Suppress("ktlint:standard:function-naming")
 @Composable

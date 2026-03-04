@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.biblestudio.features.cross_references.component.CrossReferenceState
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 
 @OptIn(ExperimentalTestApi::class)
 class CrossReferencePaneTest {

@@ -1,7 +1,5 @@
 package org.biblestudio.features.highlights.component
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -13,6 +11,7 @@ import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.highlights.domain.entities.Highlight
 import org.biblestudio.features.highlights.domain.entities.HighlightColor
 import org.biblestudio.features.highlights.domain.repositories.HighlightRepository
+import org.biblestudio.test.testComponentContext
 
 class DefaultHighlightComponentTest {
 
@@ -52,8 +51,7 @@ class DefaultHighlightComponentTest {
     }
 
     private fun createComponent(verseBus: VerseBus = VerseBus()): DefaultHighlightComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultHighlightComponent(
             componentContext = context,
             repository = fakeRepo,

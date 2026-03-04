@@ -87,7 +87,7 @@ fun main() {
     }
 }
 
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "UnusedParameter", "LongMethod")
 @Composable
 private fun FrameWindowScope.CustomTitleBar(
     title: String,
@@ -147,7 +147,12 @@ private fun FrameWindowScope.CustomTitleBar(
                 Icon(Icons.Default.Remove, "Minimize", tint = TitleBarText, modifier = Modifier.size(TitleBarIconSize))
             }
             IconButton(onClick = onMaximize, modifier = Modifier.size(WindowControlSize)) {
-                Icon(Icons.Default.CropSquare, "Maximize", tint = TitleBarText, modifier = Modifier.size(TitleBarIconSize))
+                Icon(
+                    Icons.Default.CropSquare,
+                    "Maximize",
+                    tint = TitleBarText,
+                    modifier = Modifier.size(TitleBarIconSize)
+                )
             }
             IconButton(onClick = onClose, modifier = Modifier.size(WindowControlSize)) {
                 Icon(Icons.Default.Close, "Close", tint = TitleBarText, modifier = Modifier.size(TitleBarIconSize))

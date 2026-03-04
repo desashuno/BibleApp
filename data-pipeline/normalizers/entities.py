@@ -238,3 +238,32 @@ def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
     print(f"      ✓ Entities: {entity_count:,}")
     print(f"      ✓ Relationships: {relationship_count:,}")
     print(f"      ✓ Entity-verse links: {verse_link_count:,}")
+
+    # Third pass: compute co-occurrence relationships
+    print("    → Computing entity co-occurrences")
+
+    co_occurrence_count = 0
+    # Find entity pairs that appear in the same verse, with count of shared verses
+    co_rows = db.execute(
+        """SELECT a.entity_id, b.entity_id, COUNT(*) AS shared
+           FROM entity_verse_index a
+           JOIN entity_verse_index b
+             ON a.global_verse_id = b.global_verse_id
+            AND a.entity_id < b.entity_id
+           GROUP BY a.entity_id, b.entity_id
+           HAVING shared >= 2"""
+    ).fetchall()
+
+    for source_id, target_id, shared_count in co_rows:
+        # Weight proportional to shared verses (normalized, cap at 10)
+        weight = min(shared_count, 10) / 10.0
+        db.execute(
+            """INSERT INTO relationships
+               (source_entity_id, target_entity_id, type, description)
+               VALUES (?, ?, 'CoMentioned', ?)""",
+            (source_id, target_id, f"Co-mentioned in {shared_count} verses"),
+        )
+        co_occurrence_count += 1
+
+    db.commit()
+    print(f"      ✓ Co-occurrence relationships: {co_occurrence_count:,}")

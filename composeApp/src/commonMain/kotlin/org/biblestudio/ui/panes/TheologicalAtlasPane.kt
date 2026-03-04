@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -33,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.biblestudio.ui.theme.IconSize
 import kotlinx.coroutines.flow.StateFlow
 import org.biblestudio.features.theological_atlas.component.AtlasState
 import org.biblestudio.features.theological_atlas.domain.entities.AtlasLocation
@@ -41,6 +41,9 @@ import org.biblestudio.features.theological_atlas.domain.entities.LocationType
 import org.biblestudio.ui.map.MapPin
 import org.biblestudio.ui.map.OsmMapState
 import org.biblestudio.ui.map.OsmTileMap
+import org.biblestudio.ui.components.DismissableDetailCard
+import org.biblestudio.ui.components.ErrorMessage
+import org.biblestudio.ui.components.LoadingIndicator
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -123,18 +126,11 @@ fun TheologicalAtlasPane(
         }
 
         if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.Space24)
-            )
+            LoadingIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         state.error?.let { err ->
-            Text(
-                text = err,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(Spacing.Space16)
-            )
+            ErrorMessage(message = err)
         }
 
         // Map or search results
@@ -170,15 +166,15 @@ fun TheologicalAtlasPane(
                             mapState.zoomIn()
                             onMapMoved(mapState.centerLat, mapState.centerLng, mapState.zoom.toFloat())
                         },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(Spacing.Space40)
                     ) { Text("+") }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Spacing.Space4))
                     FilledTonalButton(
                         onClick = {
                             mapState.zoomOut()
                             onMapMoved(mapState.centerLat, mapState.centerLng, mapState.zoom.toFloat())
                         },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(Spacing.Space40)
                     ) { Text("−") }
                 }
 
@@ -212,42 +208,24 @@ fun TheologicalAtlasPane(
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun LocationDetailCard(location: AtlasLocation, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Spacing.Space8)
-    ) {
-        Column(modifier = Modifier.padding(Spacing.Space16)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = location.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "✕",
-                    modifier = Modifier.clickable(onClick = onDismiss).padding(Spacing.Space4),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            Spacer(modifier = Modifier.height(Spacing.Space4))
+    DismissableDetailCard(title = location.name, onDismiss = onDismiss) {
+        Spacer(modifier = Modifier.height(Spacing.Space4))
+        Text(
+            text = "${location.type.displayName}  •  " +
+                "${location.latitude.format(4)}, ${location.longitude.format(4)}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        location.modernName?.let { modern ->
             Text(
-                text = "${location.type.displayName}  •  ${location.latitude.format(4)}, ${location.longitude.format(4)}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                text = "Modern: $modern",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            location.modernName?.let { modern ->
-                Text(
-                    text = "Modern: $modern",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (location.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(Spacing.Space8))
-                Text(text = location.description, style = MaterialTheme.typography.bodyMedium)
-            }
+        }
+        if (location.description.isNotBlank()) {
+            Spacer(modifier = Modifier.height(Spacing.Space8))
+            Text(text = location.description, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -262,7 +240,11 @@ private fun LocationListItem(location: AtlasLocation, onClick: () -> Unit) {
             .padding(horizontal = Spacing.Space16, vertical = Spacing.Space8)
     ) {
         Text(text = location.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-        Text(text = location.type.displayName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            text = location.type.displayName,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
     HorizontalDivider(modifier = Modifier.padding(horizontal = Spacing.Space16))
 }

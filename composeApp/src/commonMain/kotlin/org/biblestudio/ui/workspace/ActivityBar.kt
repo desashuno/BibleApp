@@ -55,7 +55,7 @@ private val ADD_BUTTON_SIZE = 36.dp
  * A '+' button opens the [ModulePicker] to browse all modules.
  * Settings is pinned to the bottom.
  */
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongParameterList", "LongMethod")
 @Composable
 fun ActivityBar(
     onPaneSelected: (String) -> Unit,

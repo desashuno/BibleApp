@@ -1,12 +1,12 @@
 package org.biblestudio.features.exegetical_guide.component
 
 import kotlinx.coroutines.flow.StateFlow
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.exegetical_guide.domain.entities.CommentaryEntry
 import org.biblestudio.features.exegetical_guide.domain.entities.GrammaticalNote
 import org.biblestudio.features.exegetical_guide.domain.entities.StructuralOutline
 import org.biblestudio.features.exegetical_guide.domain.entities.TextVariant
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 /**
  * Aggregated exegetical-guide state for a single verse.
@@ -28,7 +28,12 @@ data class ExegeticalGuideState(
  * Collapsible sections within the Exegetical Guide.
  */
 enum class GuideSection {
-    TextCritical, Grammatical, Lexical, Structural, Commentaries, CrossReferences
+    TextCritical,
+    Grammatical,
+    Lexical,
+    Structural,
+    Commentaries,
+    CrossReferences
 }
 
 /**

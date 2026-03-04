@@ -1,11 +1,9 @@
 package org.biblestudio.features.sermon_editor.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import org.biblestudio.core.util.nowIso
+import org.biblestudio.core.util.generateUuid
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
 import org.biblestudio.features.sermon_editor.domain.entities.Sermon
@@ -25,13 +24,13 @@ import org.biblestudio.features.sermon_editor.domain.repositories.SermonReposito
  * Default [SermonEditorComponent] with auto-save, word-count, and section management.
  */
 @Suppress("TooManyFunctions")
-class DefaultSermonEditorComponent(
+internal class DefaultSermonEditorComponent(
     componentContext: ComponentContext,
     private val repository: SermonRepository,
     private val verseBus: VerseBus
 ) : SermonEditorComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
     private val _state = MutableStateFlow(SermonEditorState())
     override val state: StateFlow<SermonEditorState> = _state.asStateFlow()
     private var saveJob: Job? = null
@@ -92,7 +91,7 @@ class DefaultSermonEditorComponent(
     }
 
     override fun onNewSermon() {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val uuid = generateUuid()
         val sermon = Sermon(
             uuid = uuid,
@@ -123,7 +122,7 @@ class DefaultSermonEditorComponent(
     }
 
     override fun onDeleteSermon(uuid: String) {
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         scope.launch {
             repository.delete(uuid, now).onSuccess {
                 if (_state.value.activeSermon?.uuid == uuid) {
@@ -199,7 +198,7 @@ class DefaultSermonEditorComponent(
         val book = (globalVerseId / 1_000_000).toInt()
         val chapter = ((globalVerseId % 1_000_000) / 1_000).toInt()
         val verse = (globalVerseId % 1_000).toInt()
-        val refText = " [${book}:${chapter}:${verse}] "
+        val refText = " [$book:$chapter:$verse] "
 
         // Append to the last section's content
         val lastSection = sections.last()
@@ -313,7 +312,7 @@ class DefaultSermonEditorComponent(
         if (!s.isDirty) return
 
         _state.update { it.copy(isSaving = true) }
-        val now = Clock.System.now().toString()
+        val now = nowIso()
         val updated = sermon.copy(
             title = s.editTitle,
             scriptureRef = s.editScriptureRef,
@@ -336,17 +335,6 @@ class DefaultSermonEditorComponent(
             }
     }
 
-    private fun generateUuid(): String {
-        val chars = "0123456789abcdef"
-        val template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-        return template.map { c ->
-            when (c) {
-                'x' -> chars.random()
-                'y' -> chars["89ab".random().digitToInt(16)]
-                else -> c
-            }
-        }.joinToString("")
-    }
 
     companion object {
         internal const val AUTO_SAVE_DELAY_MS = 2000L

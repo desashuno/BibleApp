@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.biblestudio.core.pane_registry.PaneType
 
 class LayoutNodeTest {
 
@@ -15,11 +16,11 @@ class LayoutNodeTest {
         val tree: LayoutNode = LayoutNode.Split(
             axis = SplitAxis.Horizontal,
             ratio = 0.5f,
-            first = LayoutNode.Leaf(paneType = "bible-reader"),
+            first = LayoutNode.Leaf(paneType = PaneType.BIBLE_READER),
             second = LayoutNode.Tabs(
                 children = listOf(
-                    LayoutNode.Leaf(paneType = "cross-references"),
-                    LayoutNode.Leaf(paneType = "word-study")
+                    LayoutNode.Leaf(paneType = PaneType.CROSS_REFERENCES),
+                    LayoutNode.Leaf(paneType = PaneType.WORD_STUDY)
                 ),
                 activeIndex = 1
             )
@@ -36,7 +37,7 @@ class LayoutNodeTest {
 
         assertIs<LayoutNode.Split>(layout)
         assertIs<LayoutNode.Leaf>((layout as LayoutNode.Split).first)
-        assertEquals("bible-reader", (layout.first as LayoutNode.Leaf).paneType)
+        assertEquals(PaneType.BIBLE_READER, (layout.first as LayoutNode.Leaf).paneType)
         assertIs<LayoutNode.Tabs>(layout.second)
     }
 
@@ -54,6 +55,6 @@ class LayoutNodeTest {
     fun `Default preset is a single leaf`() {
         val layout = WorkspacePreset.Default.toLayout()
         assertIs<LayoutNode.Leaf>(layout)
-        assertEquals("bible-reader", (layout as LayoutNode.Leaf).paneType)
+        assertEquals(PaneType.DASHBOARD, (layout as LayoutNode.Leaf).paneType)
     }
 }

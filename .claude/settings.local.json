@@ -73,7 +73,9 @@
       "Bash(JAVA_OPTS=\"\" ./gradlew compileKotlinDesktop:*)",
       "Bash(./gradlew compileKotlinDesktop:*)",
       "Bash(jar tf:*)",
-      "Bash(./gradlew.bat compileKotlinDesktop:*)"
+      "Bash(./gradlew.bat compileKotlinDesktop:*)",
+      "Bash(./gradlew :shared:generateCommonMainBibleStudioDatabaseInterface:*)",
+      "Bash(./gradlew :shared:compileKotlinDesktop:*)"
     ]
   }
 }

@@ -106,60 +106,8 @@ def _import_openbible_crossrefs(file_path: Path, db: sqlite3.Connection) -> int:
     return count
 
 
-# Gospel parallel passages — hardcoded synoptic parallels (core set)
-# Each group: (group_id, [(book_num, chapter, verse_start, verse_end, label)])
-SYNOPTIC_PARALLELS = [
-    (1, [
-        (40, 3, 13, 17, "Baptism of Jesus (Matt)"),
-        (41, 1, 9, 11, "Baptism of Jesus (Mark)"),
-        (42, 3, 21, 22, "Baptism of Jesus (Luke)"),
-    ]),
-    (2, [
-        (40, 4, 1, 11, "Temptation of Jesus (Matt)"),
-        (41, 1, 12, 13, "Temptation of Jesus (Mark)"),
-        (42, 4, 1, 13, "Temptation of Jesus (Luke)"),
-    ]),
-    (3, [
-        (40, 14, 13, 21, "Feeding of 5000 (Matt)"),
-        (41, 6, 30, 44, "Feeding of 5000 (Mark)"),
-        (42, 9, 10, 17, "Feeding of 5000 (Luke)"),
-        (43, 6, 1, 15, "Feeding of 5000 (John)"),
-    ]),
-    (4, [
-        (40, 26, 17, 30, "Last Supper (Matt)"),
-        (41, 14, 12, 26, "Last Supper (Mark)"),
-        (42, 22, 7, 23, "Last Supper (Luke)"),
-    ]),
-    (5, [
-        (40, 28, 1, 10, "Resurrection (Matt)"),
-        (41, 16, 1, 8, "Resurrection (Mark)"),
-        (42, 24, 1, 12, "Resurrection (Luke)"),
-        (43, 20, 1, 18, "Resurrection (John)"),
-    ]),
-]
-
-
-def _insert_parallel_passages(db: sqlite3.Connection) -> int:
-    """Insert known synoptic parallel passages."""
-    print("    → Inserting synoptic parallel passages")
-
-    count = 0
-    for group_id, passages in SYNOPTIC_PARALLELS:
-        for book_num, chapter, v_start, v_end, label in passages:
-            for v in range(v_start, v_end + 1):
-                global_id = book_num * 1_000_000 + chapter * 1_000 + v
-                db.execute(
-                    "INSERT INTO parallel_passages (group_id, global_verse_id, label) VALUES (?, ?, ?)",
-                    (group_id, global_id, label),
-                )
-                count += 1
-
-    db.commit()
-    return count
-
-
 def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
-    """Import cross-reference and parallel passage data."""
+    """Import cross-reference data."""
 
     # OpenBible.info cross-references
     count_xref = _import_openbible_crossrefs(
@@ -168,8 +116,3 @@ def normalize(raw_dir: Path, db: sqlite3.Connection) -> None:
     )
     if count_xref:
         print(f"      ✓ Cross-references: {count_xref:,} pairs")
-
-    # Synoptic parallels
-    count_par = _insert_parallel_passages(db)
-    if count_par:
-        print(f"      ✓ Parallel passages: {count_par:,} entries")

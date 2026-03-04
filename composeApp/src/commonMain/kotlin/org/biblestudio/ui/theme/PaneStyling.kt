@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FindInPage
 import androidx.compose.material.icons.filled.FormatColorFill
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.HistoryEdu
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Lightbulb
@@ -24,11 +25,11 @@ import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.ViewColumn
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.biblestudio.core.pane_registry.PaneCategory
 import org.biblestudio.core.pane_registry.PaneRegistry
+import org.biblestudio.core.pane_registry.PaneType
 
 /**
  * Global aesthetics utility for all panes and workspace UI.
@@ -85,6 +86,7 @@ object PaneStyling {
         "calendar_month" -> Icons.Default.CalendarMonth
         "space_dashboard" -> Icons.Default.SpaceDashboard
         "headphones" -> Icons.Default.Headphones
+        "music_note" -> Icons.Default.MusicNote
         else -> Icons.AutoMirrored.Filled.List
     }
 
@@ -119,28 +121,29 @@ object PaneStyling {
      * Map from pane type key to string resource name for i18n.
      */
     val paneTypeToStringKey: Map<String, String> = mapOf(
-        "bible-reader" to "pane_bible_reader",
-        "text-comparison" to "pane_text_comparison",
-        "cross-references" to "pane_cross_references",
-        "word-study" to "pane_word_study",
-        "morphology" to "pane_morphology",
-        "interlinear" to "pane_interlinear",
-        "passage-guide" to "pane_passage_guide",
-        "exegetical-guide" to "pane_exegetical_guide",
-        "commentary" to "pane_commentary",
-        "dictionary" to "pane_dictionary",
-        "resource-library" to "pane_resource_library",
-        "note-editor" to "pane_note_editor",
-        "sermon-editor" to "pane_sermon_editor",
-        "highlights" to "pane_highlights",
-        "bookmarks" to "pane_bookmarks",
-        "search" to "pane_search",
-        "knowledge-graph" to "pane_knowledge_graph",
-        "timeline" to "pane_timeline",
-        "theological-atlas" to "pane_theological_atlas",
-        "reading-plans" to "pane_reading_plans",
-        "dashboard" to "pane_dashboard",
-        "audio-sync" to "pane_audio_sync",
+        PaneType.BIBLE_READER to "pane_bible_reader",
+        PaneType.TEXT_COMPARISON to "pane_text_comparison",
+        PaneType.CROSS_REFERENCES to "pane_cross_references",
+        PaneType.WORD_STUDY to "pane_word_study",
+        PaneType.MORPHOLOGY to "pane_morphology",
+        PaneType.INTERLINEAR to "pane_interlinear",
+        PaneType.PASSAGE_GUIDE to "pane_passage_guide",
+        PaneType.EXEGETICAL_GUIDE to "pane_exegetical_guide",
+        PaneType.COMMENTARY to "pane_commentary",
+        PaneType.DICTIONARY to "pane_dictionary",
+        PaneType.RESOURCE_LIBRARY to "pane_resource_library",
+        PaneType.NOTE_EDITOR to "pane_note_editor",
+        PaneType.SERMON_EDITOR to "pane_sermon_editor",
+        PaneType.HIGHLIGHTS to "pane_highlights",
+        PaneType.BOOKMARKS to "pane_bookmarks",
+        PaneType.SEARCH to "pane_search",
+        PaneType.KNOWLEDGE_GRAPH to "pane_knowledge_graph",
+        PaneType.TIMELINE to "pane_timeline",
+        PaneType.THEOLOGICAL_ATLAS to "pane_theological_atlas",
+        PaneType.READING_PLANS to "pane_reading_plans",
+        PaneType.DASHBOARD to "pane_dashboard",
+        PaneType.AUDIO_SYNC to "pane_audio_sync",
+        PaneType.WORSHIP to "pane_worship"
     )
 }
 

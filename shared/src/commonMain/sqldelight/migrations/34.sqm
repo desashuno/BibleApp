@@ -1,0 +1,31 @@
+-- 34.sqm: Add Spanish gloss column to lexicon_entries, rebuild fts_lexicon with 5 columns.
+-- The gloss_es column is NULL by default; populated when Spanish lexicon data becomes available.
+
+ALTER TABLE lexicon_entries ADD COLUMN gloss_es TEXT;
+
+DROP TRIGGER IF EXISTS fts_lexicon_ai;
+DROP TRIGGER IF EXISTS fts_lexicon_ad;
+DROP TRIGGER IF EXISTS fts_lexicon_au;
+DROP TABLE IF EXISTS fts_lexicon;
+
+CREATE VIRTUAL TABLE fts_lexicon USING fts5(
+    original_word, transliteration, definition, usage_notes, gloss_es,
+    content=lexicon_entries, content_rowid=rowid
+);
+
+CREATE TRIGGER fts_lexicon_ai AFTER INSERT ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(rowid, original_word, transliteration, definition, usage_notes, gloss_es)
+    VALUES (new.rowid, new.original_word, new.transliteration, new.definition, new.usage_notes, new.gloss_es);
+END;
+
+CREATE TRIGGER fts_lexicon_ad AFTER DELETE ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(fts_lexicon, rowid, original_word, transliteration, definition, usage_notes, gloss_es)
+    VALUES ('delete', old.rowid, old.original_word, old.transliteration, old.definition, old.usage_notes, old.gloss_es);
+END;
+
+CREATE TRIGGER fts_lexicon_au AFTER UPDATE ON lexicon_entries BEGIN
+    INSERT INTO fts_lexicon(fts_lexicon, rowid, original_word, transliteration, definition, usage_notes, gloss_es)
+    VALUES ('delete', old.rowid, old.original_word, old.transliteration, old.definition, old.usage_notes, old.gloss_es);
+    INSERT INTO fts_lexicon(rowid, original_word, transliteration, definition, usage_notes, gloss_es)
+    VALUES (new.rowid, new.original_word, new.transliteration, new.definition, new.usage_notes, new.gloss_es);
+END;

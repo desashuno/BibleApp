@@ -1,8 +1,8 @@
 package org.biblestudio.features.word_study.component
 
 import kotlinx.coroutines.flow.StateFlow
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.WordOccurrence
+import org.biblestudio.core.study.LexiconEntry
 
 /**
  * Observable state for the Word Study pane.
@@ -12,8 +12,10 @@ data class WordStudyState(
     val entry: LexiconEntry? = null,
     val occurrences: List<WordOccurrence> = emptyList(),
     val occurrenceCount: Int = 0,
+    val occurrencePage: Int = 0,
+    val hasMoreOccurrences: Boolean = false,
     val relatedWords: List<LexiconEntry> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
 )
 
 /**
@@ -32,4 +34,7 @@ interface WordStudyComponent {
 
     /** Searches the lexicon by keyword. */
     fun onSearchLexicon(query: String)
+
+    /** Loads the next page of occurrences and appends them to the current list. */
+    fun onLoadMoreOccurrences()
 }

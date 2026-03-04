@@ -4,6 +4,8 @@ import com.arkivanov.decompose.ComponentContext
 import org.biblestudio.core.navigation.DefaultRootComponent
 import org.biblestudio.core.navigation.RootComponent
 import org.biblestudio.core.navigation.RootConfig
+import org.biblestudio.features.audio_sync.component.AudioSyncComponent
+import org.biblestudio.features.audio_sync.component.DefaultAudioSyncComponent
 import org.biblestudio.features.bible_reader.component.BibleReaderComponent
 import org.biblestudio.features.bible_reader.component.DefaultBibleReaderComponent
 import org.biblestudio.features.bible_reader.component.DefaultTextComparisonComponent
@@ -18,18 +20,10 @@ import org.biblestudio.features.exegetical_guide.component.DefaultExegeticalGuid
 import org.biblestudio.features.exegetical_guide.component.ExegeticalGuideComponent
 import org.biblestudio.features.highlights.component.DefaultHighlightComponent
 import org.biblestudio.features.highlights.component.HighlightComponent
-import org.biblestudio.features.knowledge_graph.component.DefaultKnowledgeGraphComponent
-import org.biblestudio.features.knowledge_graph.component.KnowledgeGraphComponent
-import org.biblestudio.features.audio_sync.component.AudioSyncComponent
-import org.biblestudio.features.audio_sync.component.DefaultAudioSyncComponent
-import org.biblestudio.features.theological_atlas.component.AtlasComponent
-import org.biblestudio.features.theological_atlas.component.DefaultAtlasComponent
-import org.biblestudio.features.timeline.component.DefaultTimelineComponent
-import org.biblestudio.features.timeline.component.TimelineComponent
 import org.biblestudio.features.import_export.component.DefaultImportExportComponent
 import org.biblestudio.features.import_export.component.ImportExportComponent
-import org.biblestudio.features.module_system.component.DefaultModuleManagerComponent
-import org.biblestudio.features.module_system.component.ModuleManagerComponent
+import org.biblestudio.features.knowledge_graph.component.DefaultKnowledgeGraphComponent
+import org.biblestudio.features.knowledge_graph.component.KnowledgeGraphComponent
 import org.biblestudio.features.morphology_interlinear.component.DefaultInterlinearComponent
 import org.biblestudio.features.morphology_interlinear.component.DefaultReverseInterlinearComponent
 import org.biblestudio.features.morphology_interlinear.component.InterlinearComponent
@@ -49,8 +43,14 @@ import org.biblestudio.features.sermon_editor.component.DefaultSermonEditorCompo
 import org.biblestudio.features.sermon_editor.component.SermonEditorComponent
 import org.biblestudio.features.settings.component.DefaultSettingsComponent
 import org.biblestudio.features.settings.component.SettingsComponent
+import org.biblestudio.features.theological_atlas.component.AtlasComponent
+import org.biblestudio.features.theological_atlas.component.DefaultAtlasComponent
+import org.biblestudio.features.timeline.component.DefaultTimelineComponent
+import org.biblestudio.features.timeline.component.TimelineComponent
 import org.biblestudio.features.word_study.component.DefaultWordStudyComponent
 import org.biblestudio.features.word_study.component.WordStudyComponent
+import org.biblestudio.features.worship.component.DefaultWorshipComponent
+import org.biblestudio.features.worship.component.WorshipComponent
 import org.biblestudio.features.workspace.component.DefaultWorkspaceComponent
 import org.biblestudio.features.workspace.component.WorkspaceComponent
 import org.koin.dsl.module
@@ -86,7 +86,8 @@ val componentModule = module {
             highlightRepository = get(),
             crossRefRepository = get(),
             morphologyRepository = get(),
-            settingsRepository = get()
+            settingsRepository = get(),
+            bookmarkRepository = get()
         )
     }
 
@@ -118,14 +119,8 @@ val componentModule = module {
     factory<SettingsComponent> { (componentContext: ComponentContext) ->
         DefaultSettingsComponent(
             componentContext = componentContext,
-            repository = get()
-        )
-    }
-
-    factory<ModuleManagerComponent> { (componentContext: ComponentContext) ->
-        DefaultModuleManagerComponent(
-            componentContext = componentContext,
-            repository = get()
+            repository = get(),
+            workspaceRepository = get()
         )
     }
 
@@ -175,8 +170,7 @@ val componentModule = module {
     factory<ResourceLibraryComponent> { (componentContext: ComponentContext) ->
         DefaultResourceLibraryComponent(
             componentContext = componentContext,
-            repository = get(),
-            verseBus = get()
+            dataManager = get()
         )
     }
 
@@ -266,6 +260,14 @@ val componentModule = module {
             componentContext = componentContext,
             repository = get(),
             verseBus = get()
+        )
+    }
+
+    factory<WorshipComponent> { (componentContext: ComponentContext) ->
+        DefaultWorshipComponent(
+            componentContext = componentContext,
+            repository = get(),
+            player = get()
         )
     }
 

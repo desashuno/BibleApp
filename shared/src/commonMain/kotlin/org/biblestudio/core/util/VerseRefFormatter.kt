@@ -52,12 +52,10 @@ object VerseRefFormatter {
     fun verse(globalVerseId: Long): Int = (globalVerseId % 1_000).toInt()
 
     /** Returns the full book name for a book number (1-66). */
-    fun bookName(bookNumber: Int): String =
-        BOOK_NAMES.getOrElse(bookNumber - 1) { "Book $bookNumber" }
+    fun bookName(bookNumber: Int): String = BOOK_NAMES.getOrElse(bookNumber - 1) { "Book $bookNumber" }
 
     /** Returns the abbreviated book name for a book number (1-66). */
-    fun bookAbbrev(bookNumber: Int): String =
-        BOOK_ABBREVS.getOrElse(bookNumber - 1) { "Bk $bookNumber" }
+    fun bookAbbrev(bookNumber: Int): String = BOOK_ABBREVS.getOrElse(bookNumber - 1) { "Bk $bookNumber" }
 
     /**
      * Formats a global verse ID as "Genesis 1:1".

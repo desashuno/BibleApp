@@ -1,10 +1,8 @@
 package org.biblestudio.features.timeline.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,13 +18,13 @@ import org.biblestudio.features.timeline.domain.repositories.TimelineRepository
 /**
  * Default [TimelineComponent] managing event display and navigation.
  */
-class DefaultTimelineComponent(
+internal class DefaultTimelineComponent(
     componentContext: ComponentContext,
     private val repository: TimelineRepository,
     private val verseBus: VerseBus
 ) : TimelineComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(TimelineState())
     override val state: StateFlow<TimelineState> = _state.asStateFlow()

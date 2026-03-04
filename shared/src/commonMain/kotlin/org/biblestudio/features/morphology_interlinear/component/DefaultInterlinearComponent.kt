@@ -1,10 +1,8 @@
 package org.biblestudio.features.morphology_interlinear.component
 
 import com.arkivanov.decompose.ComponentContext
+import org.biblestudio.core.util.componentScope
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,14 +18,14 @@ import org.biblestudio.features.morphology_interlinear.domain.repositories.Morph
  * Default [InterlinearComponent] that subscribes to VerseBus
  * [LinkEvent.VerseSelected] and loads morphological word data.
  */
-class DefaultInterlinearComponent(
+internal class DefaultInterlinearComponent(
     componentContext: ComponentContext,
     private val repository: MorphologyRepository,
     private val parsingDecoder: ParsingDecoder,
     private val verseBus: VerseBus
 ) : InterlinearComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(InterlinearState())
     override val state: StateFlow<InterlinearState> = _state.asStateFlow()
@@ -36,7 +34,7 @@ class DefaultInterlinearComponent(
         observeVerseBus()
     }
 
-    override fun onWordSelected(word: org.biblestudio.features.morphology_interlinear.domain.entities.MorphWord) {
+    override fun onWordSelected(word: org.biblestudio.core.study.MorphWord) {
         verseBus.publish(LinkEvent.StrongsSelected(word.strongsNumber))
     }
 

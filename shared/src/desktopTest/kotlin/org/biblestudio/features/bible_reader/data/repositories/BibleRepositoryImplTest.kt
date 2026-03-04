@@ -5,6 +5,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.biblestudio.test.TestDatabase
@@ -31,7 +32,8 @@ class BibleRepositoryImplTest {
         chapterNumber: Long = 1,
         verseNumber: Long = 1,
         globalVerseId: Long = 1001001,
-        text: String = "In the beginning God created the heaven and the earth."
+        text: String = "In the beginning God created the heaven and the earth.",
+        htmlText: String? = null
     ) {
         val db = testDb.database
         db.bibleQueries.insertBible(abbreviation, "King James Version", "en", "ltr")
@@ -40,7 +42,7 @@ class BibleRepositoryImplTest {
         val bookId = db.bibleQueries.allBooksForBible(bibleId).executeAsList().first().id
         db.bibleQueries.insertChapter(bookId, chapterNumber, 31)
         val chapterId = db.bibleQueries.chaptersForBook(bookId).executeAsList().first().id
-        db.bibleQueries.insertVerse(chapterId, globalVerseId, verseNumber, text, null)
+        db.bibleQueries.insertVerse(chapterId, globalVerseId, verseNumber, text, htmlText)
     }
 
     @Test
@@ -113,5 +115,105 @@ class BibleRepositoryImplTest {
         val results = repo.searchVerses("beginning", 10).getOrThrow()
         assertTrue(results.isNotEmpty())
         assertTrue(results.first().text.contains("beginning"))
+    }
+
+    @Test
+    fun `getVerseByGlobalId maps htmlText when present`() = runTest {
+        insertBibleWithVerse(
+            globalVerseId = 1001001,
+            text = "Truly I say to you",
+            htmlText = "<wj>Truly I say</wj> to you"
+        )
+
+        val verse = repo.getVerseByGlobalId(1001001).getOrThrow()
+
+        assertNotNull(verse)
+        assertEquals("<wj>Truly I say</wj> to you", verse.htmlText)
+    }
+
+    @Test
+    fun `getVerseByGlobalId leaves htmlText null when absent`() = runTest {
+        insertBibleWithVerse(globalVerseId = 1001001)
+
+        val verse = repo.getVerseByGlobalId(1001001).getOrThrow()
+
+        assertNotNull(verse)
+        assertNull(verse.htmlText)
+    }
+
+    @Test
+    fun `getAvailableBiblesByLanguage filters by ISO 639-1 code`() = runTest {
+        val db = testDb.database
+        db.bibleQueries.insertBible("KJV", "King James Version", "en", "ltr")
+        db.bibleQueries.insertBible("RVR1960", "Reina-Valera 1960", "es", "ltr")
+
+        val enBibles = repo.getAvailableBiblesByLanguage("en").getOrThrow()
+        assertEquals(1, enBibles.size)
+        assertEquals("KJV", enBibles[0].abbreviation)
+
+        val esBibles = repo.getAvailableBiblesByLanguage("es").getOrThrow()
+        assertEquals(1, esBibles.size)
+        assertEquals("RVR1960", esBibles[0].abbreviation)
+    }
+
+    @Test
+    fun `getAvailableBiblesByLanguage returns empty for unknown language`() = runTest {
+        val db = testDb.database
+        db.bibleQueries.insertBible("KJV", "King James Version", "en", "ltr")
+
+        val result = repo.getAvailableBiblesByLanguage("xx").getOrThrow()
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getNextVerseId crosses chapter boundary`() = runTest {
+        val db = testDb.database
+        db.bibleQueries.insertBible("KJV", "King James Version", "en", "ltr")
+        val bibleId = db.bibleQueries.allBibles().executeAsList().first().id
+        db.bibleQueries.insertBook(bibleId, 1, "Genesis", "OT")
+        val bookId = db.bibleQueries.allBooksForBible(bibleId).executeAsList().first().id
+        db.bibleQueries.insertChapter(bookId, 1, 31)
+        val chapter1Id = db.bibleQueries.chaptersForBook(bookId).executeAsList().first().id
+        db.bibleQueries.insertVerse(chapter1Id, 1_001_031, 31, "God saw all that he had made.", null)
+        db.bibleQueries.insertChapter(bookId, 2, 25)
+        val chapter2Id = db.bibleQueries.chaptersForBook(bookId).executeAsList()[1].id
+        db.bibleQueries.insertVerse(chapter2Id, 1_002_001, 1, "Thus the heavens and the earth were completed.", null)
+
+        val nextId = repo.getNextVerseId(1_001_031).getOrThrow()
+        assertEquals(1_002_001L, nextId)
+    }
+
+    @Test
+    fun `getPreviousVerseId crosses chapter boundary`() = runTest {
+        val db = testDb.database
+        db.bibleQueries.insertBible("KJV", "King James Version", "en", "ltr")
+        val bibleId = db.bibleQueries.allBibles().executeAsList().first().id
+        db.bibleQueries.insertBook(bibleId, 1, "Genesis", "OT")
+        val bookId = db.bibleQueries.allBooksForBible(bibleId).executeAsList().first().id
+        db.bibleQueries.insertChapter(bookId, 1, 31)
+        val chapter1Id = db.bibleQueries.chaptersForBook(bookId).executeAsList().first().id
+        db.bibleQueries.insertVerse(chapter1Id, 1_001_031, 31, "God saw all that he had made.", null)
+        db.bibleQueries.insertChapter(bookId, 2, 25)
+        val chapter2Id = db.bibleQueries.chaptersForBook(bookId).executeAsList()[1].id
+        db.bibleQueries.insertVerse(chapter2Id, 1_002_001, 1, "Thus the heavens and the earth were completed.", null)
+
+        val prevId = repo.getPreviousVerseId(1_002_001).getOrThrow()
+        assertEquals(1_001_031L, prevId)
+    }
+
+    @Test
+    fun `getNextVerseId returns null at last verse`() = runTest {
+        insertBibleWithVerse(globalVerseId = 66_022_021)
+
+        val nextId = repo.getNextVerseId(66_022_021).getOrThrow()
+        assertNull(nextId)
+    }
+
+    @Test
+    fun `getPreviousVerseId returns null at first verse`() = runTest {
+        insertBibleWithVerse(globalVerseId = 1_001_001)
+
+        val prevId = repo.getPreviousVerseId(1_001_001).getOrThrow()
+        assertNull(prevId)
     }
 }

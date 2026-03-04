@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import org.biblestudio.features.import_export.domain.entities.BackupInfo
 import org.biblestudio.features.import_export.domain.entities.DataType
 import org.biblestudio.features.import_export.domain.entities.ExportFormat
+import org.biblestudio.ui.components.SectionHeader
 import org.biblestudio.ui.theme.Spacing
 
 /**
@@ -58,7 +59,7 @@ fun ImportExportScreen(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             // Export section
-            item { SectionTitle("Export Data") }
+            item { SectionHeader("Export Data") }
 
             item {
                 Card(
@@ -135,7 +136,7 @@ fun ImportExportScreen(
             }
 
             // Backup section
-            item { SectionTitle("Backup & Restore") }
+            item { SectionHeader("Backup & Restore") }
 
             item {
                 Button(
@@ -166,23 +167,6 @@ fun ImportExportScreen(
             }
         }
     }
-}
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(
-            start = Spacing.Space16,
-            end = Spacing.Space16,
-            top = Spacing.Space24,
-            bottom = Spacing.Space8
-        )
-    )
 }
 
 @Suppress("ktlint:standard:function-naming", "MagicNumber")

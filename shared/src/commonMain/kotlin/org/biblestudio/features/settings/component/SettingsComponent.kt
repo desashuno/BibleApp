@@ -1,6 +1,8 @@
 package org.biblestudio.features.settings.component
 
 import kotlinx.coroutines.flow.StateFlow
+import org.biblestudio.core.AppConstants
+import org.biblestudio.core.pane_registry.PaneType
 import org.biblestudio.features.settings.domain.entities.AppSetting
 
 /**
@@ -41,9 +43,13 @@ data class SettingsState(
     val error: String? = null
 ) {
     companion object {
-        const val DEFAULT_FONT_SIZE = 16
+        const val DEFAULT_FONT_SIZE = AppConstants.FONT_SIZE_DEFAULT
         val DEFAULT_PINNED_PANES = setOf(
-            "bible-reader", "search", "note-editor", "dashboard", "cross-references"
+            PaneType.BIBLE_READER,
+            PaneType.SEARCH,
+            PaneType.NOTE_EDITOR,
+            PaneType.DASHBOARD,
+            PaneType.CROSS_REFERENCES
         )
     }
 }
@@ -60,6 +66,7 @@ enum class ThemeMode {
 /**
  * Business-logic boundary for the Settings screen.
  */
+@Suppress("TooManyFunctions")
 interface SettingsComponent {
 
     /** The current settings state observable. */

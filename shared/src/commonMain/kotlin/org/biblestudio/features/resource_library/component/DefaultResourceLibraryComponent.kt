@@ -1,116 +1,107 @@
 package org.biblestudio.features.resource_library.component
 
 import com.arkivanov.decompose.ComponentContext
-import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import org.biblestudio.core.util.componentScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.biblestudio.core.verse_bus.LinkEvent
-import org.biblestudio.core.verse_bus.VerseBus
-import org.biblestudio.features.resource_library.domain.repositories.ResourceRepository
+import org.biblestudio.core.data_manager.DataManager
+import org.biblestudio.core.data_manager.model.DataModuleDescriptor
+import org.biblestudio.core.data_manager.model.DataModuleType
 
 /**
- * Default [ResourceLibraryComponent] backed by Decompose lifecycle,
- * [ResourceRepository] for data, and [VerseBus] for cross-pane events.
+ * Default [ResourceLibraryComponent] backed by the centralized [DataManager].
+ *
+ * Collects the DataManager state and applies local filters (type, search query).
  */
-class DefaultResourceLibraryComponent(
+internal class DefaultResourceLibraryComponent(
     componentContext: ComponentContext,
-    private val repository: ResourceRepository,
-    private val verseBus: VerseBus
+    private val dataManager: DataManager
 ) : ResourceLibraryComponent, ComponentContext by componentContext {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = componentScope()
 
     private val _state = MutableStateFlow(ResourceLibraryState())
     override val state: StateFlow<ResourceLibraryState> = _state.asStateFlow()
 
-    private var currentVerseId: Long? = null
-
     init {
-        loadResources()
-        observeVerseBus()
+        observeDataManager()
     }
 
-    override fun onResourceSelected(uuid: String) {
-        scope.launch {
-            val resource = _state.value.resources.firstOrNull { it.uuid == uuid }
-            _state.update { it.copy(activeResource = resource) }
-            if (resource != null) {
-                loadEntryForCurrentVerse(resource.uuid)
-            }
+    override fun onModuleSelected(moduleId: String) {
+        val module = _state.value.filteredModules.firstOrNull { it.moduleId == moduleId }
+        _state.update { it.copy(selectedModule = module) }
+    }
+
+    override fun onInstallModule(moduleId: String) {
+        scope.launch { dataManager.installModule(moduleId) }
+    }
+
+    override fun onRemoveModule(moduleId: String) {
+        scope.launch { dataManager.removeModule(moduleId) }
+        _state.update {
+            if (it.selectedModule?.moduleId == moduleId) it.copy(selectedModule = null) else it
         }
+    }
+
+    override fun onCancelDownload(moduleId: String) {
+        dataManager.cancelDownload(moduleId)
+    }
+
+    override fun onFilterTypeChanged(type: DataModuleType?) {
+        _state.update { it.copy(filterType = type) }
+        applyFilters()
     }
 
     override fun onSearchQueryChanged(query: String) {
         _state.update { it.copy(searchQuery = query) }
-        if (query.length >= 2) {
-            scope.launch {
-                repository.searchEntries(query)
-                    .onSuccess { results ->
-                        _state.update { it.copy(searchResults = results) }
-                    }
-            }
-        } else {
-            _state.update { it.copy(searchResults = emptyList()) }
-        }
+        applyFilters()
     }
 
-    override fun onEntryVerseSelected(globalVerseId: Int) {
-        verseBus.publish(LinkEvent.VerseSelected(globalVerseId))
+    override fun onToggleModuleActive(moduleId: String) {
+        val module = _state.value.modules.firstOrNull { it.moduleId == moduleId } ?: return
+        scope.launch { dataManager.setModuleActive(moduleId, !module.isActive) }
     }
 
-    private fun loadResources() {
+    private fun observeDataManager() {
         scope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            repository.getAllResources()
-                .onSuccess { resources ->
-                    _state.update { it.copy(resources = resources, isLoading = false) }
+            dataManager.state.collect { dmState ->
+                _state.update { current ->
+                    current.copy(
+                        modules = dmState.modules,
+                        activeDownloads = dmState.activeDownloads,
+                        isLoading = dmState.isLoading,
+                        error = dmState.error
+                    )
                 }
-                .onFailure { e ->
-                    Napier.e("Failed to load resources", e)
-                    _state.update { it.copy(error = e.message, isLoading = false) }
-                }
-        }
-    }
-
-    private fun loadEntryForCurrentVerse(resourceId: String) {
-        val verseId = currentVerseId ?: return
-        scope.launch {
-            _state.update { it.copy(isLoading = true) }
-            repository.getEntriesForVerse(resourceId, verseId)
-                .onSuccess { entries ->
-                    _state.update { it.copy(entry = entries.firstOrNull(), isLoading = false) }
-                }
-                .onFailure { e ->
-                    Napier.e("Failed to load entry", e)
-                    _state.update { it.copy(error = e.message, isLoading = false) }
-                }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private fun observeVerseBus() {
-        scope.launch {
-            verseBus.events.collect { event ->
-                when (event) {
-                    is LinkEvent.VerseSelected -> {
-                        currentVerseId = event.globalVerseId.toLong()
-                        val resource = _state.value.activeResource
-                        if (resource != null) {
-                            loadEntryForCurrentVerse(resource.uuid)
-                        }
-                    }
-                    is LinkEvent.ResourceSelected -> {
-                        onResourceSelected(event.resourceId)
-                    }
-                    else -> { /* ignore */ }
-                }
+                applyFilters()
             }
         }
     }
+
+    private fun applyFilters() {
+        _state.update { current ->
+            val filtered = current.modules
+                .let { modules ->
+                    val type = current.filterType
+                    if (type != null) modules.filter { it.type == type } else modules
+                }
+                .let { modules ->
+                    val query = current.searchQuery
+                    if (query.isNotBlank()) {
+                        modules.filter { matchesSearch(it, query) }
+                    } else {
+                        modules
+                    }
+                }
+            current.copy(filteredModules = filtered)
+        }
+    }
+
+    private fun matchesSearch(module: DataModuleDescriptor, query: String): Boolean =
+        module.name.contains(query, ignoreCase = true) ||
+            module.description.contains(query, ignoreCase = true) ||
+            module.type.value.contains(query, ignoreCase = true)
 }

@@ -13,3 +13,10 @@ package org.biblestudio.core.database
  * @return `true` if the seed was copied (first launch), `false` if the DB already existed.
  */
 expect fun copySeedDatabaseIfNeeded(targetPath: String): Boolean
+
+/**
+ * Extracts the bundled seed database to a temporary file for ATTACH-based import.
+ *
+ * @return Absolute path to the temporary copy, or `null` if no seed is bundled.
+ */
+expect fun extractSeedToTempFile(): String?

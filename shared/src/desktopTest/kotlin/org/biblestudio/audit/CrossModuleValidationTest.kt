@@ -142,7 +142,8 @@ class CrossModuleValidationTest {
             .executeAsList()
         assertTrue(
             invalid.isEmpty(),
-            "Found ${invalid.size} locations with out-of-range coordinates: ${invalid.map { "${it.name}: (${it.latitude}, ${it.longitude})" }}"
+            "Found ${invalid.size} locations with out-of-range coordinates: " +
+                "${invalid.map { "${it.name}: (${it.latitude}, ${it.longitude})" }}"
         )
     }
 

@@ -44,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
@@ -54,18 +53,20 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import org.biblestudio.features.workspace.domain.model.LayoutNode
 import org.biblestudio.features.workspace.domain.model.SplitAxis
 import org.biblestudio.ui.theme.PaneStyling
+import org.biblestudio.ui.theme.IconSize
 import org.biblestudio.ui.theme.Spacing
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 private val DRAG_HANDLE_SIZE = 6.dp
 private val DRAG_HANDLE_HIT_SIZE = 16.dp
-private val PANE_HEADER_ICON_SIZE = 20.dp
-private val TAB_CLOSE_SIZE = 16.dp
-private val TAB_CLOSE_ICON_SIZE = 12.dp
+private val PANE_HEADER_ICON_SIZE = IconSize.Default
+private val TAB_CLOSE_SIZE = IconSize.Small
+private val TAB_CLOSE_ICON_SIZE = Spacing.Space12
 
 /**
  * CompositionLocal that individual panes can provide to inject
@@ -190,7 +191,7 @@ private fun SplitContainer(
  * the latest [currentRatio] on drag start and the latest [onRatioChange]
  * callback — no stale closures.
  */
-@Suppress("ktlint:standard:function-naming", "MagicNumber")
+@Suppress("ktlint:standard:function-naming", "MagicNumber", "LongMethod")
 @Composable
 private fun DragHandle(
     isVertical: Boolean,
@@ -229,11 +230,17 @@ private fun DragHandle(
                 },
                 onDrag = { change, dragAmount ->
                     change.consume()
-                    val total = if (isVertical) containerSize.width.toFloat()
-                    else containerSize.height.toFloat()
+                    val total = if (isVertical) {
+                        containerSize.width.toFloat()
+                    } else {
+                        containerSize.height.toFloat()
+                    }
                     if (total > 0f) {
-                        val delta = if (isVertical) dragAmount.x / total
-                        else dragAmount.y / total
+                        val delta = if (isVertical) {
+                            dragAmount.x / total
+                        } else {
+                            dragAmount.y / total
+                        }
                         ratio = (ratio + delta).coerceIn(0.1f, 0.9f)
                         latestOnChange(ratio)
                     }
@@ -245,11 +252,17 @@ private fun DragHandle(
 
     // Outer Box = wide hit area; inner Box = thin visible bar
     if (isVertical) {
-        Box(contentAlignment = Alignment.Center, modifier = gestureModifier.width(DRAG_HANDLE_HIT_SIZE).fillMaxHeight()) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = gestureModifier.width(DRAG_HANDLE_HIT_SIZE).fillMaxHeight()
+        ) {
             Box(modifier = Modifier.width(DRAG_HANDLE_SIZE).fillMaxHeight().background(bgColor))
         }
     } else {
-        Box(contentAlignment = Alignment.Center, modifier = gestureModifier.height(DRAG_HANDLE_HIT_SIZE).fillMaxWidth()) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = gestureModifier.height(DRAG_HANDLE_HIT_SIZE).fillMaxWidth()
+        ) {
             Box(modifier = Modifier.height(DRAG_HANDLE_SIZE).fillMaxWidth().background(bgColor))
         }
     }
@@ -266,7 +279,7 @@ private data class TabDragInfo(
 
 private const val TAB_DETACH_THRESHOLD = 40f
 
-@Suppress("ktlint:standard:function-naming", "LongMethod", "MagicNumber")
+@Suppress("ktlint:standard:function-naming", "LongMethod", "MagicNumber", "CyclomaticComplexMethod")
 @Composable
 private fun TabContainer(
     tabs: LayoutNode.Tabs,
@@ -368,8 +381,9 @@ private fun TabContainer(
                                             val avgWidth = lazyListState.layoutInfo.visibleItemsInfo
                                                 .map { it.size }.average().toFloat()
                                                 .takeIf { it > 0f } ?: 100f
-                                            val targetIndex = (final.sourceIndex + (final.offsetX / avgWidth).roundToInt())
-                                                .coerceIn(0, latestTabs.children.lastIndex)
+                                            val targetIndex =
+                                                (final.sourceIndex + (final.offsetX / avgWidth).roundToInt())
+                                                    .coerceIn(0, latestTabs.children.lastIndex)
                                             if (targetIndex != final.sourceIndex) {
                                                 latestCallbacks.onReorderTab(path, final.sourceIndex, targetIndex)
                                             }
@@ -385,13 +399,16 @@ private fun TabContainer(
                                 )
                             }
                             .clickable { latestCallbacks.onSwitchTab(path, index) }
-                            .padding(horizontal = Spacing.Space8, vertical = 6.dp)
+                            .padding(horizontal = Spacing.Space8, vertical = Spacing.Space4)
                     ) {
                         Icon(
                             imageVector = info.icon,
                             contentDescription = null,
-                            tint = if (isActive) info.accentColor
-                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            tint = if (isActive) {
+                                info.accentColor
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            },
                             modifier = Modifier.size(TAB_CLOSE_SIZE)
                         )
                         Spacer(Modifier.width(Spacing.Space4))
@@ -465,7 +482,10 @@ private fun TabContextMenu(
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         DropdownMenuItem(
             text = { Text("Close") },
-            onClick = { onDismiss(); callbacks.onCloseAtPath(tabPath) }
+            onClick = {
+                onDismiss()
+                callbacks.onCloseAtPath(tabPath)
+            }
         )
         if (totalTabs > 1) {
             DropdownMenuItem(
@@ -491,11 +511,17 @@ private fun TabContextMenu(
         }
         DropdownMenuItem(
             text = { Text("Split Right") },
-            onClick = { onDismiss(); callbacks.onSplitHorizontal(paneType) }
+            onClick = {
+                onDismiss()
+                callbacks.onSplitHorizontal(paneType)
+            }
         )
         DropdownMenuItem(
             text = { Text("Split Down") },
-            onClick = { onDismiss(); callbacks.onSplitVertical(paneType) }
+            onClick = {
+                onDismiss()
+                callbacks.onSplitVertical(paneType)
+            }
         )
     }
 }
@@ -533,13 +559,14 @@ fun PaneContainer(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer { alpha = if (isBeingDragged) 0.4f else 1f }
-            .border(1.dp, MaterialTheme.colorScheme.surfaceVariant)
+            .border(Spacing.Divider, MaterialTheme.colorScheme.surfaceVariant)
             .onGloballyPositioned { coords ->
                 val pos = coords.positionInWindow()
                 dragState.registerPane(
                     path,
                     Rect(
-                        pos.x, pos.y,
+                        pos.x,
+                        pos.y,
                         pos.x + coords.size.width.toFloat(),
                         pos.y + coords.size.height.toFloat()
                     )
@@ -582,30 +609,30 @@ private fun DropZoneOverlay(zone: DropZone) {
                 Modifier.fillMaxHeight().fillMaxWidth(0.5f)
                     .align(Alignment.CenterStart)
                     .background(overlayColor)
-                    .border(2.dp, borderColor)
+                    .border(Spacing.Space2, borderColor)
             )
             DropZone.RIGHT -> Box(
                 Modifier.fillMaxHeight().fillMaxWidth(0.5f)
                     .align(Alignment.CenterEnd)
                     .background(overlayColor)
-                    .border(2.dp, borderColor)
+                    .border(Spacing.Space2, borderColor)
             )
             DropZone.TOP -> Box(
                 Modifier.fillMaxWidth().fillMaxHeight(0.5f)
                     .align(Alignment.TopCenter)
                     .background(overlayColor)
-                    .border(2.dp, borderColor)
+                    .border(Spacing.Space2, borderColor)
             )
             DropZone.BOTTOM -> Box(
                 Modifier.fillMaxWidth().fillMaxHeight(0.5f)
                     .align(Alignment.BottomCenter)
                     .background(overlayColor)
-                    .border(2.dp, borderColor)
+                    .border(Spacing.Space2, borderColor)
             )
             DropZone.CENTER -> Box(
                 Modifier.fillMaxSize()
                     .background(overlayColor)
-                    .border(2.dp, borderColor)
+                    .border(Spacing.Space2, borderColor)
             )
         }
     }
@@ -616,7 +643,7 @@ private fun DropZoneOverlay(zone: DropZone) {
  *
  * The left part (icon + name) is a drag source for pane rearrangement.
  */
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 @Composable
 private fun PaneHeaderBar(
     paneType: String,
@@ -692,8 +719,11 @@ private fun PaneHeaderBar(
         // Close button
         IconButton(
             onClick = {
-                if (path.isNotEmpty()) callbacks.onCloseAtPath(path)
-                else callbacks.onClose(paneType)
+                if (path.isNotEmpty()) {
+                    callbacks.onCloseAtPath(path)
+                } else {
+                    callbacks.onClose(paneType)
+                }
             },
             modifier = Modifier.size(PANE_HEADER_ICON_SIZE)
         ) {

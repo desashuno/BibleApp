@@ -2,7 +2,7 @@ package org.biblestudio.features.cross_references.data.repositories
 
 import org.biblestudio.database.BibleStudioDatabase
 import org.biblestudio.features.cross_references.data.mappers.toCrossReference
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 import org.biblestudio.features.cross_references.domain.repositories.CrossRefRepository
 
 internal class CrossRefRepositoryImpl(

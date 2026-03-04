@@ -6,9 +6,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.biblestudio.features.morphology_interlinear.domain.entities.WordOccurrence
+import org.biblestudio.core.study.WordOccurrence
 import org.biblestudio.features.word_study.component.WordStudyState
-import org.biblestudio.features.word_study.domain.entities.LexiconEntry
+import org.biblestudio.core.study.LexiconEntry
 
 @OptIn(ExperimentalTestApi::class)
 class WordStudyPaneTest {

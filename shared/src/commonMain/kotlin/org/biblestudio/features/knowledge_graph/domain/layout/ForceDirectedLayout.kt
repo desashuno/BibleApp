@@ -30,10 +30,8 @@ class ForceDirectedLayout(
      * @param edges   List of (sourceId, targetId) pairs.
      * @return Map from node ID to its computed [NodePosition].
      */
-    fun compute(
-        nodeIds: List<Long>,
-        edges: List<Pair<Long, Long>>
-    ): Map<Long, NodePosition> {
+    @Suppress("LongMethod", "LoopWithTooManyJumpStatements")
+    fun compute(nodeIds: List<Long>, edges: List<Pair<Long, Long>>): Map<Long, NodePosition> {
         if (nodeIds.isEmpty()) return emptyMap()
         if (nodeIds.size == 1) return mapOf(nodeIds.first() to NodePosition(width / 2f, height / 2f))
 
@@ -58,6 +56,7 @@ class ForceDirectedLayout(
 
         var temperature = width / TEMP_DIVISOR
 
+        @Suppress("UnusedPrivateProperty")
         for (iter in 0 until iterations) {
             // Reset displacements
             nodeIds.forEach { id -> displacements[id] = floatArrayOf(0f, 0f) }

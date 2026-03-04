@@ -1,7 +1,7 @@
 package org.biblestudio.features.cross_references.component
 
 import kotlinx.coroutines.flow.StateFlow
-import org.biblestudio.features.cross_references.domain.entities.CrossReference
+import org.biblestudio.core.study.CrossReference
 
 /**
  * Observable state for the Cross-References pane.

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.biblestudio.core.pane_registry.PaneType
 import org.biblestudio.features.workspace.domain.model.LayoutNode
 import org.biblestudio.features.workspace.domain.model.SplitAxis
 import org.biblestudio.features.workspace.domain.model.WorkspaceState
@@ -26,18 +27,20 @@ class WorkspaceShellTest {
 
     @Test
     fun singlePaneLayoutRendersCorrectly() = runComposeUiTest {
-        val flow = stateFlow(LayoutNode.Leaf(paneType = "bible-reader"))
+        val flow = stateFlow(LayoutNode.Leaf(paneType = PaneType.BIBLE_READER))
 
         setContent {
             WorkspaceShell(
                 stateFlow = flow,
                 sizeClass = WindowSizeClass.Expanded,
+                pinnedPanes = emptySet(),
+                favoritePanes = emptySet(),
                 callbacks = WorkspaceCallbacks()
             )
         }
 
         // Header + body both show pane type → expect 2 nodes
-        onAllNodesWithText("bible-reader")[0].assertIsDisplayed()
+        onAllNodesWithText(PaneType.BIBLE_READER)[0].assertIsDisplayed()
     }
 
     @Test
@@ -46,8 +49,8 @@ class WorkspaceShellTest {
             LayoutNode.Split(
                 axis = SplitAxis.Horizontal,
                 ratio = 0.5f,
-                first = LayoutNode.Leaf(paneType = "bible-reader"),
-                second = LayoutNode.Leaf(paneType = "search")
+                first = LayoutNode.Leaf(paneType = PaneType.BIBLE_READER),
+                second = LayoutNode.Leaf(paneType = PaneType.SEARCH)
             )
         )
 
@@ -55,22 +58,26 @@ class WorkspaceShellTest {
             WorkspaceShell(
                 stateFlow = flow,
                 sizeClass = WindowSizeClass.Expanded,
+                pinnedPanes = emptySet(),
+                favoritePanes = emptySet(),
                 callbacks = WorkspaceCallbacks()
             )
         }
 
-        onAllNodesWithText("bible-reader")[0].assertIsDisplayed()
-        onAllNodesWithText("search")[0].assertIsDisplayed()
+        onAllNodesWithText(PaneType.BIBLE_READER)[0].assertIsDisplayed()
+        onAllNodesWithText(PaneType.SEARCH)[0].assertIsDisplayed()
     }
 
     @Test
     fun compactLayoutShowsBottomNavigation() = runComposeUiTest {
-        val flow = stateFlow(LayoutNode.Leaf(paneType = "bible-reader"))
+        val flow = stateFlow(LayoutNode.Leaf(paneType = PaneType.BIBLE_READER))
 
         setContent {
             WorkspaceShell(
                 stateFlow = flow,
                 sizeClass = WindowSizeClass.Compact,
+                pinnedPanes = emptySet(),
+                favoritePanes = emptySet(),
                 callbacks = WorkspaceCallbacks()
             )
         }
@@ -83,17 +90,19 @@ class WorkspaceShellTest {
 
     @Test
     fun expandedLayoutShowsActivityBar() = runComposeUiTest {
-        val flow = stateFlow(LayoutNode.Leaf(paneType = "bible-reader"))
+        val flow = stateFlow(LayoutNode.Leaf(paneType = PaneType.BIBLE_READER))
 
         setContent {
             WorkspaceShell(
                 stateFlow = flow,
                 sizeClass = WindowSizeClass.Expanded,
+                pinnedPanes = emptySet(),
+                favoritePanes = emptySet(),
                 callbacks = WorkspaceCallbacks()
             )
         }
 
         // Pane type should be visible in the workspace area
-        onAllNodesWithText("bible-reader")[0].assertIsDisplayed()
+        onAllNodesWithText(PaneType.BIBLE_READER)[0].assertIsDisplayed()
     }
 }

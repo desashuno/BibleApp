@@ -37,6 +37,8 @@ BibleStudio is a multi-platform Bible study application targeting Android, iOS, 
 | [Phase 6](phase-6-data-integration.md) | Data integration — pipeline fixes, seed DB bundling, OSM atlas, module enhancements |
 | [Phase 7](phase-7-integration-verification.md) | Verificación integral — congruencia de módulos, UI funcional, layout VSCode, Biblias en español, auditoría de placeholders |
 | [Phase 8](phase-8-module-review.md) | Revisión de módulos — auditoría individual, nuevas fuentes de datos, validación cruzada |
+| [Phase 9](phase-9-resource-library-redesign.md) | Rediseño Resource Library — DataManager centralizado, handlers de módulos, UI unificada |
+| [Phase 10](phase-10-bible-reader-enhancement.md) | Bible Reader enhancement — per-pane toolbar, context menu, navigation coordinator, xref badges |
 | [Build Plan](build-plan.md) | Platform release — packaging, CI/CD, security audit, performance, accessibility, launch |
 
 ### Phase Dependencies
@@ -50,8 +52,10 @@ Phase 1 (Foundation)
                 ├──→ Phase 6 (Data Integration) ← can start in parallel with Phase 4/5
                 │      └──→ Phase 7 (Verificación Integral) ← after Phase 6
                 │             └──→ Phase 8 (Revisión de Módulos)
-                │                    └──→ Build Plan (Platform Release)
-                └─────────────────────────→ Build Plan ← after Phase 8
+                │                    └──→ Phase 9 (Resource Library Redesign)
+                │                           └──→ Phase 10 (Bible Reader Enhancement)
+                │                                  └──→ Build Plan (Platform Release)
+                └──────────────────────────────────────→ Build Plan ← after Phase 10
 ```
 
 ### How to Use This Roadmap

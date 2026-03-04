@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kover)
+    alias(libs.plugins.dokka)
 }
 
 detekt {
@@ -118,6 +119,20 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dokka {
+    dokkaSourceSets {
+        named("commonMain") {
+            displayName.set("composeApp")
+            documentedVisibilities.set(
+                setOf(
+                    org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier.Public,
+                    org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier.Protected,
+                )
+            )
+        }
     }
 }
 

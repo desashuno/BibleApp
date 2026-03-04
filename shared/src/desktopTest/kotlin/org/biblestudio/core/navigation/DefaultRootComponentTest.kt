@@ -1,12 +1,11 @@
 package org.biblestudio.core.navigation
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import org.biblestudio.core.verse_bus.LinkEvent
 import org.biblestudio.core.verse_bus.VerseBus
+import org.biblestudio.test.testComponentContext
 
 class DefaultRootComponentTest {
 
@@ -14,8 +13,7 @@ class DefaultRootComponentTest {
         verseBus: VerseBus = VerseBus(),
         initialConfig: RootConfig = RootConfig.Workspace
     ): DefaultRootComponent {
-        val lifecycle = LifecycleRegistry()
-        val context = DefaultComponentContext(lifecycle = lifecycle)
+        val context = testComponentContext()
         return DefaultRootComponent(
             componentContext = context,
             verseBus = verseBus,
@@ -46,7 +44,7 @@ class DefaultRootComponentTest {
     @Test
     fun `deep link publishes to VerseBus and navigates to Workspace`() {
         val verseBus = VerseBus()
-        val verseId = 1001001L
+        val verseId = 1_001_001
 
         val component = createComponent(
             verseBus = verseBus,
@@ -60,6 +58,6 @@ class DefaultRootComponentTest {
         // Verify the VerseBus received the event
         val event = verseBus.current
         assertIs<LinkEvent.VerseSelected>(event)
-        assertEquals(verseId.toInt(), event.globalVerseId)
+        assertEquals(verseId, event.globalVerseId)
     }
 }
